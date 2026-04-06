@@ -76,12 +76,37 @@ export async function GET(request: NextRequest) {
     const detailData = await detailRes.json();
     const detail = detailData?.data;
 
+    // Filter to successful transactions, take top 5
+    const allTxns = (detail?.recent_transactions ?? []) as Array<Record<string, unknown>>;
+    const successTxns = allTxns
+      .filter((tx) => tx.status === 'success' || tx.is_paid === true)
+      .slice(0, 5);
+
+    // Enrich transactions with receipt_url from /transaction/{orderNumber}
+    const enrichedTxns = await Promise.all(
+      successTxns.map(async (tx) => {
+        if (!tx.order_number) return tx;
+        try {
+          const txRes = await fetch(
+            `https://bcl.my/api/transaction/${encodeURIComponent(String(tx.order_number))}`,
+            { headers }
+          );
+          if (txRes.ok) {
+            const txData = await txRes.json();
+            const receiptUrl = txData?.data?.short_link ?? null;
+            return { ...tx, receipt_url: receiptUrl };
+          }
+        } catch { /* ignore */ }
+        return tx;
+      })
+    );
+
     const result = {
       configured: true,
       found: true,
       customer: detail?.customer ?? null,
       stats: detail?.stats ?? null,
-      recentTransactions: detail?.recent_transactions ?? [],
+      recentTransactions: enrichedTxns,
       protectedContent: detail?.protected_content ?? [],
     };
 

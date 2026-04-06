@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { X, User, Mail, Phone, MapPin, CreditCard, AlertCircle, Loader2 } from 'lucide-react';
+import { X, User, Mail, Phone, MapPin, CreditCard, AlertCircle, Loader2, ExternalLink, ShieldCheck } from 'lucide-react';
 
 type Address = {
   address_lines?: string[];
@@ -38,12 +38,14 @@ type Transaction = {
   payment_channel?: string;
   is_paid?: boolean;
   created_at?: string;
+  receipt_url?: string | null;
   [key: string]: unknown;
 };
 
 type ProtectedContent = {
   title: string;
   granted_at?: string;
+  url?: string;
 };
 
 type CustomerData = {
@@ -230,6 +232,16 @@ export function CustomerSidebar({ phoneNumber, open, onClose }: Props) {
                     </span>
                   </div>
                 )}
+
+                <a
+                  href={`https://bcl.my/customers/${data.customer.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-1.5 mt-3 px-3 py-2 rounded-lg text-xs font-medium bg-[var(--wa-hover)] text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-colors"
+                >
+                  View on BCL
+                  <ExternalLink className="h-3 w-3" />
+                </a>
               </div>
 
               {/* Transaction stats */}
@@ -273,7 +285,7 @@ export function CustomerSidebar({ phoneNumber, open, onClose }: Props) {
                 </div>
               )}
 
-              {/* Recent transactions — success only */}
+              {/* Recent transactions — success only, max 5 */}
               {data.recentTransactions && data.recentTransactions.length > 0 && (
                 <div className="border-t border-[var(--wa-border)] pt-4">
                   <h5 className="text-xs font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-3">
@@ -282,7 +294,7 @@ export function CustomerSidebar({ phoneNumber, open, onClose }: Props) {
                   <div className="space-y-2">
                     {data.recentTransactions
                       .filter(tx => tx.status === 'success' || tx.is_paid)
-                      .slice(0, 10)
+                      .slice(0, 5)
                       .map((tx, i) => (
                       <div
                         key={tx.id || i}
@@ -299,9 +311,23 @@ export function CustomerSidebar({ phoneNumber, open, onClose }: Props) {
                           )}
                         </div>
                         {tx.order_number && (
-                          <p className="text-xs text-[var(--wa-text-secondary)]">
-                            {tx.order_number}
-                          </p>
+                          <div className="flex items-center gap-1.5">
+                            {tx.receipt_url ? (
+                              <a
+                                href={tx.receipt_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1"
+                              >
+                                {tx.order_number}
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            ) : (
+                              <p className="text-xs text-[var(--wa-text-secondary)]">
+                                {tx.order_number}
+                              </p>
+                            )}
+                          </div>
                         )}
                         <p className="text-xs text-[var(--wa-text-secondary)] mt-0.5">
                           {formatDateTime(tx.created_at)}
@@ -318,7 +344,8 @@ export function CustomerSidebar({ phoneNumber, open, onClose }: Props) {
               {/* Protected content access */}
               {data.protectedContent && data.protectedContent.length > 0 && (
                 <div className="border-t border-[var(--wa-border)] pt-4">
-                  <h5 className="text-xs font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-3">
+                  <h5 className="text-xs font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-3 flex items-center gap-1.5">
+                    <ShieldCheck className="h-3.5 w-3.5" />
                     Content Access
                   </h5>
                   <div className="space-y-2">
@@ -327,9 +354,21 @@ export function CustomerSidebar({ phoneNumber, open, onClose }: Props) {
                         key={i}
                         className="p-3 bg-[var(--wa-hover)] rounded-lg"
                       >
-                        <p className="text-sm font-medium text-[var(--wa-text-primary)] leading-snug">
-                          {content.title}
-                        </p>
+                        {content.url ? (
+                          <a
+                            href={content.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-medium text-blue-400 hover:text-blue-300 hover:underline leading-snug flex items-start gap-1.5"
+                          >
+                            <span className="flex-1">{content.title}</span>
+                            <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+                          </a>
+                        ) : (
+                          <p className="text-sm font-medium text-[var(--wa-text-primary)] leading-snug">
+                            {content.title}
+                          </p>
+                        )}
                         {content.granted_at && (
                           <p className="text-xs text-[var(--wa-text-secondary)] mt-1">
                             Granted: {formatDateTime(content.granted_at)}
