@@ -82,6 +82,7 @@ export async function GET(request: NextRequest) {
       customer: detail?.customer ?? null,
       stats: detail?.stats ?? null,
       recentTransactions: detail?.recent_transactions ?? [],
+      protectedContent: detail?.protected_content ?? [],
     };
 
     setCache(phone, result);

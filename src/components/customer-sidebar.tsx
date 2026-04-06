@@ -32,10 +32,18 @@ type Stats = {
 
 type Transaction = {
   id?: string;
-  amount?: number;
+  order_number?: string;
+  amount?: number | string;
   status?: string;
+  payment_channel?: string;
+  is_paid?: boolean;
   created_at?: string;
   [key: string]: unknown;
+};
+
+type ProtectedContent = {
+  title: string;
+  granted_at?: string;
 };
 
 type CustomerData = {
@@ -44,6 +52,7 @@ type CustomerData = {
   customer?: Customer;
   stats?: Stats;
   recentTransactions?: Transaction[];
+  protectedContent?: ProtectedContent[];
   error?: string;
 };
 
@@ -65,6 +74,16 @@ function formatDate(dateStr: string | undefined): string {
   try {
     const d = new Date(dateStr);
     return d.toLocaleDateString('en-MY', { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch {
+    return dateStr;
+  }
+}
+
+function formatDateTime(dateStr: string | undefined): string {
+  if (!dateStr) return '—';
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-MY', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   } catch {
     return dateStr;
   }
@@ -241,54 +260,80 @@ export function CustomerSidebar({ phoneNumber, open, onClose }: Props) {
                     <div className="bg-[var(--wa-hover)] rounded-lg p-3">
                       <p className="text-xs text-[var(--wa-text-secondary)]">First Transaction</p>
                       <p className="text-sm font-medium text-[var(--wa-text-primary)]">
-                        {formatDate(data.stats.first_transaction_at)}
+                        {formatDateTime(data.stats.first_transaction_at)}
                       </p>
                     </div>
                     <div className="bg-[var(--wa-hover)] rounded-lg p-3">
                       <p className="text-xs text-[var(--wa-text-secondary)]">Last Transaction</p>
                       <p className="text-sm font-medium text-[var(--wa-text-primary)]">
-                        {formatDate(data.stats.last_transaction_at)}
+                        {formatDateTime(data.stats.last_transaction_at)}
                       </p>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Recent transactions */}
+              {/* Recent transactions — success only */}
               {data.recentTransactions && data.recentTransactions.length > 0 && (
                 <div className="border-t border-[var(--wa-border)] pt-4">
                   <h5 className="text-xs font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-3">
                     Recent Transactions
                   </h5>
                   <div className="space-y-2">
-                    {data.recentTransactions.slice(0, 5).map((tx, i) => (
+                    {data.recentTransactions
+                      .filter(tx => tx.status === 'success' || tx.is_paid)
+                      .slice(0, 10)
+                      .map((tx, i) => (
                       <div
                         key={tx.id || i}
-                        className="flex items-center justify-between p-3 bg-[var(--wa-hover)] rounded-lg"
+                        className="p-3 bg-[var(--wa-hover)] rounded-lg"
                       >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <CreditCard className="h-4 w-4 text-[var(--wa-text-secondary)] flex-shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-[var(--wa-text-primary)]">
-                              {formatRM(tx.amount)}
-                            </p>
-                            <p className="text-xs text-[var(--wa-text-secondary)]">
-                              {formatDate(tx.created_at)}
-                            </p>
-                          </div>
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-sm font-semibold text-[var(--wa-text-primary)]">
+                            {formatRM(tx.amount)}
+                          </p>
+                          {tx.payment_channel && (
+                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400">
+                              {tx.payment_channel}
+                            </span>
+                          )}
                         </div>
-                        {tx.status && (
-                          <span
-                            className={`text-[10px] font-medium px-2 py-0.5 rounded-full leading-tight flex-shrink-0 ${
-                              tx.status === 'paid' || tx.status === 'success'
-                                ? 'bg-green-500/15 text-green-500'
-                                : tx.status === 'pending'
-                                  ? 'bg-yellow-500/15 text-yellow-500'
-                                  : 'bg-[var(--wa-text-secondary)]/15 text-[var(--wa-text-secondary)]'
-                            }`}
-                          >
-                            {tx.status}
-                          </span>
+                        {tx.order_number && (
+                          <p className="text-xs text-[var(--wa-text-secondary)]">
+                            {tx.order_number}
+                          </p>
+                        )}
+                        <p className="text-xs text-[var(--wa-text-secondary)] mt-0.5">
+                          {formatDateTime(tx.created_at)}
+                        </p>
+                      </div>
+                    ))}
+                    {data.recentTransactions.filter(tx => tx.status === 'success' || tx.is_paid).length === 0 && (
+                      <p className="text-xs text-[var(--wa-text-secondary)] italic py-2">No successful transactions</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Protected content access */}
+              {data.protectedContent && data.protectedContent.length > 0 && (
+                <div className="border-t border-[var(--wa-border)] pt-4">
+                  <h5 className="text-xs font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-3">
+                    Content Access
+                  </h5>
+                  <div className="space-y-2">
+                    {data.protectedContent.map((content, i) => (
+                      <div
+                        key={i}
+                        className="p-3 bg-[var(--wa-hover)] rounded-lg"
+                      >
+                        <p className="text-sm font-medium text-[var(--wa-text-primary)] leading-snug">
+                          {content.title}
+                        </p>
+                        {content.granted_at && (
+                          <p className="text-xs text-[var(--wa-text-secondary)] mt-1">
+                            Granted: {formatDateTime(content.granted_at)}
+                          </p>
                         )}
                       </div>
                     ))}
