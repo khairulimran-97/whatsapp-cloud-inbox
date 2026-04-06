@@ -21,6 +21,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result);
   } catch (error: unknown) {
+    // Rate limits are non-critical for mark-read — return 200 silently
+    const isRateLimit = error instanceof Error && error.message.includes('Rate limit');
+    if (isRateLimit) {
+      return NextResponse.json({ ok: true, skipped: 'rate_limited' });
+    }
     console.error('Error marking message as read:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(

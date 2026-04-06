@@ -80,6 +80,7 @@ type Message = {
     filename?: string;
   } | (MediaData & { url: string });
   reactionEmoji?: string | null;
+  reactions?: { emoji: string; count: number }[];
   reactedToMessageId?: string | null;
   filename?: string | null;
   mimeType?: string | null;
@@ -281,14 +282,45 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
       // Separate reactions from regular messages
       const reactions = allMessages.filter(m => m.messageType === 'reaction');
       const regularMessages = allMessages.filter(m => m.messageType !== 'reaction');
-      const reactionMap = new Map<string, string>();
-      // Sort reactions by time so newest wins (last set() overwrites older)
+
+      // Build per-message reaction groups: { emoji → count }
+      const reactionGroups = new Map<string, Map<string, number>>();
+      // Track your own latest reaction per message (for the picker highlight)
+      const ownReactionMap = new Map<string, string>();
+
       reactions
         .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-        .forEach(r => { if (r.reactedToMessageId && r.reactionEmoji) reactionMap.set(r.reactedToMessageId, r.reactionEmoji); });
+        .forEach(r => {
+          if (!r.reactedToMessageId || !r.reactionEmoji) return;
+          const msgId = r.reactedToMessageId;
+
+          // Group all emojis with counts
+          if (!reactionGroups.has(msgId)) reactionGroups.set(msgId, new Map());
+          const emojiMap = reactionGroups.get(msgId)!;
+          if (r.reactionEmoji) {
+            emojiMap.set(r.reactionEmoji, (emojiMap.get(r.reactionEmoji) ?? 0) + 1);
+          }
+
+          // Track outbound (your own) reactions — newest wins
+          if (r.direction === 'outbound') {
+            ownReactionMap.set(msgId, r.reactionEmoji);
+          }
+        });
+
       const messagesWithReactions = regularMessages.map(m => {
-        const reaction = reactionMap.get(m.id);
-        return reaction ? { ...m, reactionEmoji: reaction } : m;
+        const emojiMap = reactionGroups.get(m.id);
+        const ownReaction = ownReactionMap.get(m.id);
+        if (!emojiMap && !ownReaction) return m;
+
+        const groupedReactions = emojiMap
+          ? Array.from(emojiMap.entries()).map(([emoji, count]) => ({ emoji, count }))
+          : undefined;
+
+        return {
+          ...m,
+          reactionEmoji: ownReaction ?? (groupedReactions?.[0]?.emoji || null),
+          reactions: groupedReactions,
+        };
       });
 
       const sortedMessages = messagesWithReactions.sort(
@@ -339,9 +371,29 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
 
   // Optimistically update reaction emoji on a message without waiting for server
   const handleReaction = useCallback((messageId: string, emoji: string) => {
-    setMessages(prev => prev.map(m =>
-      m.id === messageId ? { ...m, reactionEmoji: emoji || null } : m
-    ));
+    setMessages(prev => prev.map(m => {
+      if (m.id !== messageId) return m;
+      // Update own reaction + rebuild reactions array
+      const existingReactions = m.reactions ?? [];
+      let newReactions: { emoji: string; count: number }[];
+
+      if (!emoji) {
+        // Remove own reaction
+        newReactions = existingReactions
+          .map(r => r.emoji === m.reactionEmoji ? { ...r, count: r.count - 1 } : r)
+          .filter(r => r.count > 0);
+      } else {
+        // Remove old own reaction, add new
+        newReactions = existingReactions
+          .map(r => r.emoji === m.reactionEmoji ? { ...r, count: r.count - 1 } : r)
+          .filter(r => r.count > 0);
+        const existing = newReactions.find(r => r.emoji === emoji);
+        if (existing) existing.count++;
+        else newReactions.push({ emoji, count: 1 });
+      }
+
+      return { ...m, reactionEmoji: emoji || null, reactions: newReactions.length ? newReactions : undefined };
+    }));
   }, []);
 
   useEffect(() => {
@@ -1012,9 +1064,16 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                       );
                     })()}
 
-                    {message.reactionEmoji && (
-                      <div className="absolute -bottom-1.5 -right-1 bg-[var(--wa-reaction-bg)] rounded-full px-1 py-0.5 text-[13px] shadow-sm border border-[var(--wa-border)]">
-                        {message.reactionEmoji}
+                    {(message.reactions?.length || message.reactionEmoji) && (
+                      <div className="absolute -bottom-2.5 -right-1 flex items-center gap-0.5 bg-[var(--wa-reaction-bg)] rounded-full px-1.5 py-0.5 text-[13px] shadow-sm border border-[var(--wa-border)]">
+                        {message.reactions?.map(r => (
+                          <span key={r.emoji}>{r.emoji}</span>
+                        )) ?? <span>{message.reactionEmoji}</span>}
+                        {(message.reactions?.reduce((s, r) => s + r.count, 0) ?? 0) > 1 && (
+                          <span className="text-[11px] text-[var(--wa-text-secondary)] ml-0.5">
+                            {message.reactions?.reduce((s, r) => s + r.count, 0)}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
