@@ -247,15 +247,21 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
 
   useImperativeHandle(ref, () => ({
     refresh: async () => {
-      setRefreshing(true);
-      const response = await fetch('/api/conversations?refresh=true');
-      const data = await response.json();
-      const newConversations = data.data || [];
-      setHasMore(!!data.hasMore);
-      prevDataRef.current = JSON.stringify(newConversations.map((c: Conversation) => c.id + c.status + c.lastActiveAt + (c.lastMessage?.content || '')));
-      setConversations(newConversations);
-      setRefreshing(false);
-      return newConversations;
+      try {
+        setRefreshing(true);
+        const response = await fetch('/api/conversations?refresh=true');
+        if (!response.ok) return conversations;
+        const data = await response.json();
+        const newConversations = data.data || [];
+        setHasMore(!!data.hasMore);
+        prevDataRef.current = JSON.stringify(newConversations.map((c: Conversation) => c.id + c.status + c.lastActiveAt + (c.lastMessage?.content || '')));
+        setConversations(newConversations);
+        return newConversations;
+      } catch {
+        return conversations;
+      } finally {
+        setRefreshing(false);
+      }
     },
     selectByPhoneNumber
   }));
