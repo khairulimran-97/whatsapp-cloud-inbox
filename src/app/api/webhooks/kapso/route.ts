@@ -46,6 +46,7 @@ function mapEventType(kapsoEvent: string): WebhookEvent['type'] | null {
     'whatsapp.message.read': 'message_read',
     'whatsapp.message.failed': 'message_failed',
     'whatsapp.conversation.started': 'conversation_started',
+    'whatsapp.conversation.created': 'conversation_started',
     'whatsapp.conversation.ended': 'conversation_ended',
     'whatsapp.conversation.inactive': 'conversation_inactive',
     // Fallback formats
@@ -61,6 +62,8 @@ function mapEventType(kapsoEvent: string): WebhookEvent['type'] | null {
     'message_failed': 'message_failed',
     'conversation.started': 'conversation_started',
     'conversation_started': 'conversation_started',
+    'conversation.created': 'conversation_started',
+    'conversation_created': 'conversation_started',
     'conversation.ended': 'conversation_ended',
     'conversation_ended': 'conversation_ended',
     'conversation.inactive': 'conversation_inactive',

@@ -168,7 +168,7 @@ async function fetchNextPage(status?: string, limit = 100): Promise<GroupedConve
   });
 
   const records = response.data as ConversationRecord[];
-  console.log(`[pagination] fetchNextPage: raw records=${records.length}, limit=${limit}, hadCursor=${!!nextApiCursor}, newCursor=${!!response.paging?.cursors?.after}`);
+
   nextApiCursor = response.paging?.cursors?.after ?? undefined;
   if (!nextApiCursor) allPagesFetched = true;
 
