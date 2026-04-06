@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, RefreshCw } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -126,13 +126,13 @@ export function TemplateSelectorDialog({ open, onOpenChange, phoneNumber, onTemp
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'MARKETING':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-500/15 text-blue-700 dark:text-blue-300';
       case 'UTILITY':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-500/15 text-green-700 dark:text-green-300';
       case 'AUTHENTICATION':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-purple-500/15 text-purple-700 dark:text-purple-300';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-500/15 text-gray-700 dark:text-gray-300';
     }
   };
 
@@ -148,16 +148,23 @@ export function TemplateSelectorDialog({ open, onOpenChange, phoneNumber, onTemp
         </DialogHeader>
 
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
-            {error}
+          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-600 dark:text-red-400 flex items-center justify-between gap-3">
+            <span>{error}</span>
+            <button
+              onClick={fetchTemplates}
+              className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 flex items-center gap-1 text-xs font-medium flex-shrink-0"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              Retry
+            </button>
           </div>
         )}
 
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-[#00a884]" />
+            <Loader2 className="h-8 w-8 animate-spin text-[var(--wa-green)]" />
           </div>
-        ) : templates.length === 0 ? (
+        ) : templates.length === 0 && !error ? (
           <div className="py-8 text-center text-muted-foreground">
             No approved templates found
           </div>
@@ -167,18 +174,18 @@ export function TemplateSelectorDialog({ open, onOpenChange, phoneNumber, onTemp
               {templates.map((template) => (
                 <div
                   key={template.id}
-                  className="p-4 border border-[#d1d7db] rounded-lg hover:bg-[#f0f2f5] transition-colors"
+                  className="p-4 border border-[var(--wa-border-strong)] rounded-lg hover:bg-[var(--wa-hover)] transition-colors"
                 >
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-[#111b21] truncate">
+                      <h3 className="font-medium text-[var(--wa-text-primary)] truncate">
                         {template.name}
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
                         <Badge variant="secondary" className={getCategoryColor(template.category)}>
                           {template.category}
                         </Badge>
-                        <span className="text-xs text-[#667781]">
+                        <span className="text-xs text-[var(--wa-text-secondary)]">
                           {template.language}
                         </span>
                       </div>
@@ -187,7 +194,7 @@ export function TemplateSelectorDialog({ open, onOpenChange, phoneNumber, onTemp
                       onClick={() => handleSelectTemplate(template)}
                       disabled={sending !== null}
                       size="sm"
-                      className="bg-[#00a884] hover:bg-[#008f6f]"
+                      className="bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] text-white"
                     >
                       {sending === template.id ? (
                         <Loader2 className="h-4 w-4 animate-spin" />

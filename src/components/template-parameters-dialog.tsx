@@ -124,7 +124,7 @@ export function TemplateParametersDialog({
         </DialogHeader>
 
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
+          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-600 dark:text-red-400">
             {error}
           </div>
         )}
@@ -134,12 +134,12 @@ export function TemplateParametersDialog({
             {parameterInfo.parameters.map((param) => (
               <div key={param.name} className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Label htmlFor={param.name} className="text-[#111b21]">
+                  <Label htmlFor={param.name} className="text-[var(--wa-text-primary)]">
                     {formatParameterName(param.name)}
                   </Label>
                   <Badge
                     variant="secondary"
-                    className="text-xs bg-[#f0f2f5] text-[#667781]"
+                    className="text-xs bg-[var(--wa-hover)] text-[var(--wa-text-secondary)]"
                   >
                     {param.component}
                   </Badge>
@@ -149,10 +149,10 @@ export function TemplateParametersDialog({
                   value={parameterValues[param.name] || ''}
                   onChange={(e) => handleParameterChange(param.name, e.target.value)}
                   placeholder={param.example || `Enter ${formatParameterName(param.name)}`}
-                  className="bg-white border-[#d1d7db] focus-visible:ring-[#00a884]"
+                  className="bg-[var(--wa-input-bg)] border-[var(--wa-input-ring)] focus-visible:ring-[var(--wa-green)]"
                 />
                 {param.example && (
-                  <p className="text-xs text-[#667781]">
+                  <p className="text-xs text-[var(--wa-text-secondary)]">
                     Example: {param.example}
                   </p>
                 )}
@@ -170,7 +170,7 @@ export function TemplateParametersDialog({
           <Button
             onClick={handleSend}
             disabled={!allParametersFilled || sending}
-            className="bg-[#00a884] hover:bg-[#008f6f]"
+            className="bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] text-white"
           >
             {sending ? (
               <Loader2 className="h-4 w-4 animate-spin" />

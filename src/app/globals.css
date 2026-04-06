@@ -76,43 +76,144 @@
   --sidebar-accent-foreground: #111b21;
   --sidebar-border: #e9edef;
   --sidebar-ring: #00a884;
-  --whatsapp-green: #00a884;
-  --whatsapp-bubble-incoming: #ffffff;
-  --whatsapp-bubble-outgoing: #d9fdd3;
+
+  /* WhatsApp theme tokens */
+  --wa-bg: #f0f2f5;
+  --wa-panel-bg: #ffffff;
+  --wa-panel-header: #f0f2f5;
+  --wa-text-primary: #111b21;
+  --wa-text-secondary: #667781;
+  --wa-text-tertiary: #54656f;
+  --wa-green: #00a884;
+  --wa-green-dark: #008f6f;
+  --wa-green-darker: #006f5c;
+  --wa-border: #e9edef;
+  --wa-border-strong: #d1d7db;
+  --wa-hover: #f5f6f6;
+  --wa-active: #e9edef;
+  --wa-selected: #f0f2f5;
+  --wa-search-bg: #ffffff;
+  --wa-input-bg: #ffffff;
+  --wa-input-ring: #d1d7db;
+  --wa-bubble-out: #d9fdd3;
+  --wa-bubble-in: #ffffff;
+  --wa-chat-bg: #efeae2;
+  --wa-chat-pattern: rgba(209, 215, 219, 0.15);
+  --wa-icon: #8696a0;
+  --wa-read-check: #53bdeb;
+  --wa-date-pill-bg: rgba(255, 255, 255, 0.8);
+  --wa-date-pill-text: #8696a0;
+  --wa-tooltip-bg: #111b21;
+  --wa-tooltip-text: #ffffff;
+  --wa-scrollbar: rgba(0, 0, 0, 0.15);
+  --wa-scrollbar-hover: rgba(0, 0, 0, 0.25);
+  --wa-reaction-bg: #ffffff;
+  --wa-ended-pill-bg: rgba(255, 255, 255, 0.8);
+  --wa-ended-pill-text: #54656f;
+
+  /* Status notice tokens */
+  --wa-notice-warn-bg: #fef3cd;
+  --wa-notice-warn-border: rgba(255, 193, 7, 0.3);
+  --wa-notice-warn-text: #856404;
+  --wa-notice-warn-btn-bg: rgba(255, 193, 7, 0.2);
+  --wa-notice-warn-btn-hover: rgba(255, 193, 7, 0.4);
+  --wa-notice-urgent-bg: #fff3e0;
+  --wa-notice-urgent-border: rgba(255, 152, 0, 0.2);
+  --wa-notice-urgent-text: #e65100;
+  --wa-notice-urgent-btn-bg: rgba(255, 152, 0, 0.15);
+  --wa-notice-urgent-btn-hover: rgba(255, 152, 0, 0.3);
+  --wa-notice-ok-bg: #e8f5e9;
+  --wa-notice-ok-border: rgba(76, 175, 80, 0.2);
+  --wa-notice-ok-text: #2e7d32;
+  --wa-notice-ended-bg: rgba(239, 68, 68, 0.08);
+  --wa-notice-ended-text: #dc2626;
+  --wa-notice-ended-border: rgba(239, 68, 68, 0.2);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: #0b141a;
+  --foreground: #e9edef;
+  --card: #111b21;
+  --card-foreground: #e9edef;
+  --popover: #1f2c33;
+  --popover-foreground: #e9edef;
+  --primary: #00a884;
+  --primary-foreground: #ffffff;
+  --secondary: #202c33;
+  --secondary-foreground: #e9edef;
+  --muted: #202c33;
+  --muted-foreground: #8696a0;
+  --accent: #202c33;
+  --accent-foreground: #e9edef;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --border: #222d34;
+  --input: #2a3942;
+  --ring: #00a884;
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar: #111b21;
+  --sidebar-foreground: #e9edef;
+  --sidebar-primary: #00a884;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #202c33;
+  --sidebar-accent-foreground: #e9edef;
+  --sidebar-border: #222d34;
+  --sidebar-ring: #00a884;
+
+  /* WhatsApp dark theme tokens */
+  --wa-bg: #0b141a;
+  --wa-panel-bg: #111b21;
+  --wa-panel-header: #202c33;
+  --wa-text-primary: #e9edef;
+  --wa-text-secondary: #8696a0;
+  --wa-text-tertiary: #8696a0;
+  --wa-green: #00a884;
+  --wa-green-dark: #00a884;
+  --wa-green-darker: #008f6f;
+  --wa-border: #222d34;
+  --wa-border-strong: #2a3942;
+  --wa-hover: #202c33;
+  --wa-active: #2a3942;
+  --wa-selected: #2a3942;
+  --wa-search-bg: #111b21;
+  --wa-input-bg: #2a3942;
+  --wa-input-ring: #2a3942;
+  --wa-bubble-out: #005c4b;
+  --wa-bubble-in: #202c33;
+  --wa-chat-bg: #0b141a;
+  --wa-chat-pattern: rgba(255, 255, 255, 0.03);
+  --wa-icon: #aebac1;
+  --wa-read-check: #53bdeb;
+  --wa-date-pill-bg: rgba(17, 27, 33, 0.85);
+  --wa-date-pill-text: #8696a0;
+  --wa-tooltip-bg: #e9edef;
+  --wa-tooltip-text: #111b21;
+  --wa-scrollbar: rgba(255, 255, 255, 0.15);
+  --wa-scrollbar-hover: rgba(255, 255, 255, 0.25);
+  --wa-reaction-bg: #1f2c33;
+  --wa-ended-pill-bg: rgba(32, 44, 51, 0.8);
+  --wa-ended-pill-text: #8696a0;
+
+  /* Status notice tokens (dark) */
+  --wa-notice-warn-bg: rgba(255, 193, 7, 0.08);
+  --wa-notice-warn-border: rgba(255, 193, 7, 0.15);
+  --wa-notice-warn-text: #ffd54f;
+  --wa-notice-warn-btn-bg: rgba(255, 193, 7, 0.12);
+  --wa-notice-warn-btn-hover: rgba(255, 193, 7, 0.25);
+  --wa-notice-urgent-bg: rgba(255, 152, 0, 0.08);
+  --wa-notice-urgent-border: rgba(255, 152, 0, 0.15);
+  --wa-notice-urgent-text: #ffb74d;
+  --wa-notice-urgent-btn-bg: rgba(255, 152, 0, 0.12);
+  --wa-notice-urgent-btn-hover: rgba(255, 152, 0, 0.25);
+  --wa-notice-ok-bg: rgba(76, 175, 80, 0.08);
+  --wa-notice-ok-border: rgba(76, 175, 80, 0.15);
+  --wa-notice-ok-text: #81c784;
+  --wa-notice-ended-bg: rgba(239, 68, 68, 0.08);
+  --wa-notice-ended-text: #f87171;
+  --wa-notice-ended-border: rgba(239, 68, 68, 0.15);
 }
 
 @layer base {
@@ -129,9 +230,10 @@
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
-  .safe-area-top {
-    padding-top: env(safe-area-inset-top);
-  }
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 /* Fix ScrollArea table layout breaking text truncation */
@@ -139,4 +241,74 @@
   display: block !important;
   width: 100% !important;
   min-width: 0 !important;
+}
+
+/* Force long text (URLs, etc.) to wrap inside message bubbles */
+.overflow-wrap-anywhere {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* WhatsApp-style chat background pattern */
+.chat-bg {
+  background-color: var(--wa-chat-bg);
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d1d7db' fill-opacity='0.15'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+.dark .chat-bg {
+  background-color: var(--wa-chat-bg);
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Thin scrollbar styling */
+::-webkit-scrollbar {
+  width: 3px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--wa-scrollbar);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--wa-scrollbar-hover);
+}
+
+/* Firefox thin scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--wa-scrollbar) transparent;
+}
+
+/* Mobile panel slide transition */
+@media (max-width: 767px) {
+  .panel-slide {
+    transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1), opacity 200ms ease;
+    will-change: transform, opacity;
+    position: absolute;
+    inset: 0;
+  }
+  .panel-slide-left {
+    transform: translateX(-100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .panel-slide-right {
+    transform: translateX(100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .panel-slide-center {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@media (min-width: 768px) {
+  .panel-slide {
+    position: static !important;
+    transform: none !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
 }

@@ -1,24 +1,188 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { ConversationList, type ConversationListRef } from '@/components/conversation-list';
-import { MessageView } from '@/components/message-view';
+import { MessageView, type MessageViewRef } from '@/components/message-view';
+import { useRealtime, type RealtimeEvent } from '@/hooks/use-realtime';
+import { useNotification } from '@/hooks/use-notification';
+import { PwaInstallBanner } from '@/components/pwa-install-banner';
+import { LoginScreen, useAuth } from '@/components/login-screen';
 
 type Conversation = {
   id: string;
+  conversationIds: string[];
+  conversationStatuses: Record<string, string>;
+  status: string;
   phoneNumber: string;
   contactName?: string;
+  lastMessage?: { content: string; direction: string; type?: string };
 };
 
+const UNREAD_STORAGE_KEY = 'whatsapp-inbox-unread';
+
+function loadUnreadMap(): Map<string, number> {
+  try {
+    const stored = localStorage.getItem(UNREAD_STORAGE_KEY);
+    if (!stored) return new Map();
+    const parsed = JSON.parse(stored);
+    if (Array.isArray(parsed)) {
+      return new Map(parsed.map((phone: string) => [phone, 1]));
+    }
+    return new Map(Object.entries(parsed as Record<string, number>));
+  } catch {
+    return new Map();
+  }
+}
+
+function saveUnreadMap(unread: Map<string, number>) {
+  localStorage.setItem(UNREAD_STORAGE_KEY, JSON.stringify(Object.fromEntries(unread)));
+  // Fire-and-forget sync to server
+  fetch('/api/unread', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(Object.fromEntries(unread)),
+  }).catch(() => {});
+}
+
 export default function Home() {
+  const { authenticated, login } = useAuth();
   const [selectedConversation, setSelectedConversation] = useState<Conversation>();
+  const [unreadCounts, setUnreadCounts] = useState<Map<string, number>>(new Map());
+  const [initialUnreadCount, setInitialUnreadCount] = useState(0);
   const conversationListRef = useRef<ConversationListRef>(null);
+  const messageViewRef = useRef<MessageViewRef>(null);
+  const selectedConversationRef = useRef<Conversation | undefined>(undefined);
+  selectedConversationRef.current = selectedConversation;
+  const { enabled: notifEnabled, permission: notifPermission, toggle: toggleNotif } = useNotification();
+  // Track previous lastMessage per phone for new-message detection
+  const prevLastMessagesRef = useRef<Map<string, string>>(new Map());
+  const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
+  const audioUnlockedRef = useRef(false);
+
+  useEffect(() => {
+    // Load from localStorage first (instant), then sync from server
+    setUnreadCounts(loadUnreadMap());
+    fetch('/api/unread').then(r => r.json()).then(data => {
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        const serverMap = new Map(Object.entries(data as Record<string, number>));
+        // Merge: server wins for any key it has, keep local-only keys
+        setUnreadCounts(prev => {
+          const merged = new Map(prev);
+          for (const [k, v] of serverMap) merged.set(k, v as number);
+          return merged;
+        });
+      }
+    }).catch(() => {});
+
+    notificationSoundRef.current = new Audio('/notification.wav');
+    notificationSoundRef.current.volume = 0.8;
+
+    // Browsers block audio until user interacts — unlock on first click/tap
+    const unlock = () => {
+      if (audioUnlockedRef.current) return;
+      const audio = notificationSoundRef.current;
+      if (audio) {
+        audio.play().then(() => { audio.pause(); audio.currentTime = 0; audioUnlockedRef.current = true; }).catch(() => {});
+      }
+    };
+    document.addEventListener('click', unlock, { once: true });
+    document.addEventListener('touchstart', unlock, { once: true });
+    return () => {
+      document.removeEventListener('click', unlock);
+      document.removeEventListener('touchstart', unlock);
+    };
+  }, []);
+
+  const handleSelectConversation = useCallback((conversation: Conversation) => {
+    // Capture unread count BEFORE clearing (for "X unread messages" divider)
+    const count = unreadCounts.get(conversation.phoneNumber) ?? 0;
+    setInitialUnreadCount(count);
+    setSelectedConversation(conversation);
+    // Clear unread badge from sidebar
+    if (count > 0) {
+      setUnreadCounts(prev => {
+        const next = new Map(prev);
+        next.delete(conversation.phoneNumber);
+        saveUnreadMap(next);
+        return next;
+      });
+    }
+  }, [unreadCounts]);
+
+  const clearUnreadForSelected = useCallback(() => {
+    const selected = selectedConversationRef.current;
+    if (!selected) return;
+    setInitialUnreadCount(0);
+    setUnreadCounts(prev => {
+      if (!prev.has(selected.phoneNumber)) return prev;
+      const next = new Map(prev);
+      next.delete(selected.phoneNumber);
+      saveUnreadMap(next);
+      return next;
+    });
+  }, []);
+
+  // Sync selected conversation + auto-mark new inbound messages as unread
+  const handleConversationsUpdated = useCallback((conversations: Conversation[]) => {
+    const selected = selectedConversationRef.current;
+    const prev = prevLastMessagesRef.current;
+    const isFirstLoad = prev.size === 0;
+
+    // Detect new inbound messages → increment unread count
+    if (!isFirstLoad) {
+      const newUnreads: string[] = [];
+      for (const conv of conversations) {
+        const lastMsg = conv.lastMessage;
+        if (!lastMsg) continue;
+        const prevContent = prev.get(conv.phoneNumber);
+        const isNewMessage = prevContent !== lastMsg.content;
+        const isInbound = lastMsg.direction === 'inbound';
+        const isNotSelected = conv.phoneNumber !== selected?.phoneNumber;
+        if (isNewMessage && isInbound && isNotSelected) {
+          newUnreads.push(conv.phoneNumber);
+        }
+      }
+      if (newUnreads.length > 0) {
+        notificationSoundRef.current?.play().catch(() => {});
+        setUnreadCounts(current => {
+          const next = new Map(current);
+          for (const phone of newUnreads) next.set(phone, (next.get(phone) ?? 0) + 1);
+          saveUnreadMap(next);
+          return next;
+        });
+      }
+    }
+
+    // Update previous lastMessage tracking
+    const newPrev = new Map<string, string>();
+    for (const conv of conversations) {
+      if (conv.lastMessage) newPrev.set(conv.phoneNumber, conv.lastMessage.content);
+    }
+    prevLastMessagesRef.current = newPrev;
+
+    // Sync selected conversation if IDs or status changed
+    if (selected) {
+      const updated = conversations.find(c => c.phoneNumber === selected.phoneNumber);
+      if (updated && (
+        updated.conversationIds.join(',') !== selected.conversationIds.join(',') ||
+        updated.status !== selected.status
+      )) {
+        setSelectedConversation(updated);
+      }
+    }
+  }, []);
+
+  const handleMarkUnread = useCallback((phoneNumber: string) => {
+    setUnreadCounts(prev => {
+      const next = new Map(prev);
+      next.set(phoneNumber, Math.max(next.get(phoneNumber) ?? 0, 1));
+      saveUnreadMap(next);
+      return next;
+    });
+  }, []);
 
   const handleTemplateSent = async (phoneNumber: string) => {
-    // Refresh the conversation list and get the updated conversations
     const conversations = await conversationListRef.current?.refresh();
-
-    // Find and select the conversation for the phone number
     if (conversations) {
       const conversation = conversations.find(conv => conv.phoneNumber === phoneNumber);
       if (conversation) {
@@ -27,25 +191,128 @@ export default function Home() {
     }
   };
 
-  const handleBackToList = () => {
-    setSelectedConversation(undefined);
+  const handleStatusChanged = async () => {
+    // Optimistically update the selected conversation status locally
+    // then do a quick (non-full) refresh in the background
+    if (selectedConversation) {
+      // Flip the status locally for instant UI update
+      const latestConvId = selectedConversation.conversationIds[0];
+      const currentStatus = selectedConversation.conversationStatuses[latestConvId];
+      const newStatus = currentStatus === 'ended' ? 'active' : 'ended';
+      const updatedStatuses = { ...selectedConversation.conversationStatuses, [latestConvId]: newStatus };
+      const overallStatus = Object.values(updatedStatuses).some(s => s === 'active') ? 'active' : 'ended';
+      setSelectedConversation({
+        ...selectedConversation,
+        conversationStatuses: updatedStatuses,
+        status: overallStatus,
+      });
+    }
+    // Background refresh to sync with server (quick fetch, not full)
+    conversationListRef.current?.refresh().then(conversations => {
+      if (conversations && selectedConversation) {
+        const updated = conversations.find(conv => conv.phoneNumber === selectedConversation.phoneNumber);
+        if (updated) setSelectedConversation(updated);
+      }
+    });
   };
 
+  const handleBackToList = () => {
+    setSelectedConversation(undefined);
+    setInitialUnreadCount(0);
+  };
+
+  // Real-time updates via webhook SSE — triggers instant refresh on events
+  const handleRealtimeEvent = useCallback((event: RealtimeEvent) => {
+    if (event.type === 'connected') return;
+
+    // Message events → refresh messages + conversation list
+    if (event.type === 'message_received' || event.type === 'message_sent') {
+      messageViewRef.current?.refresh();
+      conversationListRef.current?.refresh();
+
+      // Inbound message → always play sound + always increment unread
+      if (event.type === 'message_received' && event.phoneNumber) {
+        notificationSoundRef.current?.play().catch(() => {});
+
+        const selected = selectedConversationRef.current;
+        if (selected && event.phoneNumber === selected.phoneNumber) {
+          // Currently viewing this conversation — show unread divider line
+          setInitialUnreadCount(prev => prev + 1);
+        }
+
+        // Always increment sidebar badge
+        setUnreadCounts(current => {
+          const next = new Map(current);
+          next.set(event.phoneNumber!, (next.get(event.phoneNumber!) ?? 0) + 1);
+          saveUnreadMap(next);
+          return next;
+        });
+      }
+    }
+
+    // Status events → refresh messages
+    if (event.type === 'message_delivered' || event.type === 'message_read' || event.type === 'message_failed') {
+      messageViewRef.current?.refresh();
+    }
+
+    // Conversation events → refresh list
+    if (event.type === 'conversation_started' || event.type === 'conversation_ended' || event.type === 'conversation_inactive') {
+      conversationListRef.current?.refresh();
+    }
+
+    // Unread sync from another browser/tab
+    if (event.type === 'unread_update' && event.data) {
+      const serverUnread = event.data as Record<string, number>;
+      const serverMap = new Map(Object.entries(serverUnread));
+      setUnreadCounts(serverMap);
+      localStorage.setItem(UNREAD_STORAGE_KEY, JSON.stringify(serverUnread));
+    }
+  }, []);
+
+  const { connected: sseConnected } = useRealtime({ onEvent: handleRealtimeEvent });
+
+  // Adaptive polling: fast when no webhook/SSE, slow as backup when connected
+  const conversationPollInterval = sseConnected ? 30000 : 10000;
+  const messagePollInterval = sseConnected ? 30000 : 5000;
+
+  // Show loading while checking auth, then login screen if not authenticated
+  if (authenticated === null) {
+    return <div className="h-dvh bg-[#111b21]" />;
+  }
+  if (!authenticated) {
+    return <LoginScreen onSuccess={login} />;
+  }
+
   return (
-    <div className="h-dvh flex">
+    <div className="h-dvh flex relative overflow-hidden">
+      <PwaInstallBanner />
       <ConversationList
         ref={conversationListRef}
-        onSelectConversation={setSelectedConversation}
-        selectedConversationId={selectedConversation?.id}
+        onSelectConversation={handleSelectConversation}
+        onConversationsUpdated={handleConversationsUpdated}
+        selectedConversationId={selectedConversation?.phoneNumber}
         isHidden={!!selectedConversation}
+        unreadCounts={unreadCounts}
+        pollInterval={conversationPollInterval}
+        notificationEnabled={notifEnabled}
+        notificationPermission={notifPermission}
+        onToggleNotification={toggleNotif}
       />
       <MessageView
-        conversationId={selectedConversation?.id}
+        ref={messageViewRef}
+        conversationIds={selectedConversation?.conversationIds}
+        conversationStatuses={selectedConversation?.conversationStatuses}
+        conversationStatus={selectedConversation?.status}
         phoneNumber={selectedConversation?.phoneNumber}
         contactName={selectedConversation?.contactName}
         onTemplateSent={handleTemplateSent}
+        onStatusChanged={handleStatusChanged}
+        onMarkUnread={handleMarkUnread}
         onBack={handleBackToList}
+        onInteraction={clearUnreadForSelected}
         isVisible={!!selectedConversation}
+        pollInterval={messagePollInterval}
+        initialUnreadCount={initialUnreadCount}
       />
     </div>
   );

@@ -11,9 +11,10 @@ type Props = {
   caption?: string | null;
   filename?: string | null;
   isOutbound?: boolean;
+  onImageClick?: (url: string) => void;
 };
 
-export function MediaMessage({ mediaId, messageType, caption, filename, isOutbound }: Props) {
+export function MediaMessage({ mediaId, messageType, caption, filename, isOutbound, onImageClick }: Props) {
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -53,8 +54,9 @@ export function MediaMessage({ mediaId, messageType, caption, filename, isOutbou
         <img
           src={mediaUrl}
           alt={caption || 'Image'}
-          className="rounded max-w-full h-auto max-h-96"
+          className={cn("rounded max-w-full h-auto max-h-96", onImageClick && "cursor-pointer")}
           onError={handleLoadError}
+          onClick={() => onImageClick?.(mediaUrl)}
         />
       )}
 

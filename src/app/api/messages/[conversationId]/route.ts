@@ -84,28 +84,50 @@ export async function GET(
     const parsedLimit = Number.parseInt(searchParams.get('limit') ?? '', 10);
     const limit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? Math.min(parsedLimit, 100) : 50;
 
-    const response = await whatsappClient.messages.listByConversation({
-      phoneNumberId: PHONE_NUMBER_ID,
-      conversationId,
-      limit,
-      fields: buildKapsoFields([
-        'direction',
-        'status',
-        'processing_status',
-        'phone_number',
-        'has_media',
-        'media_data',
-        'media_url',
-        'whatsapp_conversation_id',
-        'contact_name',
-        'message_type_data',
-        'content',
-        'flow_response',
-        'flow_token',
-        'flow_name',
-        'order_text'
-      ])
-    });
+    const fields = buildKapsoFields([
+      'direction',
+      'status',
+      'processing_status',
+      'phone_number',
+      'has_media',
+      'media_data',
+      'media_url',
+      'whatsapp_conversation_id',
+      'contact_name',
+      'message_type_data',
+      'content',
+      'flow_response',
+      'flow_token',
+      'flow_name',
+      'order_text'
+    ]);
+
+    // Retry up to 2 times on failure
+    let response;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        response = await whatsappClient.messages.listByConversation({
+          phoneNumberId: PHONE_NUMBER_ID,
+          conversationId,
+          limit,
+          fields,
+        });
+        break;
+      } catch (err) {
+        if (attempt < 2) {
+          await new Promise(r => setTimeout(r, 300 * (attempt + 1)));
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    if (!response) {
+      return NextResponse.json(
+        { error: 'Failed to fetch messages after retries', conversationId },
+        { status: 500 }
+      );
+    }
 
     // Transform messages to match frontend expectations
     const transformedData = response.data.map((msg: MetaMessage) => {
@@ -157,6 +179,17 @@ export async function GET(
 
       const lastMessageTimestamp = (kapsoExtensions as WithOptionalTimestamp | undefined)?.lastMessageTimestamp;
 
+      // Extract error details from message or kapso extensions
+      const rawErrors = (msg as Record<string, unknown>).errors as Array<Record<string, unknown>> | undefined;
+      const kapsoErrors = (kapsoExtensions as Record<string, unknown> | undefined)?.errors as Array<Record<string, unknown>> | undefined;
+      const errorArr = rawErrors ?? kapsoErrors;
+      const firstError = Array.isArray(errorArr) && errorArr.length > 0 ? errorArr[0] : undefined;
+      const errorDetails = firstError ? {
+        code: typeof firstError.code === 'number' ? firstError.code : undefined,
+        title: typeof firstError.title === 'string' ? firstError.title : undefined,
+        message: typeof firstError.message === 'string' ? firstError.message : undefined,
+      } : undefined;
+
       return {
         id: msg.id,
         direction: typeof kapsoExtensions?.direction === 'string' ? kapsoExtensions.direction : 'inbound',
@@ -174,6 +207,7 @@ export async function GET(
         mimeType: messageTypeData?.mimeType ?? kapsoMediaData.contentType,
         messageType: msg.type,
         caption: fallbackCaption,
+        errorDetails,
         metadata: {
           mediaId
         }
