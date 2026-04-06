@@ -145,6 +145,7 @@ type Props = {
 export type ConversationListRef = {
   refresh: () => Promise<Conversation[]>;
   selectByPhoneNumber: (phoneNumber: string) => void;
+  updateConversation: (updated: Conversation) => void;
 };
 
 export const ConversationList = forwardRef<ConversationListRef, Props>(
@@ -263,7 +264,10 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
         setRefreshing(false);
       }
     },
-    selectByPhoneNumber
+    selectByPhoneNumber,
+    updateConversation: (updated: Conversation) => {
+      setConversations(prev => prev.map(c => c.phoneNumber === updated.phoneNumber ? updated : c));
+    }
   }));
 
   // Infinite scroll: observe sentinel element at bottom of list (disabled for unread tab)

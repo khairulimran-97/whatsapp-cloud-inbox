@@ -52,6 +52,7 @@ export default function Home() {
   const conversationListRef = useRef<ConversationListRef>(null);
   const messageViewRef = useRef<MessageViewRef>(null);
   const selectedConversationRef = useRef<Conversation | undefined>(undefined);
+  const statusCooldownRef = useRef<number>(0);
   selectedConversationRef.current = selectedConversation;
   const { enabled: notifEnabled, permission: notifPermission, toggle: toggleNotif } = useNotification();
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
@@ -125,7 +126,8 @@ export default function Home() {
     const selected = selectedConversationRef.current;
 
     // Sync selected conversation if IDs or status changed
-    if (selected) {
+    // Skip during status cooldown to preserve optimistic update
+    if (selected && Date.now() > statusCooldownRef.current) {
       const updated = conversations.find(c => c.phoneNumber === selected.phoneNumber);
       if (updated && (
         updated.conversationIds.join(',') !== selected.conversationIds.join(',') ||
@@ -157,27 +159,25 @@ export default function Home() {
 
   const handleStatusChanged = async () => {
     // Optimistically update the selected conversation status locally
-    // then do a quick (non-full) refresh in the background
     if (selectedConversation) {
-      // Flip the status locally for instant UI update
       const latestConvId = selectedConversation.conversationIds[0];
       const currentStatus = selectedConversation.conversationStatuses[latestConvId];
       const newStatus = currentStatus === 'ended' ? 'active' : 'ended';
       const updatedStatuses = { ...selectedConversation.conversationStatuses, [latestConvId]: newStatus };
       const overallStatus = Object.values(updatedStatuses).some(s => s === 'active') ? 'active' : 'ended';
-      setSelectedConversation({
+      const updatedConversation = {
         ...selectedConversation,
         conversationStatuses: updatedStatuses,
         status: overallStatus,
-      });
+      };
+      setSelectedConversation(updatedConversation);
+
+      // Block refresh from overwriting optimistic status for 5s
+      statusCooldownRef.current = Date.now() + 5000;
+
+      // Update the conversation in the list without full refresh
+      conversationListRef.current?.updateConversation?.(updatedConversation);
     }
-    // Background refresh to sync with server (quick fetch, not full)
-    conversationListRef.current?.refresh().then(conversations => {
-      if (conversations && selectedConversation) {
-        const updated = conversations.find(conv => conv.phoneNumber === selectedConversation.phoneNumber);
-        if (updated) setSelectedConversation(updated);
-      }
-    });
   };
 
   const handleBackToList = () => {
