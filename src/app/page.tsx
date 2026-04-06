@@ -191,18 +191,11 @@ export default function Home() {
 
     // Message events → refresh messages + conversation list
     if (event.type === 'message_received' || event.type === 'message_sent') {
-      const msg = event.data?.message as Record<string, unknown> | undefined;
-      const isReaction = msg?.type === 'reaction';
-      // Only skip refresh for OUR OWN reactions (message_sent) — handled optimistically.
-      // Inbound reactions (message_received) still need refresh to show other person's reactions.
-      const skipRefresh = isReaction && event.type === 'message_sent';
-      if (!skipRefresh) {
-        messageViewRef.current?.refresh();
-      }
+      messageViewRef.current?.refresh();
       conversationListRef.current?.refresh();
 
-      // Inbound message → play sound + increment unread (skip reactions)
-      if (event.type === 'message_received' && event.phoneNumber && !isReaction) {
+      // Inbound message → play sound + increment unread
+      if (event.type === 'message_received' && event.phoneNumber) {
         notificationSoundRef.current?.play().catch(() => {});
 
         const selected = selectedConversationRef.current;

@@ -8,7 +8,6 @@ import { MediaMessage } from '@/components/media-message';
 import { InteractiveMessageDialog } from '@/components/interactive-message-dialog';
 import { InteractiveListDialog } from '@/components/interactive-list-dialog';
 import { CtaUrlDialog } from '@/components/cta-url-dialog';
-import { EmojiReactionPicker } from '@/components/emoji-reaction-picker';
 import { TemplateSelectorDialog } from '@/components/template-selector-dialog';
 import { useAutoPolling } from '@/hooks/use-auto-polling';
 import { Button } from '@/components/ui/button';
@@ -79,9 +78,6 @@ type Message = {
     contentType?: string;
     filename?: string;
   } | (MediaData & { url: string });
-  reactionEmoji?: string | null;
-  reactions?: { emoji: string; count: number }[];
-  reactedToMessageId?: string | null;
   filename?: string | null;
   mimeType?: string | null;
   messageType?: string;
@@ -188,7 +184,6 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
   const refreshingRef = useRef(false);
   const markedReadRef = useRef<string>('');
-  const reactionCooldownRef = useRef<number>(0);
 
   // Initialize notification sound — shares unlock from parent's first click
   useEffect(() => {
@@ -247,9 +242,6 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
   const fetchMessages = useCallback(async () => {
     if (!conversationIds || conversationIds.length === 0) return;
 
-    // Skip re-fetch if we recently sent a reaction (optimistic state is authoritative)
-    if (Date.now() < reactionCooldownRef.current) return;
-
     const isInitialLoad = prevMessageFingerprintRef.current === '';
     const isRefresh = refreshingRef.current;
 
@@ -281,59 +273,10 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
       for (const msg of rawMessages) {
         if (!messageMap.has(msg.id)) messageMap.set(msg.id, msg);
       }
-      const allMessages = Array.from(messageMap.values());
+      // Filter out reaction messages — they're not displayed
+      const filteredMessages = Array.from(messageMap.values()).filter(m => m.messageType !== 'reaction');
 
-      // Separate reactions from regular messages
-      const reactions = allMessages.filter(m => m.messageType === 'reaction');
-      const regularMessages = allMessages.filter(m => m.messageType !== 'reaction');
-
-      // Each sender can only have ONE active reaction per message.
-      // Track latest reaction per (targetMessageId, sender) — keyed by direction+phoneNumber.
-      const latestPerSender = new Map<string, { emoji: string; direction: string }>();
-
-      reactions
-        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-        .forEach(r => {
-          if (!r.reactedToMessageId) return;
-          const senderKey = `${r.reactedToMessageId}::${r.direction}::${r.phoneNumber || ''}`;
-          // Empty/missing emoji or "Reaction removed" content means removal
-          const isRemoval = !r.reactionEmoji || r.content?.startsWith('Reaction removed');
-          if (isRemoval) {
-            latestPerSender.delete(senderKey);
-          } else {
-            latestPerSender.set(senderKey, { emoji: r.reactionEmoji, direction: r.direction });
-          }
-        });
-
-      // Group active reactions per message: { msgId → { emoji → count } }
-      const reactionGroups = new Map<string, Map<string, number>>();
-      const ownReactionMap = new Map<string, string>();
-
-      for (const [key, { emoji, direction }] of latestPerSender) {
-        const msgId = key.split('::')[0];
-        if (!reactionGroups.has(msgId)) reactionGroups.set(msgId, new Map());
-        const emojiMap = reactionGroups.get(msgId)!;
-        emojiMap.set(emoji, (emojiMap.get(emoji) ?? 0) + 1);
-        if (direction === 'outbound') ownReactionMap.set(msgId, emoji);
-      }
-
-      const messagesWithReactions = regularMessages.map(m => {
-        const emojiMap = reactionGroups.get(m.id);
-        const ownReaction = ownReactionMap.get(m.id);
-        if (!emojiMap && !ownReaction) return m;
-
-        const groupedReactions = emojiMap
-          ? Array.from(emojiMap.entries()).map(([emoji, count]) => ({ emoji, count }))
-          : undefined;
-
-        return {
-          ...m,
-          reactionEmoji: ownReaction ?? (groupedReactions?.[0]?.emoji || null),
-          reactions: groupedReactions,
-        };
-      });
-
-      const sortedMessages = messagesWithReactions.sort(
+      const sortedMessages = filteredMessages.sort(
         (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       );
 
@@ -378,36 +321,6 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
       refreshingRef.current = false;
     }
   }, [conversationIds]);
-
-  // Optimistically update reaction emoji on a message without waiting for server
-  const handleReaction = useCallback((messageId: string, emoji: string) => {
-    // Block re-fetches for 5s so optimistic state isn't overwritten by stale server data
-    reactionCooldownRef.current = Date.now() + 5000;
-
-    setMessages(prev => prev.map(m => {
-      if (m.id !== messageId) return m;
-      // Update own reaction + rebuild reactions array
-      const existingReactions = m.reactions ?? [];
-      let newReactions: { emoji: string; count: number }[];
-
-      if (!emoji) {
-        // Remove own reaction
-        newReactions = existingReactions
-          .map(r => r.emoji === m.reactionEmoji ? { ...r, count: r.count - 1 } : r)
-          .filter(r => r.count > 0);
-      } else {
-        // Remove old own reaction, add new
-        newReactions = existingReactions
-          .map(r => r.emoji === m.reactionEmoji ? { ...r, count: r.count - 1 } : r)
-          .filter(r => r.count > 0);
-        const existing = newReactions.find(r => r.emoji === emoji);
-        if (existing) existing.count++;
-        else newReactions.push({ emoji, count: 1 });
-      }
-
-      return { ...m, reactionEmoji: emoji || null, reactions: newReactions.length ? newReactions : undefined };
-    }));
-  }, []);
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -921,18 +834,6 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                     messageSearchQuery && messageSearchResults.some(r => r.id === message.id) && 'ring-2 ring-[var(--wa-green)] ring-offset-1 rounded-lg'
                   )}
                 >
-                  {/* Reaction picker — before bubble for outbound */}
-                  {message.direction === 'outbound' && phoneNumber && (
-                    <div className="flex items-end mb-1 mr-1">
-                      <EmojiReactionPicker
-                        messageId={message.id}
-                        phoneNumber={phoneNumber}
-                        existingEmoji={message.reactionEmoji}
-                        onReacted={handleReaction}
-                      />
-                    </div>
-                  )}
-
                   {/* Inbound tail */}
                   {message.direction === 'inbound' && isFirstInGroup && (
                     <svg viewBox="0 0 8 13" width="8" height="13" className="flex-shrink-0 -mr-[1px] mt-0 text-[var(--wa-bubble-in)]">
@@ -951,8 +852,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                         ? (message.direction === 'outbound' ? 'rounded-[7.5px] rounded-tr-0' : 'rounded-[7.5px] rounded-tl-0')
                         : 'rounded-[7.5px]',
                       'shadow-[0_1px_0.5px_rgba(11,20,26,0.13)]',
-                      message.hasMedia || message.metadata?.mediaId ? 'p-[3px]' : 'px-[9px] pt-[6px] pb-[8px]',
-                      (message.reactions?.length || message.reactionEmoji) ? 'mb-3' : ''
+                      message.hasMedia || message.metadata?.mediaId ? 'p-[3px]' : 'px-[9px] pt-[6px] pb-[8px]'
                     )}
                   >
                     {message.hasMedia && message.mediaData?.url ? (
@@ -1078,18 +978,6 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                       );
                     })()}
 
-                    {(message.reactions?.length || message.reactionEmoji) && (
-                      <div className="absolute -bottom-2.5 -right-1 flex items-center gap-0.5 bg-[var(--wa-reaction-bg)] rounded-full px-1.5 py-0.5 text-[13px] shadow-sm border border-[var(--wa-border)]">
-                        {message.reactions?.map(r => (
-                          <span key={r.emoji}>{r.emoji}</span>
-                        )) ?? <span>{message.reactionEmoji}</span>}
-                        {(message.reactions?.reduce((s, r) => s + r.count, 0) ?? 0) > 1 && (
-                          <span className="text-[11px] text-[var(--wa-text-secondary)] ml-0.5">
-                            {message.reactions?.reduce((s, r) => s + r.count, 0)}
-                          </span>
-                        )}
-                      </div>
-                    )}
                   </div>
 
                   {/* Outbound tail */}
@@ -1100,17 +988,6 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                   )}
                   {message.direction === 'outbound' && !isFirstInGroup && <div className="w-[8px] flex-shrink-0" />}
 
-                  {/* Reaction picker — after bubble for inbound */}
-                  {message.direction === 'inbound' && phoneNumber && (
-                    <div className="flex items-end mb-1 ml-1">
-                      <EmojiReactionPicker
-                        messageId={message.id}
-                        phoneNumber={phoneNumber}
-                        existingEmoji={message.reactionEmoji}
-                        onReacted={handleReaction}
-                      />
-                    </div>
-                  )}
                 </div>
               </div>
             );
