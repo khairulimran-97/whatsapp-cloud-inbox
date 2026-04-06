@@ -343,7 +343,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
           </button>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
-              <h1 className="text-[16px] font-bold text-[var(--wa-text-primary)] leading-tight truncate">
+              <h1 className="text-[14px] font-bold text-[var(--wa-text-primary)] leading-tight truncate">
                 {profile?.verifiedName || profile?.displayPhoneNumber || 'Support Inbox'}
               </h1>
               {isPolling && (
