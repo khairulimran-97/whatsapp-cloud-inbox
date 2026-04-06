@@ -930,7 +930,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
 
                   <div
                     className={cn(
-                      'relative overflow-hidden break-words',
+                      'relative break-words',
                       message.direction === 'outbound'
                         ? 'bg-[var(--wa-bubble-out)] text-[var(--wa-text-primary)]'
                         : 'bg-[var(--wa-bubble-in)] text-[var(--wa-text-primary)]',
@@ -938,11 +938,12 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                         ? (message.direction === 'outbound' ? 'rounded-[7.5px] rounded-tr-0' : 'rounded-[7.5px] rounded-tl-0')
                         : 'rounded-[7.5px]',
                       'shadow-[0_1px_0.5px_rgba(11,20,26,0.13)]',
-                      message.hasMedia || message.metadata?.mediaId ? 'p-[3px]' : 'px-[9px] pt-[6px] pb-[8px]'
+                      message.hasMedia || message.metadata?.mediaId ? 'p-[3px]' : 'px-[9px] pt-[6px] pb-[8px]',
+                      (message.reactions?.length || message.reactionEmoji) ? 'mb-3' : ''
                     )}
                   >
                     {message.hasMedia && message.mediaData?.url ? (
-                      <div className={message.content || message.caption ? 'mb-[3px]' : ''}>
+                      <div className={cn('overflow-hidden rounded-[5px]', message.content || message.caption ? 'mb-[3px]' : '')}>
                         {message.messageType === 'sticker' ? (
                           <img
                             src={message.mediaData.url}
