@@ -283,29 +283,29 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
       const reactions = allMessages.filter(m => m.messageType === 'reaction');
       const regularMessages = allMessages.filter(m => m.messageType !== 'reaction');
 
-      // Build per-message reaction groups: { emoji → count }
-      const reactionGroups = new Map<string, Map<string, number>>();
-      // Track your own latest reaction per message (for the picker highlight)
-      const ownReactionMap = new Map<string, string>();
+      // Each sender can only have ONE active reaction per message.
+      // Track latest reaction per (targetMessageId, sender) — keyed by direction+phoneNumber.
+      const latestPerSender = new Map<string, { emoji: string; direction: string }>();
 
       reactions
         .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
         .forEach(r => {
           if (!r.reactedToMessageId || !r.reactionEmoji) return;
-          const msgId = r.reactedToMessageId;
-
-          // Group all emojis with counts
-          if (!reactionGroups.has(msgId)) reactionGroups.set(msgId, new Map());
-          const emojiMap = reactionGroups.get(msgId)!;
-          if (r.reactionEmoji) {
-            emojiMap.set(r.reactionEmoji, (emojiMap.get(r.reactionEmoji) ?? 0) + 1);
-          }
-
-          // Track outbound (your own) reactions — newest wins
-          if (r.direction === 'outbound') {
-            ownReactionMap.set(msgId, r.reactionEmoji);
-          }
+          const senderKey = `${r.reactedToMessageId}::${r.direction}::${r.phoneNumber || ''}`;
+          latestPerSender.set(senderKey, { emoji: r.reactionEmoji, direction: r.direction });
         });
+
+      // Group active reactions per message: { msgId → { emoji → count } }
+      const reactionGroups = new Map<string, Map<string, number>>();
+      const ownReactionMap = new Map<string, string>();
+
+      for (const [key, { emoji, direction }] of latestPerSender) {
+        const msgId = key.split('::')[0];
+        if (!reactionGroups.has(msgId)) reactionGroups.set(msgId, new Map());
+        const emojiMap = reactionGroups.get(msgId)!;
+        emojiMap.set(emoji, (emojiMap.get(emoji) ?? 0) + 1);
+        if (direction === 'outbound') ownReactionMap.set(msgId, emoji);
+      }
 
       const messagesWithReactions = regularMessages.map(m => {
         const emojiMap = reactionGroups.get(m.id);
