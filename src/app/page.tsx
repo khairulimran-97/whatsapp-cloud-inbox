@@ -14,7 +14,11 @@ type Conversation = {
   conversationStatuses: Record<string, string>;
   status: string;
   phoneNumber: string;
+  lastActiveAt: string;
+  phoneNumberId: string;
+  metadata?: Record<string, unknown>;
   contactName?: string;
+  messagesCount?: number;
   lastMessage?: { content: string; direction: string; type?: string };
 };
 
