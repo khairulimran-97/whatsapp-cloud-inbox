@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { X, User, Mail, Phone, MapPin, AlertCircle, Loader2, ExternalLink, ShieldCheck, Copy, Check, FileText } from 'lucide-react';
+import { X, User, Mail, Phone, MapPin, AlertCircle, Loader2, ExternalLink, ShieldCheck, Copy, Check } from 'lucide-react';
 
 type Address = {
   address_lines?: string[];
@@ -152,26 +152,29 @@ function TransactionCard({ tx, protectedContent }: { tx: Transaction; protectedC
   return (
     <div className="p-3 rounded-lg border border-[var(--wa-border)] bg-[var(--wa-hover)]">
       <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-2">
-          <p className="text-sm font-semibold text-[var(--wa-text-primary)]">
+        <div className="flex items-center gap-2 min-w-0">
+          {tx.order_number && (
+            <p className="text-sm font-semibold text-[var(--wa-text-primary)] truncate">
+              {tx.order_number}
+            </p>
+          )}
+          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--wa-panel-bg)] text-[var(--wa-text-secondary)] whitespace-nowrap">
             {formatRM(tx.amount)}
-          </p>
-          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400">
+          </span>
+          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400 whitespace-nowrap">
             Successful
           </span>
         </div>
         {tx.payment_channel && (
-          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400">
+          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 whitespace-nowrap flex-shrink-0 ml-2">
             {tx.payment_channel}
           </span>
         )}
       </div>
       <div className="flex items-center gap-1.5 mt-1">
-        {tx.order_number && (
-          <p className="text-xs text-[var(--wa-text-secondary)]">
-            {tx.order_number}
-          </p>
-        )}
+        <p className="text-[11px] text-[var(--wa-text-secondary)]">
+          {formatDateTime(tx.created_at)}
+        </p>
         {tx.receipt_url && (
           <div className="flex items-center gap-0.5">
             <a
@@ -181,15 +184,12 @@ function TransactionCard({ tx, protectedContent }: { tx: Transaction; protectedC
               className="h-5 w-5 flex items-center justify-center rounded text-orange-400 hover:text-orange-300 hover:bg-orange-500/10 transition-colors"
               title="Download receipt PDF"
             >
-              <FileText className="h-3 w-3" />
+              <ExternalLink className="h-3 w-3" />
             </a>
             <CopyButton text={tx.receipt_url} />
           </div>
         )}
       </div>
-      <p className="text-[11px] text-[var(--wa-text-secondary)] mt-1">
-        {formatDateTime(tx.created_at)}
-      </p>
 
       {/* Grouped content access */}
       {relatedContent.length > 0 && (
