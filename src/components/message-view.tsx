@@ -188,6 +188,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
   const refreshingRef = useRef(false);
   const markedReadRef = useRef<string>('');
+  const reactionCooldownRef = useRef<number>(0);
 
   // Initialize notification sound — shares unlock from parent's first click
   useEffect(() => {
@@ -245,6 +246,9 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
 
   const fetchMessages = useCallback(async () => {
     if (!conversationIds || conversationIds.length === 0) return;
+
+    // Skip re-fetch if we recently sent a reaction (optimistic state is authoritative)
+    if (Date.now() < reactionCooldownRef.current) return;
 
     const isInitialLoad = prevMessageFingerprintRef.current === '';
     const isRefresh = refreshingRef.current;
@@ -377,6 +381,9 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
 
   // Optimistically update reaction emoji on a message without waiting for server
   const handleReaction = useCallback((messageId: string, emoji: string) => {
+    // Block re-fetches for 5s so optimistic state isn't overwritten by stale server data
+    reactionCooldownRef.current = Date.now() + 5000;
+
     setMessages(prev => prev.map(m => {
       if (m.id !== messageId) return m;
       // Update own reaction + rebuild reactions array
