@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { X, User, Mail, Phone, MapPin, AlertCircle, Loader2, ExternalLink, ShieldCheck, Copy, Check, Receipt } from 'lucide-react';
+import { X, User, Mail, Phone, MapPin, AlertCircle, Loader2, ExternalLink, ShieldCheck, Copy, Check, FileText } from 'lucide-react';
 
 type Address = {
   address_lines?: string[];
@@ -146,61 +146,63 @@ function ContentAccessItem({ content }: { content: ProtectedContent }) {
   );
 }
 
-function TransactionCard({ tx, protectedContent }: { tx: Transaction; protectedContent?: ProtectedContent[] }) {
-  // Find related protected content for this transaction
+function TransactionCard({ tx, protectedContent, isLast }: { tx: Transaction; protectedContent?: ProtectedContent[]; isLast?: boolean }) {
   const relatedContent = protectedContent?.filter(pc => pc.url) ?? [];
 
   return (
-    <div className="p-3 bg-[var(--wa-hover)] rounded-lg">
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-2">
-          <p className="text-sm font-semibold text-[var(--wa-text-primary)]">
-            {formatRM(tx.amount)}
-          </p>
-          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400">
-            Successful
-          </span>
+    <>
+      <div className="py-3">
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold text-[var(--wa-text-primary)]">
+              {formatRM(tx.amount)}
+            </p>
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400">
+              Successful
+            </span>
+          </div>
+          {tx.payment_channel && (
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400">
+              {tx.payment_channel}
+            </span>
+          )}
         </div>
-        {tx.payment_channel && (
-          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400">
-            {tx.payment_channel}
-          </span>
-        )}
-      </div>
-      <div className="flex items-center gap-1.5">
-        {tx.order_number && (
-          <p className="text-xs text-[var(--wa-text-secondary)]">
-            {tx.order_number}
-          </p>
-        )}
-        {tx.receipt_url && (
-          <div className="flex items-center gap-0.5">
-            <a
-              href={tx.receipt_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="h-5 w-5 flex items-center justify-center rounded text-orange-400 hover:text-orange-300 hover:bg-orange-500/10 transition-colors"
-              title="View receipt"
-            >
-              <Receipt className="h-3 w-3" />
-            </a>
-            <CopyButton text={tx.receipt_url} />
+        <div className="flex items-center gap-1.5 mt-1">
+          {tx.order_number && (
+            <p className="text-xs text-[var(--wa-text-secondary)]">
+              {tx.order_number}
+            </p>
+          )}
+          {tx.receipt_url && (
+            <div className="flex items-center gap-0.5">
+              <a
+                href={tx.receipt_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-5 w-5 flex items-center justify-center rounded text-orange-400 hover:text-orange-300 hover:bg-orange-500/10 transition-colors"
+                title="Download receipt PDF"
+              >
+                <FileText className="h-3 w-3" />
+              </a>
+              <CopyButton text={tx.receipt_url} />
+            </div>
+          )}
+        </div>
+        <p className="text-[11px] text-[var(--wa-text-secondary)] mt-1">
+          {formatDateTime(tx.created_at)}
+        </p>
+
+        {/* Grouped content access */}
+        {relatedContent.length > 0 && (
+          <div className="mt-2.5 pt-2 border-t border-[var(--wa-border)] border-dashed">
+            {relatedContent.map((content, i) => (
+              <ContentAccessItem key={i} content={content} />
+            ))}
           </div>
         )}
       </div>
-      <p className="text-xs text-[var(--wa-text-secondary)] mt-0.5">
-        {formatDateTime(tx.created_at)}
-      </p>
-
-      {/* Grouped content access */}
-      {relatedContent.length > 0 && (
-        <div className="mt-2 pt-2 border-t border-[var(--wa-border)]">
-          {relatedContent.map((content, i) => (
-            <ContentAccessItem key={i} content={content} />
-          ))}
-        </div>
-      )}
-    </div>
+      {!isLast && <div className="border-b border-[var(--wa-border)]" />}
+    </>
   );
 }
 
@@ -244,7 +246,7 @@ export function CustomerSidebar({ phoneNumber, open, onClose }: Props) {
 
       {/* Sidebar panel */}
       <div
-        className={`fixed top-0 right-0 h-full z-[70] w-full sm:w-[360px] bg-[var(--wa-panel-bg)] border-l border-[var(--wa-border)] shadow-2xl transform transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 h-full z-[70] w-full sm:w-[420px] bg-[var(--wa-panel-bg)] border-l border-[var(--wa-border)] shadow-2xl transform transition-transform duration-300 ease-in-out ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -362,14 +364,14 @@ export function CustomerSidebar({ phoneNumber, open, onClose }: Props) {
                       </p>
                     </div>
                     <div className="bg-[var(--wa-hover)] rounded-lg p-3">
-                      <p className="text-xs text-[var(--wa-text-secondary)]">First Transaction</p>
-                      <p className="text-sm font-medium text-[var(--wa-text-primary)]">
+                      <p className="text-[10px] text-[var(--wa-text-secondary)]">First Transaction</p>
+                      <p className="text-xs font-medium text-[var(--wa-text-primary)] mt-0.5">
                         {formatDateTime(data.stats.first_transaction_at)}
                       </p>
                     </div>
                     <div className="bg-[var(--wa-hover)] rounded-lg p-3">
-                      <p className="text-xs text-[var(--wa-text-secondary)]">Last Transaction</p>
-                      <p className="text-sm font-medium text-[var(--wa-text-primary)]">
+                      <p className="text-[10px] text-[var(--wa-text-secondary)]">Last Transaction</p>
+                      <p className="text-xs font-medium text-[var(--wa-text-primary)] mt-0.5">
                         {formatDateTime(data.stats.last_transaction_at)}
                       </p>
                     </div>
@@ -385,12 +387,12 @@ export function CustomerSidebar({ phoneNumber, open, onClose }: Props) {
                 if (successTxns.length === 0) return null;
                 return (
                   <div className="border-t border-[var(--wa-border)] pt-4">
-                    <h5 className="text-xs font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-3">
+                    <h5 className="text-xs font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-1">
                       Recent Transactions
                     </h5>
-                    <div className="space-y-2">
+                    <div>
                       {successTxns.map((tx, i) => (
-                        <TransactionCard key={tx.id || i} tx={tx} protectedContent={data.protectedContent} />
+                        <TransactionCard key={tx.id || i} tx={tx} protectedContent={data.protectedContent} isLast={i === successTxns.length - 1} />
                       ))}
                     </div>
                   </div>
