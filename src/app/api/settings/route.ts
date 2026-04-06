@@ -18,9 +18,9 @@ async function writeSettings(settings: Record<string, string>) {
 }
 
 function verifyAdmin(request: NextRequest): boolean {
-  const secret = process.env.ADMIN_SECRET;
+  const secret = process.env.APP_PASSWORD;
   if (!secret) return false;
-  const provided = request.headers.get('x-admin-secret');
+  const provided = request.headers.get('x-app-password');
   return provided === secret;
 }
 
@@ -31,28 +31,28 @@ function maskKey(key: string): string {
 
 // GET: returns masked key (safe, no auth needed)
 export async function GET() {
-  const adminConfigured = !!process.env.ADMIN_SECRET;
+  const adminConfigured = !!process.env.APP_PASSWORD;
   const settings = await readSettings();
   const key = settings.bcl_api_key || '';
   return NextResponse.json({
     bcl_api_key: maskKey(key),
     bcl_configured: !!key,
-    admin_configured: adminConfigured,
+    app_password_configured: adminConfigured,
   });
 }
 
-// PUT: requires ADMIN_SECRET to update
+// PUT: requires APP_PASSWORD to update
 export async function PUT(request: NextRequest) {
-  if (!process.env.ADMIN_SECRET) {
+  if (!process.env.APP_PASSWORD) {
     return NextResponse.json(
-      { error: 'ADMIN_SECRET not set in environment' },
+      { error: 'APP_PASSWORD not set in environment' },
       { status: 503 }
     );
   }
 
   if (!verifyAdmin(request)) {
     return NextResponse.json(
-      { error: 'Invalid admin secret' },
+      { error: 'Invalid app password' },
       { status: 401 }
     );
   }

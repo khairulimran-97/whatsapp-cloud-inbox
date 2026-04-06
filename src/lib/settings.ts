@@ -20,6 +20,5 @@ export async function getSettings(): Promise<Record<string, string>> {
 
 export async function getBclApiKey(): Promise<string> {
   const settings = await getSettings();
-  // Prefer JSON file, fall back to env for backwards compat
-  return settings.bcl_api_key || process.env.BCL_API_KEY || '';
+  return settings.bcl_api_key || '';
 }

@@ -276,7 +276,7 @@ export function CustomerSidebar({ phoneNumber, open, onClose }: Props) {
                 BCL integration not configured
               </p>
               <p className="text-xs text-[var(--wa-text-secondary)] opacity-70">
-                Set the <code className="bg-[var(--wa-hover)] px-1.5 py-0.5 rounded text-xs">BCL_API_KEY</code> environment variable to enable customer lookup.
+                Configure the BCL API key in <strong>Settings</strong> (⚙️) to enable customer lookup.
               </p>
             </div>
           )}

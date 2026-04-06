@@ -735,19 +735,19 @@ ConversationList.displayName = 'ConversationList';
 function SettingsForm({ onClose }: { onClose: () => void }) {
   const [bclKey, setBclKey] = useState('');
   const [maskedKey, setMaskedKey] = useState('');
-  const [adminSecret, setAdminSecret] = useState('');
+  const [appPassword, setAdminSecret] = useState('');
   const [showKey, setShowKey] = useState(false);
-  const [showSecret, setShowSecret] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
-  const [adminConfigured, setAdminConfigured] = useState(true);
+  const [appPasswordConfigured, setAdminConfigured] = useState(true);
 
   useEffect(() => {
     fetch('/api/settings')
       .then(r => r.json())
       .then(data => {
         setMaskedKey(data.bcl_api_key || '');
-        setAdminConfigured(data.admin_configured !== false);
+        setAdminConfigured(data.app_password_configured !== false);
       })
       .catch(() => {});
   }, []);
@@ -760,7 +760,7 @@ function SettingsForm({ onClose }: { onClose: () => void }) {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-secret': adminSecret,
+          'x-app-password': appPassword,
         },
         body: JSON.stringify({ bcl_api_key: bclKey }),
       });
@@ -810,31 +810,31 @@ function SettingsForm({ onClose }: { onClose: () => void }) {
         </div>
       </div>
 
-      {!adminConfigured && (
+      {!appPasswordConfigured && (
         <p className="text-xs text-amber-400 bg-amber-500/10 px-3 py-2 rounded-lg">
-          ⚠ Set <code className="font-mono bg-[var(--wa-hover)] px-1 rounded">ADMIN_SECRET</code> in your environment to enable settings updates.
+          ⚠ Set <code className="font-mono bg-[var(--wa-hover)] px-1 rounded">APP_PASSWORD</code> in your environment to enable settings updates.
         </p>
       )}
 
-      {adminConfigured && (
+      {appPasswordConfigured && (
         <div>
           <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider">
-            Admin Secret
+            App Password
           </label>
           <div className="relative mt-1.5">
             <input
-              type={showSecret ? 'text' : 'password'}
-              value={adminSecret}
+              type={showPassword ? 'text' : 'password'}
+              value={appPassword}
               onChange={(e) => setAdminSecret(e.target.value)}
-              placeholder="Enter admin secret to confirm"
+              placeholder="Enter app password to confirm"
               className="w-full px-3 py-2 pr-9 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
             />
             <button
               type="button"
-              onClick={() => setShowSecret(!showSecret)}
+              onClick={() => setShowPassword(!showPassword)}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]"
             >
-              {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
         </div>
@@ -852,7 +852,7 @@ function SettingsForm({ onClose }: { onClose: () => void }) {
         </Button>
         <Button
           onClick={handleSave}
-          disabled={saving || !bclKey || (!adminSecret && adminConfigured)}
+          disabled={saving || !bclKey || (!appPassword && appPasswordConfigured)}
           className="bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] text-white text-sm gap-1.5"
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
