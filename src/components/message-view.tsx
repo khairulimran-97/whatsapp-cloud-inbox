@@ -9,6 +9,7 @@ import { InteractiveMessageDialog } from '@/components/interactive-message-dialo
 import { InteractiveListDialog } from '@/components/interactive-list-dialog';
 import { CtaUrlDialog } from '@/components/cta-url-dialog';
 import { TemplateSelectorDialog } from '@/components/template-selector-dialog';
+import { CustomerSidebar } from '@/components/customer-sidebar';
 import { useAutoPolling } from '@/hooks/use-auto-polling';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -168,6 +169,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
   const [showCtaDialog, setShowCtaDialog] = useState(false);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [showMessageSearch, setShowMessageSearch] = useState(false);
+  const [showCustomerSidebar, setShowCustomerSidebar] = useState(false);
   const [messageSearchQuery, setMessageSearchQuery] = useState('');
   const [messageSearchResults, setMessageSearchResults] = useState<Message[]>([]);
   const [searchMatchIndex, setSearchMatchIndex] = useState(0);
@@ -716,6 +718,14 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
               >
                 <Search className="h-4 w-4" />
               </Button>
+              <Button
+                onClick={() => setShowCustomerSidebar(!showCustomerSidebar)}
+                variant="ghost"
+                size="icon"
+                className={cn("text-[var(--wa-text-tertiary)] hover:text-[var(--wa-text-primary)] h-9 w-9 transition-colors duration-200", showCustomerSidebar && "text-[var(--wa-green)]")}
+              >
+                <Info className="h-4 w-4" />
+              </Button>
             </div>
 
             {/* Mobile/Tablet: icon buttons + overflow menu */}
@@ -764,6 +774,10 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                   <DropdownMenuItem onClick={() => setShowMessageSearch(!showMessageSearch)} className="py-2.5">
                     <Search className="h-4 w-4 mr-3" />
                     Search messages
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowCustomerSidebar(true)} className="py-2.5">
+                    <Info className="h-4 w-4 mr-3" />
+                    Customer info
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -1390,6 +1404,14 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
             onClick={(e) => e.stopPropagation()}
           />
         </div>
+      )}
+
+      {phoneNumber && (
+        <CustomerSidebar
+          phoneNumber={phoneNumber}
+          open={showCustomerSidebar}
+          onClose={() => setShowCustomerSidebar(false)}
+        />
       )}
     </div>
   );
