@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "kapso-docs": {
+      "type": "http",
+      "url": "https://docs.kapso.ai/mcp"
+    }
+  }
+}
