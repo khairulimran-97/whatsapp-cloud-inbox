@@ -193,7 +193,7 @@ function TransactionCard({ tx, protectedContent }: { tx: Transaction; protectedC
 
       {/* Grouped content access */}
       {relatedContent.length > 0 && (
-        <div className="mt-2.5 pt-2 border-t border-white/15">
+        <div className="mt-2.5 pt-2 border-t border-black/15 dark:border-white/15">
           {relatedContent.map((content, i) => (
             <ContentAccessItem key={i} content={content} />
           ))}
