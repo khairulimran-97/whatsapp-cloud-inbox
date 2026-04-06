@@ -209,14 +209,24 @@ export async function GET(request: Request) {
 
     // ── Force refresh: reset everything ──
     if (forceRefresh) {
+      const previousCache = cachedData;
       nextApiCursor = undefined;
       allPagesFetched = false;
       cachedData = null;
 
-      const page = await fetchNextPage(status ?? undefined, 100);
-      cachedData = page;
-      cacheTimestamp = Date.now();
-      return NextResponse.json({ data: page, hasMore: !allPagesFetched });
+      try {
+        const page = await fetchNextPage(status ?? undefined, 100);
+        cachedData = page;
+        cacheTimestamp = Date.now();
+        return NextResponse.json({ data: page, hasMore: !allPagesFetched });
+      } catch (refreshError) {
+        // Restore previous cache on failure
+        if (previousCache) {
+          cachedData = previousCache;
+          return NextResponse.json({ data: previousCache, hasMore: true });
+        }
+        throw refreshError;
+      }
     }
 
     // ── Polling: return cache if fresh ──
