@@ -8,7 +8,7 @@ type Props = {
   messageId: string;
   phoneNumber: string;
   existingEmoji?: string | null;
-  onReacted?: () => void;
+  onReacted?: (messageId: string, emoji: string) => void;
 };
 
 export function EmojiReactionPicker({ messageId, phoneNumber, existingEmoji, onReacted }: Props) {
@@ -33,18 +33,24 @@ export function EmojiReactionPicker({ messageId, phoneNumber, existingEmoji, onR
     setOpen(false);
 
     try {
+      const finalEmoji = emoji === existingEmoji ? '' : emoji;
+
+      // Optimistic update before API call
+      onReacted?.(messageId, finalEmoji);
+
       const response = await fetch('/api/messages/react', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phoneNumber,
           messageId,
-          emoji: emoji === existingEmoji ? '' : emoji,
+          emoji: finalEmoji,
         }),
       });
 
-      if (response.ok) {
-        onReacted?.();
+      if (!response.ok) {
+        // Revert on failure
+        onReacted?.(messageId, existingEmoji || '');
       }
     } catch (err) {
       console.error('Error sending reaction:', err);

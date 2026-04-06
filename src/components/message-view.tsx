@@ -337,6 +337,13 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
     }
   }, [conversationIds]);
 
+  // Optimistically update reaction emoji on a message without waiting for server
+  const handleReaction = useCallback((messageId: string, emoji: string) => {
+    setMessages(prev => prev.map(m =>
+      m.id === messageId ? { ...m, reactionEmoji: emoji || null } : m
+    ));
+  }, []);
+
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
@@ -856,7 +863,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                         messageId={message.id}
                         phoneNumber={phoneNumber}
                         existingEmoji={message.reactionEmoji}
-                        onReacted={fetchMessages}
+                        onReacted={handleReaction}
                       />
                     </div>
                   )}
@@ -1027,7 +1034,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                         messageId={message.id}
                         phoneNumber={phoneNumber}
                         existingEmoji={message.reactionEmoji}
-                        onReacted={fetchMessages}
+                        onReacted={handleReaction}
                       />
                     </div>
                   )}
