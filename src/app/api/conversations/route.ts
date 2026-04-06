@@ -196,14 +196,14 @@ export async function GET(request: Request) {
     // ── Paginated mode: ?cursor=next  (load more) ──
     if (cursorParam === 'next') {
       if (allPagesFetched) {
-        return NextResponse.json({ data: [], hasMore: false });
+        return NextResponse.json({ data: cachedData ?? [], hasMore: false });
       }
       const page = await fetchNextPage(status ?? undefined);
       if (page.length > 0) {
         cachedData = mergeGrouped(cachedData ?? [], page);
         cacheTimestamp = Date.now();
       }
-      return NextResponse.json({ data: page, hasMore: !allPagesFetched });
+      return NextResponse.json({ data: cachedData ?? [], hasMore: !allPagesFetched });
     }
 
     // ── Force refresh: reset everything ──

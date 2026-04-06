@@ -199,17 +199,12 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
     try {
       const response = await fetch('/api/conversations?cursor=next');
       const data = await response.json();
-      const moreConversations: Conversation[] = data.data || [];
+      const allConversations: Conversation[] = data.data || [];
       setHasMore(!!data.hasMore);
-      if (moreConversations.length > 0) {
-        setConversations(prev => {
-          const phoneSet = new Set(prev.map(c => c.phoneNumber));
-          const unique = moreConversations.filter(c => !phoneSet.has(c.phoneNumber));
-          const merged = [...prev, ...unique];
-          prevDataRef.current = JSON.stringify(merged.map((c: Conversation) => c.id + c.status + c.lastActiveAt + (c.lastMessage?.content || '')));
-          onConversationsUpdatedRef.current?.(merged);
-          return merged;
-        });
+      if (allConversations.length > 0) {
+        prevDataRef.current = JSON.stringify(allConversations.map((c: Conversation) => c.id + c.status + c.lastActiveAt + (c.lastMessage?.content || '')));
+        setConversations(allConversations);
+        onConversationsUpdatedRef.current?.(allConversations);
       }
     } catch (error) {
       console.error('Error loading more conversations:', error);
