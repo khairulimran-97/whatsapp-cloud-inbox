@@ -84,7 +84,8 @@ function groupConversations(records: ConversationRecord[]): GroupedConversation[
         metadata: conversation.metadata ?? {},
         contactName: typeof kapso?.contactName === 'string' ? kapso.contactName : undefined,
         messagesCount: typeof kapso?.messagesCount === 'number' ? kapso.messagesCount : undefined,
-        lastMessage: lastMessageText
+        // Don't use reaction events as sidebar lastMessage
+        lastMessage: (lastMessageText && lastMessageType !== 'reaction')
           ? { content: lastMessageText, direction: parseDirection(kapso), type: lastMessageType }
           : undefined
       });
@@ -102,7 +103,8 @@ function groupConversations(records: ConversationRecord[]): GroupedConversation[
         existing.status = conversation.status ?? 'unknown';
         existing.lastActiveAt = lastActiveAt;
         if (typeof kapso?.contactName === 'string') existing.contactName = kapso.contactName;
-        if (lastMessageText) {
+        // Don't overwrite sidebar lastMessage with reaction events
+        if (lastMessageText && lastMessageType !== 'reaction') {
           existing.lastMessage = { content: lastMessageText, direction: parseDirection(kapso), type: lastMessageType };
         }
       }
