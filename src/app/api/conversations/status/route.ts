@@ -18,9 +18,37 @@ export async function PATCH(request: Request) {
       );
     }
 
-    // Kapso API does not yet support conversation status updates.
-    // Return success so the UI can update optimistically.
-    return NextResponse.json({ conversationId, status, note: 'local-only' });
+    const kapsoApiKey = process.env.KAPSO_API_KEY;
+    if (!kapsoApiKey) {
+      return NextResponse.json(
+        { error: 'KAPSO_API_KEY not configured' },
+        { status: 500 }
+      );
+    }
+
+    const response = await fetch(
+      `https://api.kapso.ai/platform/v1/whatsapp/conversations/${conversationId}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': kapsoApiKey,
+        },
+        body: JSON.stringify({ whatsapp_conversation: { status } }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Kapso API error:', response.status, errorText);
+      return NextResponse.json(
+        { error: 'Failed to update conversation status' },
+        { status: response.status }
+      );
+    }
+
+    const result = await response.json();
+    return NextResponse.json(result);
   } catch (error: unknown) {
     console.error('Error updating conversation status:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
