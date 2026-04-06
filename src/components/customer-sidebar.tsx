@@ -53,9 +53,10 @@ type Props = {
   onClose: () => void;
 };
 
-function formatRM(amount: number | undefined): string {
+function formatRM(amount: number | string | undefined): string {
   if (amount == null) return 'RM 0.00';
-  return `RM ${amount.toFixed(2)}`;
+  const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+  return `RM ${(isNaN(num) ? 0 : num).toFixed(2)}`;
 }
 
 function formatDate(dateStr: string | undefined): string {
