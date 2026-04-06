@@ -72,7 +72,6 @@ function groupConversations(records: ConversationRecord[]): GroupedConversation[
     if (!existing) {
       const lastMessageText = typeof kapso?.lastMessageText === 'string' ? kapso.lastMessageText : undefined;
       const lastMessageType = typeof kapso?.lastMessageType === 'string' ? kapso.lastMessageType : undefined;
-      const isReaction = lastMessageType === 'reaction';
 
       phoneGroupMap.set(phone, {
         id: conversation.id,
@@ -85,7 +84,7 @@ function groupConversations(records: ConversationRecord[]): GroupedConversation[
         metadata: conversation.metadata ?? {},
         contactName: typeof kapso?.contactName === 'string' ? kapso.contactName : undefined,
         messagesCount: typeof kapso?.messagesCount === 'number' ? kapso.messagesCount : undefined,
-        lastMessage: (lastMessageText && !isReaction)
+        lastMessage: lastMessageText
           ? { content: lastMessageText, direction: parseDirection(kapso), type: lastMessageType }
           : undefined
       });
@@ -98,13 +97,12 @@ function groupConversations(records: ConversationRecord[]): GroupedConversation[
       if (isNewer) {
         const lastMessageText = typeof kapso?.lastMessageText === 'string' ? kapso.lastMessageText : undefined;
         const lastMessageType = typeof kapso?.lastMessageType === 'string' ? kapso.lastMessageType : undefined;
-        const isReaction = lastMessageType === 'reaction';
 
         existing.id = conversation.id;
         existing.status = conversation.status ?? 'unknown';
         existing.lastActiveAt = lastActiveAt;
         if (typeof kapso?.contactName === 'string') existing.contactName = kapso.contactName;
-        if (lastMessageText && !isReaction) {
+        if (lastMessageText) {
           existing.lastMessage = { content: lastMessageText, direction: parseDirection(kapso), type: lastMessageType };
         }
       }

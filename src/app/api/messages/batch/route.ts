@@ -165,7 +165,12 @@ type CacheEntry = {
   timestamp: number;
 };
 
-const messageCache = new Map<string, CacheEntry>();
+// Share cache via Symbol.for so webhook route can invalidate entries
+const CACHE_KEY = Symbol.for('__kapso_message_cache__');
+const g = globalThis as Record<symbol, Map<string, CacheEntry>>;
+if (!g[CACHE_KEY]) g[CACHE_KEY] = new Map();
+const messageCache = g[CACHE_KEY];
+
 const CACHE_TTL_MS = 5_000; // 5s cache — matches poll interval
 
 function getCached(conversationId: string): TransformedMessage[] | null {

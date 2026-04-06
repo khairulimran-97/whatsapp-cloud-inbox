@@ -282,7 +282,10 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
       const reactions = allMessages.filter(m => m.messageType === 'reaction');
       const regularMessages = allMessages.filter(m => m.messageType !== 'reaction');
       const reactionMap = new Map<string, string>();
-      reactions.forEach(r => { if (r.reactedToMessageId && r.reactionEmoji) reactionMap.set(r.reactedToMessageId, r.reactionEmoji); });
+      // Sort reactions by time so newest wins (last set() overwrites older)
+      reactions
+        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+        .forEach(r => { if (r.reactedToMessageId && r.reactionEmoji) reactionMap.set(r.reactedToMessageId, r.reactionEmoji); });
       const messagesWithReactions = regularMessages.map(m => {
         const reaction = reactionMap.get(m.id);
         return reaction ? { ...m, reactionEmoji: reaction } : m;

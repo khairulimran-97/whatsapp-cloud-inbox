@@ -7,6 +7,13 @@ import { sendPushNotification } from '@/lib/web-push';
 
 const UNREAD_FILE = path.join(process.cwd(), 'data', 'unread.json');
 
+// Access shared message cache to invalidate on webhook events
+const CACHE_KEY = Symbol.for('__kapso_message_cache__');
+function invalidateMessageCache(conversationId: string) {
+  const cache = (globalThis as Record<symbol, Map<string, unknown>>)[CACHE_KEY];
+  if (cache) cache.delete(conversationId);
+}
+
 /**
  * Kapso webhook receiver (v2).
  * Headers from Kapso:
@@ -120,6 +127,10 @@ export async function POST(request: Request) {
     for (const item of items) {
       const webhookEvent = extractEvent(item, headerEvent);
       if (webhookEvent) {
+        // Invalidate message cache so next fetch gets fresh data
+        if (webhookEvent.conversationId) {
+          invalidateMessageCache(webhookEvent.conversationId);
+        }
         publish(webhookEvent);
         published++;
         // Track unread server-side for inbound messages
