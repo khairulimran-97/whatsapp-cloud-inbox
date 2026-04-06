@@ -82,18 +82,37 @@ export async function GET(request: NextRequest) {
       .filter((tx) => tx.status === 'success' || tx.is_paid === true)
       .slice(0, 5);
 
-    // Enrich transactions with receipt_url from /transaction/{orderNumber}
+    // Enrich transactions with receipt_url + protected content from /transactions/{orderNumber}
+    const protectedContentMap = new Map<string, { title: string; url?: string; access_finder_url?: string }>();
+
     const enrichedTxns = await Promise.all(
       successTxns.map(async (tx) => {
         if (!tx.order_number) return tx;
         try {
           const txRes = await fetch(
-            `https://bcl.my/api/transaction/${encodeURIComponent(String(tx.order_number))}`,
+            `https://bcl.my/api/transactions/${encodeURIComponent(String(tx.order_number))}`,
             { headers }
           );
           if (txRes.ok) {
             const txData = await txRes.json();
-            const receiptUrl = txData?.data?.short_link ?? null;
+            const txDetail = txData?.data;
+            const receiptUrl = txDetail?.receipt_url ?? null;
+
+            // Collect protected content from transaction items
+            const items = txDetail?.main_data?.items ?? [];
+            for (const item of items) {
+              const pcList = item?.protected_content ?? [];
+              for (const pc of pcList) {
+                if (pc?.title && !protectedContentMap.has(pc.title)) {
+                  protectedContentMap.set(pc.title, {
+                    title: pc.title,
+                    url: pc.url ?? undefined,
+                    access_finder_url: pc.access_finder_url ?? undefined,
+                  });
+                }
+              }
+            }
+
             return { ...tx, receipt_url: receiptUrl };
           }
         } catch { /* ignore */ }
@@ -101,13 +120,28 @@ export async function GET(request: NextRequest) {
       })
     );
 
+    // Merge protected content: from customer endpoint + enriched from transactions
+    const customerPC = (detail?.protected_content ?? []) as Array<Record<string, unknown>>;
+    const mergedPC = customerPC.map((pc) => {
+      const enriched = protectedContentMap.get(String(pc.title));
+      if (enriched) {
+        protectedContentMap.delete(String(pc.title));
+        return { ...pc, url: enriched.url, access_finder_url: enriched.access_finder_url };
+      }
+      return pc;
+    });
+    // Add any extra protected content found only in transactions
+    for (const extra of protectedContentMap.values()) {
+      mergedPC.push(extra);
+    }
+
     const result = {
       configured: true,
       found: true,
       customer: detail?.customer ?? null,
       stats: detail?.stats ?? null,
       recentTransactions: enrichedTxns,
-      protectedContent: detail?.protected_content ?? [],
+      protectedContent: mergedPC,
     };
 
     setCache(phone, result);
