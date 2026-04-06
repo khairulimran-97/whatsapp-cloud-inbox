@@ -290,9 +290,14 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
       reactions
         .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
         .forEach(r => {
-          if (!r.reactedToMessageId || !r.reactionEmoji) return;
+          if (!r.reactedToMessageId) return;
           const senderKey = `${r.reactedToMessageId}::${r.direction}::${r.phoneNumber || ''}`;
-          latestPerSender.set(senderKey, { emoji: r.reactionEmoji, direction: r.direction });
+          // Empty emoji means reaction was removed
+          if (!r.reactionEmoji) {
+            latestPerSender.delete(senderKey);
+          } else {
+            latestPerSender.set(senderKey, { emoji: r.reactionEmoji, direction: r.direction });
+          }
         });
 
       // Group active reactions per message: { msgId → { emoji → count } }
