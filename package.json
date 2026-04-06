@@ -2,8 +2,8 @@
   "name": "whatsapp-cloud-inbox",
   "version": "0.1.0",
   "scripts": {
-    "dev": "next dev --turbopack -p 4000",
-    "build": "next build",
+    "dev": "rm -rf .next && next dev --turbopack -p 4000",
+    "build": "rm -rf .next && next build",
     "start": "next start",
     "lint": "eslint"
   },
