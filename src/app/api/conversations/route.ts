@@ -46,11 +46,16 @@ const KAPSO_FIELDS = buildKapsoFields([
   'last_outbound_at'
 ]);
 
-// In-memory cache
+const DEFAULT_PAGE_SIZE = 30;
+
+// In-memory cache of all grouped conversations fetched so far
 let cachedData: GroupedConversation[] | null = null;
 let cacheTimestamp = 0;
-let fullFetchDone = false;
-const CACHE_TTL_MS = 10_000; // serve cache for 10s before refreshing
+// Kapso API cursor for next page of raw conversations
+let nextApiCursor: string | undefined;
+// Whether we've exhausted all pages from the Kapso API
+let allPagesFetched = false;
+const CACHE_TTL_MS = 10_000;
 
 function groupConversations(records: ConversationRecord[]): GroupedConversation[] {
   const phoneGroupMap = new Map<string, GroupedConversation>();
@@ -111,32 +116,61 @@ function groupConversations(records: ConversationRecord[]): GroupedConversation[
   });
 }
 
-// Full fetch: paginate through all conversations (used on first load & manual refresh)
-async function fetchAllConversations(status?: string): Promise<ConversationRecord[]> {
-  const all: ConversationRecord[] = [];
-  let cursor: string | undefined;
-  let pages = 0;
-  const MAX_PAGES = 10;
-
-  do {
-    const response = await whatsappClient.conversations.list({
-      phoneNumberId: PHONE_NUMBER_ID,
-      ...(status && { status: status as 'active' | 'ended' }),
-      limit: 100,
-      ...(cursor && { after: cursor }),
-      fields: KAPSO_FIELDS
-    });
-
-    all.push(...(response.data as ConversationRecord[]));
-    cursor = response.paging?.cursors?.after ?? undefined;
-    pages++;
-
-    if (cursor && pages < MAX_PAGES) {
-      await new Promise(resolve => setTimeout(resolve, 200));
+/** Merge new grouped conversations into an existing list (newer wins by phone). */
+function mergeGrouped(existing: GroupedConversation[], incoming: GroupedConversation[]): GroupedConversation[] {
+  const map = new Map<string, GroupedConversation>();
+  for (const g of existing) map.set(g.phoneNumber, g);
+  for (const g of incoming) {
+    const prev = map.get(g.phoneNumber);
+    if (!prev) {
+      map.set(g.phoneNumber, g);
+    } else {
+      // Merge conversation IDs
+      const idSet = new Set([...prev.conversationIds, ...g.conversationIds]);
+      const merged: GroupedConversation = {
+        ...g,
+        conversationIds: Array.from(idSet),
+        conversationStatuses: { ...prev.conversationStatuses, ...g.conversationStatuses },
+        messagesCount: (prev.messagesCount ?? 0) + (g.messagesCount ?? 0),
+      };
+      // Keep whichever is newer
+      if (prev.lastActiveAt && (!g.lastActiveAt || prev.lastActiveAt > g.lastActiveAt)) {
+        merged.id = prev.id;
+        merged.status = prev.status;
+        merged.lastActiveAt = prev.lastActiveAt;
+        merged.contactName = prev.contactName ?? g.contactName;
+        merged.lastMessage = prev.lastMessage ?? g.lastMessage;
+      }
+      map.set(g.phoneNumber, merged);
     }
-  } while (cursor && pages < MAX_PAGES);
+  }
+  return Array.from(map.values()).sort((a, b) => {
+    if (!a.lastActiveAt) return 1;
+    if (!b.lastActiveAt) return -1;
+    return b.lastActiveAt.localeCompare(a.lastActiveAt);
+  });
+}
 
-  return all;
+/**
+ * Fetch one page of raw conversations from Kapso and return grouped results.
+ * Updates nextApiCursor and allPagesFetched.
+ */
+async function fetchNextPage(status?: string, limit = 100): Promise<GroupedConversation[]> {
+  if (allPagesFetched) return [];
+
+  const response = await whatsappClient.conversations.list({
+    phoneNumberId: PHONE_NUMBER_ID,
+    ...(status && { status: status as 'active' | 'ended' }),
+    limit,
+    ...(nextApiCursor && { after: nextApiCursor }),
+    fields: KAPSO_FIELDS
+  });
+
+  const records = response.data as ConversationRecord[];
+  nextApiCursor = response.paging?.cursors?.after ?? undefined;
+  if (!nextApiCursor) allPagesFetched = true;
+
+  return groupConversations(records);
 }
 
 // Quick fetch: only page 1 (100 most recent) — used for polling updates
@@ -155,55 +189,57 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const forceRefresh = searchParams.get('refresh') === 'true';
+    const cursorParam = searchParams.get('cursor');
+    const limitParam = Number(searchParams.get('limit')) || DEFAULT_PAGE_SIZE;
 
-    // Return cache if fresh and not a forced refresh
-    if (cachedData && !forceRefresh && (Date.now() - cacheTimestamp) < CACHE_TTL_MS) {
-      return NextResponse.json({ data: cachedData });
+    // ── Paginated mode: ?cursor=next  (load more) ──
+    if (cursorParam === 'next') {
+      if (allPagesFetched) {
+        return NextResponse.json({ data: [], hasMore: false });
+      }
+      const page = await fetchNextPage(status ?? undefined);
+      if (page.length > 0) {
+        cachedData = mergeGrouped(cachedData ?? [], page);
+        cacheTimestamp = Date.now();
+      }
+      return NextResponse.json({ data: page, hasMore: !allPagesFetched });
     }
 
-    let records: ConversationRecord[];
+    // ── Force refresh: reset everything ──
+    if (forceRefresh) {
+      nextApiCursor = undefined;
+      allPagesFetched = false;
+      cachedData = null;
 
-    if (!fullFetchDone || forceRefresh) {
-      // First load or manual refresh: fetch ALL pages
-      records = await fetchAllConversations(status ?? undefined);
-      fullFetchDone = true;
-    } else {
-      // Polling: only fetch page 1 (recent), merge with cached old conversations
-      const recent = await fetchRecentConversations(status ?? undefined);
-      // Merge: recent records override older ones by id
-      const recentIds = new Set(recent.map(r => r.id));
-      const oldRecords = cachedData
-        ? cachedData.flatMap(g => g.conversationIds.map(id => ({ id })))
-            .filter(r => !recentIds.has(r.id))
-        : [];
-
-      // For polling, we only re-group the recent data merged with cached grouped data
-      const recentGrouped = groupConversations(recent);
-
-      // Merge: recent grouped contacts override cached contacts
-      const recentPhones = new Set(recentGrouped.map(g => g.phoneNumber));
-      const oldContacts = cachedData?.filter(g => !recentPhones.has(g.phoneNumber)) ?? [];
-      const merged = [...recentGrouped, ...oldContacts].sort((a, b) => {
-        if (!a.lastActiveAt) return 1;
-        if (!b.lastActiveAt) return -1;
-        return b.lastActiveAt.localeCompare(a.lastActiveAt);
-      });
-
-      cachedData = merged;
+      const page = await fetchNextPage(status ?? undefined, 100);
+      cachedData = page;
       cacheTimestamp = Date.now();
-      return NextResponse.json({ data: merged });
+      return NextResponse.json({ data: page, hasMore: !allPagesFetched });
     }
 
-    const grouped = groupConversations(records);
-    cachedData = grouped;
-    cacheTimestamp = Date.now();
+    // ── Polling: return cache if fresh ──
+    if (cachedData && (Date.now() - cacheTimestamp) < CACHE_TTL_MS) {
+      return NextResponse.json({ data: cachedData, hasMore: !allPagesFetched });
+    }
 
-    return NextResponse.json({ data: grouped });
+    // ── Polling with stale cache: fetch page 1 and merge ──
+    if (cachedData) {
+      const recent = await fetchRecentConversations(status ?? undefined);
+      const recentGrouped = groupConversations(recent);
+      cachedData = mergeGrouped(cachedData, recentGrouped);
+      cacheTimestamp = Date.now();
+      return NextResponse.json({ data: cachedData, hasMore: !allPagesFetched });
+    }
+
+    // ── First load: fetch first page only (fast) ──
+    const page = await fetchNextPage(status ?? undefined, 100);
+    cachedData = page;
+    cacheTimestamp = Date.now();
+    return NextResponse.json({ data: page, hasMore: !allPagesFetched });
   } catch (error) {
     console.error('Error fetching conversations:', error);
-    // If we have cached data, serve it on error (stale is better than nothing)
     if (cachedData) {
-      return NextResponse.json({ data: cachedData });
+      return NextResponse.json({ data: cachedData, hasMore: !allPagesFetched });
     }
     return NextResponse.json(
       { error: 'Failed to fetch conversations' },

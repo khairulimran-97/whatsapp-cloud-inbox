@@ -31,7 +31,13 @@ export async function POST(request: Request) {
       });
 
       // Send message with media
-      if (mediaType === 'image') {
+      if (file.type === 'image/webp') {
+        result = await whatsappClient.messages.sendSticker({
+          phoneNumberId: PHONE_NUMBER_ID,
+          to,
+          sticker: { id: uploadResult.id }
+        });
+      } else if (mediaType === 'image') {
         result = await whatsappClient.messages.sendImage({
           phoneNumberId: PHONE_NUMBER_ID,
           to,

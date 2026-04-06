@@ -2,10 +2,13 @@
 
 import { useEffect, useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { format, isValid, isToday, isYesterday } from 'date-fns';
-import { RefreshCw, Paperclip, Send, X, MessageSquare, XCircle, ListTree, ArrowLeft, CircleCheck, RotateCcw, MailOpen, MoreVertical, Info } from 'lucide-react';
+import { RefreshCw, Paperclip, Send, X, MessageSquare, ListTree, ArrowLeft, CircleCheck, RotateCcw, MailOpen, MoreVertical, Info, List, Link, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MediaMessage } from '@/components/media-message';
 import { InteractiveMessageDialog } from '@/components/interactive-message-dialog';
+import { InteractiveListDialog } from '@/components/interactive-list-dialog';
+import { CtaUrlDialog } from '@/components/cta-url-dialog';
+import { EmojiReactionPicker } from '@/components/emoji-reaction-picker';
 import { TemplateSelectorDialog } from '@/components/template-selector-dialog';
 import { useAutoPolling } from '@/hooks/use-auto-polling';
 import { Button } from '@/components/ui/button';
@@ -164,7 +167,12 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [showInteractiveDialog, setShowInteractiveDialog] = useState(false);
+  const [showListDialog, setShowListDialog] = useState(false);
+  const [showCtaDialog, setShowCtaDialog] = useState(false);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const [showMessageSearch, setShowMessageSearch] = useState(false);
+  const [messageSearchQuery, setMessageSearchQuery] = useState('');
+  const [messageSearchResults, setMessageSearchResults] = useState<Message[]>([]);
   const [isNearBottom, setIsNearBottom] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [confirmAction, setConfirmAction] = useState<'close' | 'reopen' | null>(null);
@@ -474,6 +482,21 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
     }
   };
 
+  const handleMessageSearch = useCallback((query: string) => {
+    setMessageSearchQuery(query);
+    if (!query.trim()) {
+      setMessageSearchResults([]);
+      return;
+    }
+    const q = query.toLowerCase();
+    const results = messages.filter(
+      (m) =>
+        m.content?.toLowerCase().includes(q) ||
+        m.caption?.toLowerCase().includes(q)
+    );
+    setMessageSearchResults(results);
+  }, [messages]);
+
   if (!conversationIds || conversationIds.length === 0) {
     return (
       <div className={cn(
@@ -642,6 +665,14 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
               >
                 <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
               </Button>
+              <Button
+                onClick={() => setShowMessageSearch(!showMessageSearch)}
+                variant="ghost"
+                size="icon"
+                className={cn("text-[var(--wa-text-tertiary)] hover:text-[var(--wa-text-primary)] h-9 w-9 transition-colors duration-200", showMessageSearch && "text-[var(--wa-green)]")}
+              >
+                <Search className="h-4 w-4" />
+              </Button>
             </div>
 
             {/* Mobile/Tablet: icon buttons + overflow menu */}
@@ -687,12 +718,41 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                       Mark as unread
                     </DropdownMenuItem>
                   )}
+                  <DropdownMenuItem onClick={() => setShowMessageSearch(!showMessageSearch)} className="py-2.5">
+                    <Search className="h-4 w-4 mr-3" />
+                    Search messages
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           </div>
         </div>
       </div>
+
+      {showMessageSearch && (
+        <div className="border-b border-[var(--wa-border-strong)] bg-[var(--wa-panel-bg)] px-3 py-2 flex items-center gap-2">
+          <Search className="h-4 w-4 text-[var(--wa-text-secondary)] flex-shrink-0" />
+          <input
+            type="text"
+            value={messageSearchQuery}
+            onChange={(e) => handleMessageSearch(e.target.value)}
+            placeholder="Search messages..."
+            autoFocus
+            className="flex-1 bg-transparent text-sm text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)]/50 outline-none"
+          />
+          {messageSearchQuery && (
+            <span className="text-xs text-[var(--wa-text-secondary)]">
+              {messageSearchResults.length} found
+            </span>
+          )}
+          <button
+            onClick={() => { setShowMessageSearch(false); setMessageSearchQuery(''); setMessageSearchResults([]); }}
+            className="text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] p-1"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       <ScrollArea ref={messagesContainerRef} className="flex-1 h-0 px-3 py-3 sm:px-4 md:px-[30px]" onClick={onInteraction}>
         <div>
@@ -780,11 +840,24 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
 
                 <div
                   className={cn(
-                    'flex',
+                    'flex group',
                     isSameDirectionAsPrev ? 'mt-[2px]' : 'mt-2',
-                    message.direction === 'outbound' ? 'justify-end pl-[48px] sm:pl-[60px]' : 'justify-start pr-[48px] sm:pr-[60px]'
+                    message.direction === 'outbound' ? 'justify-end pl-[48px] sm:pl-[60px]' : 'justify-start pr-[48px] sm:pr-[60px]',
+                    messageSearchQuery && messageSearchResults.some(r => r.id === message.id) && 'ring-2 ring-[var(--wa-green)] ring-offset-1 rounded-lg'
                   )}
                 >
+                  {/* Reaction picker — before bubble for outbound */}
+                  {message.direction === 'outbound' && phoneNumber && (
+                    <div className="flex items-end mb-1 mr-1">
+                      <EmojiReactionPicker
+                        messageId={message.id}
+                        phoneNumber={phoneNumber}
+                        existingEmoji={message.reactionEmoji}
+                        onReacted={fetchMessages}
+                      />
+                    </div>
+                  )}
+
                   {/* Inbound tail */}
                   {message.direction === 'inbound' && isFirstInGroup && (
                     <svg viewBox="0 0 8 13" width="8" height="13" className="flex-shrink-0 -mr-[1px] mt-0 text-[var(--wa-bubble-in)]">
@@ -943,6 +1016,18 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                     </svg>
                   )}
                   {message.direction === 'outbound' && !isFirstInGroup && <div className="w-[8px] flex-shrink-0" />}
+
+                  {/* Reaction picker — after bubble for inbound */}
+                  {message.direction === 'inbound' && phoneNumber && (
+                    <div className="flex items-end mb-1 ml-1">
+                      <EmojiReactionPicker
+                        messageId={message.id}
+                        phoneNumber={phoneNumber}
+                        existingEmoji={message.reactionEmoji}
+                        onReacted={fetchMessages}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -1072,7 +1157,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                   ref={fileInputRef}
                   type="file"
                   onChange={handleFileSelect}
-                  accept="image/*,video/*,audio/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  accept="image/*,video/*,audio/*,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                   className="hidden"
                 />
                 <div className="flex-1 min-w-0 flex items-end bg-[var(--wa-input-bg)] rounded-[21px] border-0 outline-none ring-0 focus-within:ring-[var(--wa-green)]/60 focus-within:ring-2 transition-all duration-200">
@@ -1085,15 +1170,32 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                   >
                     <Paperclip className="h-[22px] w-[22px]" />
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowInteractiveDialog(true)}
-                    disabled={sending}
-                    className="text-[var(--wa-icon)] hover:text-[var(--wa-text-primary)] h-[44px] w-10 items-center justify-center flex-shrink-0 transition-colors duration-200 disabled:opacity-40 hidden sm:flex"
-                    title="Send interactive message"
-                  >
-                    <ListTree className="h-[22px] w-[22px]" />
-                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        disabled={sending}
+                        className="text-[var(--wa-icon)] hover:text-[var(--wa-text-primary)] h-[44px] w-10 items-center justify-center flex-shrink-0 transition-colors duration-200 disabled:opacity-40 hidden sm:flex"
+                        title="Send interactive message"
+                      >
+                        <ListTree className="h-[22px] w-[22px]" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-52 rounded-xl shadow-lg">
+                      <DropdownMenuItem onClick={() => setShowInteractiveDialog(true)} className="py-2.5">
+                        <ListTree className="h-4 w-4 mr-3" />
+                        Button message
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowListDialog(true)} className="py-2.5">
+                        <List className="h-4 w-4 mr-3" />
+                        List message
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowCtaDialog(true)} className="py-2.5">
+                        <Link className="h-4 w-4 mr-3" />
+                        CTA URL message
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <textarea
                     value={messageInput}
                     onChange={(e) => {
@@ -1131,6 +1233,20 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
         open={showInteractiveDialog}
         onOpenChange={setShowInteractiveDialog}
         conversationId={conversationIds?.[0]}
+        phoneNumber={phoneNumber}
+        onMessageSent={fetchMessages}
+      />
+
+      <InteractiveListDialog
+        open={showListDialog}
+        onOpenChange={setShowListDialog}
+        phoneNumber={phoneNumber}
+        onMessageSent={fetchMessages}
+      />
+
+      <CtaUrlDialog
+        open={showCtaDialog}
+        onOpenChange={setShowCtaDialog}
         phoneNumber={phoneNumber}
         onMessageSent={fetchMessages}
       />

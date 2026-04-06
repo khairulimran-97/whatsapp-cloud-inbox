@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { format, isValid, isToday, isYesterday } from 'date-fns';
-import { RefreshCw, Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff } from 'lucide-react';
+import { RefreshCw, Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAutoPolling } from '@/hooks/use-auto-polling';
 import { useTheme } from '@/hooks/use-theme';
@@ -157,10 +157,13 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [showPushDialog, setShowPushDialog] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const prevDataRef = useRef<string>('');
   const onConversationsUpdatedRef = useRef(onConversationsUpdated);
   onConversationsUpdatedRef.current = onConversationsUpdated;
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch('/api/profile')
@@ -174,6 +177,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       const response = await fetch('/api/conversations');
       const data = await response.json();
       const newConversations = data.data || [];
+      setHasMore(!!data.hasMore);
       // Only update state if data actually changed to avoid scroll reset
       const fingerprint = JSON.stringify(newConversations.map((c: Conversation) => c.id + c.status + c.lastActiveAt + (c.lastMessage?.content || '')));
       if (fingerprint !== prevDataRef.current) {
@@ -189,6 +193,31 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
     }
   }, []);
 
+  const loadMoreConversations = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const response = await fetch('/api/conversations?cursor=next');
+      const data = await response.json();
+      const moreConversations: Conversation[] = data.data || [];
+      setHasMore(!!data.hasMore);
+      if (moreConversations.length > 0) {
+        setConversations(prev => {
+          const phoneSet = new Set(prev.map(c => c.phoneNumber));
+          const unique = moreConversations.filter(c => !phoneSet.has(c.phoneNumber));
+          const merged = [...prev, ...unique];
+          prevDataRef.current = JSON.stringify(merged.map((c: Conversation) => c.id + c.status + c.lastActiveAt + (c.lastMessage?.content || '')));
+          onConversationsUpdatedRef.current?.(merged);
+          return merged;
+        });
+      }
+    } catch (error) {
+      console.error('Error loading more conversations:', error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loadingMore, hasMore]);
+
   useEffect(() => {
     fetchConversations();
   }, [fetchConversations]);
@@ -199,6 +228,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       .then(r => r.json())
       .then(data => {
         const newConversations = data.data || [];
+        setHasMore(!!data.hasMore);
         prevDataRef.current = JSON.stringify(newConversations.map((c: Conversation) => c.id + c.status + c.lastActiveAt + (c.lastMessage?.content || '')));
         setConversations(newConversations);
       })
@@ -226,6 +256,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       const response = await fetch('/api/conversations?refresh=true');
       const data = await response.json();
       const newConversations = data.data || [];
+      setHasMore(!!data.hasMore);
       prevDataRef.current = JSON.stringify(newConversations.map((c: Conversation) => c.id + c.status + c.lastActiveAt + (c.lastMessage?.content || '')));
       setConversations(newConversations);
       setRefreshing(false);
@@ -233,6 +264,24 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
     },
     selectByPhoneNumber
   }));
+
+  // Infinite scroll: observe sentinel element at bottom of list
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          loadMoreConversations();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loadMoreConversations]);
 
   const filteredConversations = conversations.filter((conv) => {
     const query = searchQuery.toLowerCase();
@@ -501,6 +550,14 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
             </button>
             );
           })}
+          </div>
+        )}
+
+        {/* Sentinel for infinite scroll */}
+        <div ref={sentinelRef} className="h-1" />
+        {loadingMore && (
+          <div className="flex justify-center py-3">
+            <Loader2 className="h-5 w-5 animate-spin text-[var(--wa-text-secondary)]" />
           </div>
         )}
       </ScrollArea>
