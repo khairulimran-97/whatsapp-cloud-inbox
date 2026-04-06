@@ -292,7 +292,9 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
   const filteredConversations = conversations.filter((conv) => {
     const query = searchQuery.toLowerCase();
     const matchesSearch = conv.phoneNumber.toLowerCase().includes(query) ||
-      conv.contactName?.toLowerCase().includes(query);
+      conv.contactName?.toLowerCase().includes(query) ||
+      // Also search within last message content
+      conv.lastMessage?.content?.toLowerCase().includes(query);
     const matchesTab = activeTab === 'all' || (activeTab === 'unread' && unreadCounts.has(conv.phoneNumber));
     return matchesSearch && matchesTab;
   });

@@ -97,6 +97,8 @@ export default function Home() {
     const count = unreadCounts.get(conversation.phoneNumber) ?? 0;
     setInitialUnreadCount(count);
     setSelectedConversation(conversation);
+    // Push history state so PWA back button returns to list instead of closing app
+    window.history.pushState({ view: 'chat' }, '');
     // Clear unread badge from sidebar
     if (count > 0) {
       setUnreadCounts(prev => {
@@ -181,9 +183,21 @@ export default function Home() {
   };
 
   const handleBackToList = () => {
-    setSelectedConversation(undefined);
-    setInitialUnreadCount(0);
+    // Navigate back in history — the popstate handler will clear selected conversation
+    window.history.back();
   };
+
+  // PWA back button support: listen for popstate to return to conversation list
+  useEffect(() => {
+    const handlePopState = () => {
+      if (selectedConversationRef.current) {
+        setSelectedConversation(undefined);
+        setInitialUnreadCount(0);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Real-time updates via webhook SSE — triggers instant refresh on events
   const handleRealtimeEvent = useCallback((event: RealtimeEvent) => {
