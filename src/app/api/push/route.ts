@@ -9,7 +9,7 @@ function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-export function readSubscriptions(): PushSubscriptionJSON[] {
+function readSubscriptions(): PushSubscriptionJSON[] {
   try {
     if (!fs.existsSync(SUBS_FILE)) return [];
     return JSON.parse(fs.readFileSync(SUBS_FILE, 'utf8'));
