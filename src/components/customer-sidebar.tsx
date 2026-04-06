@@ -55,7 +55,8 @@ type Props = {
 
 function formatRM(amount: number | string | undefined): string {
   if (amount == null) return 'RM 0.00';
-  const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+  const cleaned = typeof amount === 'string' ? amount.replace(/[^0-9.\-]/g, '') : String(amount);
+  const num = parseFloat(cleaned);
   return `RM ${(isNaN(num) ? 0 : num).toFixed(2)}`;
 }
 
