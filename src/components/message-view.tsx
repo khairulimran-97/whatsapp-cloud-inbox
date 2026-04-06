@@ -292,8 +292,9 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
         .forEach(r => {
           if (!r.reactedToMessageId) return;
           const senderKey = `${r.reactedToMessageId}::${r.direction}::${r.phoneNumber || ''}`;
-          // Empty emoji means reaction was removed
-          if (!r.reactionEmoji) {
+          // Empty/missing emoji or "Reaction removed" content means removal
+          const isRemoval = !r.reactionEmoji || r.content?.startsWith('Reaction removed');
+          if (isRemoval) {
             latestPerSender.delete(senderKey);
           } else {
             latestPerSender.set(senderKey, { emoji: r.reactionEmoji, direction: r.direction });
