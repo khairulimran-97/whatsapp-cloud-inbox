@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { format, isValid, isToday, isYesterday } from 'date-fns';
-import { RefreshCw, Paperclip, Send, X, MessageSquare, ListTree, ArrowLeft, CircleCheck, RotateCcw, MailOpen, MoreVertical, Info, List, Link, Search } from 'lucide-react';
+import { RefreshCw, Paperclip, Send, X, MessageSquare, ListTree, ArrowLeft, CircleCheck, RotateCcw, MailOpen, MoreVertical, Info, List, Link, Search, ChevronUp, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MediaMessage } from '@/components/media-message';
 import { InteractiveMessageDialog } from '@/components/interactive-message-dialog';
@@ -170,6 +170,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
   const [showMessageSearch, setShowMessageSearch] = useState(false);
   const [messageSearchQuery, setMessageSearchQuery] = useState('');
   const [messageSearchResults, setMessageSearchResults] = useState<Message[]>([]);
+  const [searchMatchIndex, setSearchMatchIndex] = useState(0);
   const [rateLimitWarning, setRateLimitWarning] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [isNearBottom, setIsNearBottom] = useState(true);
@@ -483,6 +484,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
     setMessageSearchQuery(query);
     if (!query.trim()) {
       setMessageSearchResults([]);
+      setSearchMatchIndex(0);
       return;
     }
     const q = query.toLowerCase();
@@ -492,12 +494,24 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
         m.caption?.toLowerCase().includes(q)
     );
     setMessageSearchResults(results);
-    // Scroll to first matching message
+    setSearchMatchIndex(0);
     if (results.length > 0) {
-      const firstMatch = document.getElementById(`msg-${results[0].id}`);
-      firstMatch?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      requestAnimationFrame(() => {
+        document.getElementById(`msg-${results[0].id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
     }
   }, [messages]);
+
+  const navigateSearch = useCallback((direction: 'prev' | 'next') => {
+    if (messageSearchResults.length === 0) return;
+    const newIndex = direction === 'next'
+      ? (searchMatchIndex + 1) % messageSearchResults.length
+      : (searchMatchIndex - 1 + messageSearchResults.length) % messageSearchResults.length;
+    setSearchMatchIndex(newIndex);
+    requestAnimationFrame(() => {
+      document.getElementById(`msg-${messageSearchResults[newIndex].id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }, [messageSearchResults, searchMatchIndex]);
 
   // Cmd+F / Ctrl+F keyboard shortcut to toggle search
   useEffect(() => {
@@ -766,17 +780,35 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
             type="text"
             value={messageSearchQuery}
             onChange={(e) => handleMessageSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                navigateSearch(e.shiftKey ? 'prev' : 'next');
+              } else if (e.key === 'Escape') {
+                setShowMessageSearch(false); setMessageSearchQuery(''); setMessageSearchResults([]); setSearchMatchIndex(0);
+              }
+            }}
             placeholder="Search messages..."
             autoFocus
             className="flex-1 bg-transparent text-sm text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)]/50 outline-none"
           />
           {messageSearchQuery && (
-            <span className="text-xs text-[var(--wa-text-secondary)]">
-              {messageSearchResults.length} found
+            <span className="text-xs text-[var(--wa-text-secondary)] tabular-nums whitespace-nowrap">
+              {messageSearchResults.length > 0 ? `${searchMatchIndex + 1} of ${messageSearchResults.length}` : 'No results'}
             </span>
           )}
+          {messageSearchResults.length > 1 && (
+            <>
+              <button onClick={() => navigateSearch('prev')} className="text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] p-0.5">
+                <ChevronUp className="h-4 w-4" />
+              </button>
+              <button onClick={() => navigateSearch('next')} className="text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] p-0.5">
+                <ChevronDown className="h-4 w-4" />
+              </button>
+            </>
+          )}
           <button
-            onClick={() => { setShowMessageSearch(false); setMessageSearchQuery(''); setMessageSearchResults([]); }}
+            onClick={() => { setShowMessageSearch(false); setMessageSearchQuery(''); setMessageSearchResults([]); setSearchMatchIndex(0); }}
             className="text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] p-1"
           >
             <X className="h-4 w-4" />
@@ -873,8 +905,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                   className={cn(
                     'flex group',
                     isSameDirectionAsPrev ? 'mt-[2px]' : 'mt-2',
-                    message.direction === 'outbound' ? 'justify-end pl-[48px] sm:pl-[60px]' : 'justify-start pr-[48px] sm:pr-[60px]',
-                    messageSearchQuery && messageSearchResults.some(r => r.id === message.id) && 'ring-2 ring-[var(--wa-green)] ring-offset-1 rounded-lg'
+                    message.direction === 'outbound' ? 'justify-end pl-[48px] sm:pl-[60px]' : 'justify-start pr-[48px] sm:pr-[60px]'
                   )}
                 >
                   {/* Inbound tail */}
@@ -895,7 +926,12 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                         ? (message.direction === 'outbound' ? 'rounded-[7.5px] rounded-tr-0' : 'rounded-[7.5px] rounded-tl-0')
                         : 'rounded-[7.5px]',
                       'shadow-[0_1px_0.5px_rgba(11,20,26,0.13)]',
-                      message.hasMedia || message.metadata?.mediaId ? 'p-[3px]' : 'px-[9px] pt-[6px] pb-[8px]'
+                      message.hasMedia || message.metadata?.mediaId ? 'p-[3px]' : 'px-[9px] pt-[6px] pb-[8px]',
+                      messageSearchQuery && messageSearchResults.some(r => r.id === message.id) && (
+                        messageSearchResults[searchMatchIndex]?.id === message.id
+                          ? 'ring-2 ring-yellow-400/80 shadow-[0_0_8px_rgba(250,204,21,0.4)]'
+                          : 'ring-1 ring-yellow-400/30'
+                      )
                     )}
                   >
                     {message.hasMedia && message.mediaData?.url ? (
