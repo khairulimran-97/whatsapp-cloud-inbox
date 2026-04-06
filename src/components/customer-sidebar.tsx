@@ -146,63 +146,60 @@ function ContentAccessItem({ content }: { content: ProtectedContent }) {
   );
 }
 
-function TransactionCard({ tx, protectedContent, isLast }: { tx: Transaction; protectedContent?: ProtectedContent[]; isLast?: boolean }) {
+function TransactionCard({ tx, protectedContent }: { tx: Transaction; protectedContent?: ProtectedContent[] }) {
   const relatedContent = protectedContent?.filter(pc => pc.url) ?? [];
 
   return (
-    <>
-      <div className="py-3">
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-semibold text-[var(--wa-text-primary)]">
-              {formatRM(tx.amount)}
-            </p>
-            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400">
-              Successful
-            </span>
-          </div>
-          {tx.payment_channel && (
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400">
-              {tx.payment_channel}
-            </span>
-          )}
+    <div className="p-3 rounded-lg border border-[var(--wa-border)] bg-[var(--wa-hover)]">
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-semibold text-[var(--wa-text-primary)]">
+            {formatRM(tx.amount)}
+          </p>
+          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400">
+            Successful
+          </span>
         </div>
-        <div className="flex items-center gap-1.5 mt-1">
-          {tx.order_number && (
-            <p className="text-xs text-[var(--wa-text-secondary)]">
-              {tx.order_number}
-            </p>
-          )}
-          {tx.receipt_url && (
-            <div className="flex items-center gap-0.5">
-              <a
-                href={tx.receipt_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="h-5 w-5 flex items-center justify-center rounded text-orange-400 hover:text-orange-300 hover:bg-orange-500/10 transition-colors"
-                title="Download receipt PDF"
-              >
-                <FileText className="h-3 w-3" />
-              </a>
-              <CopyButton text={tx.receipt_url} />
-            </div>
-          )}
-        </div>
-        <p className="text-[11px] text-[var(--wa-text-secondary)] mt-1">
-          {formatDateTime(tx.created_at)}
-        </p>
-
-        {/* Grouped content access */}
-        {relatedContent.length > 0 && (
-          <div className="mt-2.5 pt-2 border-t border-[var(--wa-border)] border-dashed">
-            {relatedContent.map((content, i) => (
-              <ContentAccessItem key={i} content={content} />
-            ))}
+        {tx.payment_channel && (
+          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400">
+            {tx.payment_channel}
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-1.5 mt-1">
+        {tx.order_number && (
+          <p className="text-xs text-[var(--wa-text-secondary)]">
+            {tx.order_number}
+          </p>
+        )}
+        {tx.receipt_url && (
+          <div className="flex items-center gap-0.5">
+            <a
+              href={tx.receipt_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="h-5 w-5 flex items-center justify-center rounded text-orange-400 hover:text-orange-300 hover:bg-orange-500/10 transition-colors"
+              title="Download receipt PDF"
+            >
+              <FileText className="h-3 w-3" />
+            </a>
+            <CopyButton text={tx.receipt_url} />
           </div>
         )}
       </div>
-      {!isLast && <div className="border-b border-[var(--wa-border)]" />}
-    </>
+      <p className="text-[11px] text-[var(--wa-text-secondary)] mt-1">
+        {formatDateTime(tx.created_at)}
+      </p>
+
+      {/* Grouped content access */}
+      {relatedContent.length > 0 && (
+        <div className="mt-2.5 pt-2 border-t border-[var(--wa-border)] border-dashed">
+          {relatedContent.map((content, i) => (
+            <ContentAccessItem key={i} content={content} />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -390,9 +387,9 @@ export function CustomerSidebar({ phoneNumber, open, onClose }: Props) {
                     <h5 className="text-xs font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-1">
                       Recent Transactions
                     </h5>
-                    <div>
+                    <div className="space-y-2.5">
                       {successTxns.map((tx, i) => (
-                        <TransactionCard key={tx.id || i} tx={tx} protectedContent={data.protectedContent} isLast={i === successTxns.length - 1} />
+                        <TransactionCard key={tx.id || i} tx={tx} protectedContent={data.protectedContent} />
                       ))}
                     </div>
                   </div>
