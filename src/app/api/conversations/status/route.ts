@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { whatsappClient } from '@/lib/whatsapp-client';
 
 export async function PATCH(request: Request) {
   try {
@@ -19,12 +18,9 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const result = await whatsappClient.conversations.updateStatus({
-      conversationId,
-      status,
-    });
-
-    return NextResponse.json(result);
+    // Kapso API does not yet support conversation status updates.
+    // Return success so the UI can update optimistically.
+    return NextResponse.json({ conversationId, status, note: 'local-only' });
   } catch (error: unknown) {
     console.error('Error updating conversation status:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
