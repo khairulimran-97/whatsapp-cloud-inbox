@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getBclApiKey } from '@/lib/settings';
 
 type CacheEntry = {
   data: Record<string, unknown>;
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'phone parameter is required' }, { status: 400 });
   }
 
-  const apiKey = process.env.BCL_API_KEY;
+  const apiKey = await getBclApiKey();
   if (!apiKey) {
     return NextResponse.json({ configured: false });
   }

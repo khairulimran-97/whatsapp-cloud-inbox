@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { format, isValid, isToday, isYesterday } from 'date-fns';
-import { RefreshCw, Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2 } from 'lucide-react';
+import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAutoPolling } from '@/hooks/use-auto-polling';
 import { useTheme } from '@/hooks/use-theme';
@@ -152,12 +152,12 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
   ({ onSelectConversation, onConversationsUpdated, selectedConversationId, isHidden = false, unreadCounts = new Map(), pollInterval = 10000, notificationEnabled = false, notificationPermission = 'default', onToggleNotification }, ref) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'unread'>('all');
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [showPushDialog, setShowPushDialog] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const { theme, toggleTheme } = useTheme();
@@ -190,7 +190,6 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       console.error('Error fetching conversations:', error);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, []);
 
@@ -218,20 +217,6 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
     fetchConversations();
   }, [fetchConversations]);
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetch('/api/conversations?refresh=true')
-      .then(r => r.json())
-      .then(data => {
-        const newConversations = data.data || [];
-        setHasMore(!!data.hasMore);
-        prevDataRef.current = JSON.stringify(newConversations.map((c: Conversation) => c.id + c.status + c.lastActiveAt + (c.lastMessage?.content || '')));
-        setConversations(newConversations);
-      })
-      .catch(error => console.error('Error refreshing conversations:', error))
-      .finally(() => setRefreshing(false));
-  };
-
   // Auto-polling for conversations (every 30 seconds, uses cache/quick fetch)
   const { isPolling } = useAutoPolling({
     interval: pollInterval,
@@ -249,7 +234,6 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
   useImperativeHandle(ref, () => ({
     refresh: async () => {
       try {
-        setRefreshing(true);
         const response = await fetch('/api/conversations?refresh=true');
         if (!response.ok) return conversations;
         const data = await response.json();
@@ -260,8 +244,6 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
         return newConversations;
       } catch {
         return conversations;
-      } finally {
-        setRefreshing(false);
       }
     },
     selectByPhoneNumber,
@@ -413,16 +395,15 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
             </div>
             <div className="relative group">
               <Button
-                onClick={handleRefresh}
-                disabled={refreshing}
+                onClick={() => setShowSettings(true)}
                 variant="ghost"
                 size="icon"
                 className="text-[var(--wa-text-secondary)] hover:bg-[var(--wa-border-strong)]/30 h-9 w-9"
               >
-                <RefreshCw className={cn("h-[18px] w-[18px]", refreshing && "animate-spin")} />
+                <Settings className="h-[18px] w-[18px]" />
               </Button>
               <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 px-2 py-1 text-[11px] rounded-md bg-[var(--wa-tooltip-bg)] text-[var(--wa-tooltip-text)] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-lg">
-                Refresh
+                Settings
               </span>
             </div>
           </div>
@@ -737,8 +718,147 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <Dialog open={showSettings} onOpenChange={setShowSettings}>
+        <DialogContent className="sm:max-w-[420px] rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg">Settings</DialogTitle>
+          </DialogHeader>
+          <SettingsForm onClose={() => setShowSettings(false)} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 });
 
 ConversationList.displayName = 'ConversationList';
+
+function SettingsForm({ onClose }: { onClose: () => void }) {
+  const [bclKey, setBclKey] = useState('');
+  const [maskedKey, setMaskedKey] = useState('');
+  const [adminSecret, setAdminSecret] = useState('');
+  const [showKey, setShowKey] = useState(false);
+  const [showSecret, setShowSecret] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
+  const [adminConfigured, setAdminConfigured] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(r => r.json())
+      .then(data => {
+        setMaskedKey(data.bcl_api_key || '');
+        setAdminConfigured(data.admin_configured !== false);
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    setMessage(null);
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-secret': adminSecret,
+        },
+        body: JSON.stringify({ bcl_api_key: bclKey }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage({ text: data.error || 'Failed to save', error: true });
+      } else {
+        setMaskedKey(data.bcl_api_key || '');
+        setBclKey('');
+        setAdminSecret('');
+        setMessage({ text: 'BCL API key saved successfully' });
+        setTimeout(() => onClose(), 1500);
+      }
+    } catch {
+      setMessage({ text: 'Network error', error: true });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4 pt-2">
+      <div>
+        <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider">
+          BCL API Key
+        </label>
+        {maskedKey && (
+          <p className="text-xs text-[var(--wa-text-secondary)] mt-1 font-mono bg-[var(--wa-hover)] px-2 py-1.5 rounded">
+            Current: {maskedKey}
+          </p>
+        )}
+        <div className="relative mt-2">
+          <input
+            type={showKey ? 'text' : 'password'}
+            value={bclKey}
+            onChange={(e) => setBclKey(e.target.value)}
+            placeholder="Enter new BCL API key"
+            className="w-full px-3 py-2 pr-9 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+          />
+          <button
+            type="button"
+            onClick={() => setShowKey(!showKey)}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]"
+          >
+            {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
+      </div>
+
+      {!adminConfigured && (
+        <p className="text-xs text-amber-400 bg-amber-500/10 px-3 py-2 rounded-lg">
+          ⚠ Set <code className="font-mono bg-[var(--wa-hover)] px-1 rounded">ADMIN_SECRET</code> in your environment to enable settings updates.
+        </p>
+      )}
+
+      {adminConfigured && (
+        <div>
+          <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider">
+            Admin Secret
+          </label>
+          <div className="relative mt-1.5">
+            <input
+              type={showSecret ? 'text' : 'password'}
+              value={adminSecret}
+              onChange={(e) => setAdminSecret(e.target.value)}
+              placeholder="Enter admin secret to confirm"
+              className="w-full px-3 py-2 pr-9 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+            />
+            <button
+              type="button"
+              onClick={() => setShowSecret(!showSecret)}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]"
+            >
+              {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {message && (
+        <p className={cn("text-xs px-3 py-2 rounded-lg", message.error ? "text-red-400 bg-red-500/10" : "text-green-400 bg-green-500/10")}>
+          {message.text}
+        </p>
+      )}
+
+      <div className="flex justify-end gap-2 pt-1">
+        <Button variant="ghost" onClick={onClose} className="text-sm">
+          Cancel
+        </Button>
+        <Button
+          onClick={handleSave}
+          disabled={saving || !bclKey || (!adminSecret && adminConfigured)}
+          className="bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] text-white text-sm gap-1.5"
+        >
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          Save
+        </Button>
+      </div>
+    </div>
+  );
+}

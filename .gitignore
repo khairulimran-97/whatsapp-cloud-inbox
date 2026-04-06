@@ -45,3 +45,4 @@ webhook.log
 
 # Server data
 /data/
+data/settings.json
