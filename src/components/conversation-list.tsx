@@ -295,6 +295,12 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
 
   const unreadCount = conversations.filter(c => unreadCounts.has(c.phoneNumber)).length;
 
+  // Detect unread conversations that aren't in loaded pages yet
+  const loadedPhoneNumbers = new Set(conversations.map(c => c.phoneNumber));
+  const hasUnloadedUnread = activeTab === 'unread' && Array.from(unreadCounts.keys()).some(
+    (phone) => !loadedPhoneNumbers.has(phone)
+  );
+
   if (loading) {
     return (
       <div className={cn(
@@ -552,6 +558,15 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
             </button>
             );
           })}
+          </div>
+        )}
+
+        {/* Hint for unloaded unread conversations */}
+        {hasUnloadedUnread && (
+          <div className="px-4 py-3 text-center">
+            <p className="text-[12px] text-[var(--wa-text-secondary)]/70 italic">
+              Some unread conversations may not be loaded yet
+            </p>
           </div>
         )}
 

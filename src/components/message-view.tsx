@@ -170,6 +170,8 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
   const [showMessageSearch, setShowMessageSearch] = useState(false);
   const [messageSearchQuery, setMessageSearchQuery] = useState('');
   const [messageSearchResults, setMessageSearchResults] = useState<Message[]>([]);
+  const [rateLimitWarning, setRateLimitWarning] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [isNearBottom, setIsNearBottom] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [confirmAction, setConfirmAction] = useState<'close' | 'reopen' | null>(null);
@@ -446,10 +448,17 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
         formData.append('file', selectedFile);
       }
 
-      await fetch('/api/messages/send', {
+      const res = await fetch('/api/messages/send', {
         method: 'POST',
         body: formData
       });
+
+      const data = await res.json().catch(() => null);
+      if (data?.reason === 'rate_limited') {
+        setRateLimitWarning(true);
+        setTimeout(() => setRateLimitWarning(false), 5000);
+        return;
+      }
 
       setMessageInput('');
       handleRemoveFile();
@@ -483,7 +492,39 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
         m.caption?.toLowerCase().includes(q)
     );
     setMessageSearchResults(results);
+    // Scroll to first matching message
+    if (results.length > 0) {
+      const firstMatch = document.getElementById(`msg-${results[0].id}`);
+      firstMatch?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   }, [messages]);
+
+  // Cmd+F / Ctrl+F keyboard shortcut to toggle search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+        e.preventDefault();
+        setShowMessageSearch(prev => {
+          if (prev) {
+            setMessageSearchQuery('');
+            setMessageSearchResults([]);
+            return false;
+          }
+          return true;
+        });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Auto-focus search input when opened
+  useEffect(() => {
+    if (showMessageSearch) {
+      // Small delay to ensure DOM is rendered
+      requestAnimationFrame(() => searchInputRef.current?.focus());
+    }
+  }, [showMessageSearch]);
 
   if (!conversationIds || conversationIds.length === 0) {
     return (
@@ -721,6 +762,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
         <div className="border-b border-[var(--wa-border-strong)] bg-[var(--wa-panel-bg)] px-3 py-2 flex items-center gap-2">
           <Search className="h-4 w-4 text-[var(--wa-text-secondary)] flex-shrink-0" />
           <input
+            ref={searchInputRef}
             type="text"
             value={messageSearchQuery}
             onChange={(e) => handleMessageSearch(e.target.value)}
@@ -827,6 +869,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                 )}
 
                 <div
+                  id={`msg-${message.id}`}
                   className={cn(
                     'flex group',
                     isSameDirectionAsPrev ? 'mt-[2px]' : 'mt-2',
@@ -1112,6 +1155,12 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                 </div>
               </div>
             ) : (
+              <>
+              {rateLimitWarning && (
+                <div className="mx-1 mb-1 px-3 py-2 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg text-[13px] text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                  ⚠️ Rate limited — message not sent. Please wait a moment and try again.
+                </div>
+              )}
               <form onSubmit={handleSendMessage} className="py-2.5 sm:py-3 flex gap-1.5 items-end">
                 <input
                   ref={fileInputRef}
@@ -1186,6 +1235,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                   </button>
                 </div>
               </form>
+              </>
             )}
       </div>
 

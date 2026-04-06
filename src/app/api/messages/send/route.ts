@@ -77,7 +77,14 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(result);
-  } catch (error) {
+  } catch (error: unknown) {
+    // Rate limit detection — return 200 with reason so frontend can show a warning
+    const isRateLimit =
+      (error instanceof Error && /rate.limit/i.test(error.message)) ||
+      (error != null && typeof error === 'object' && 'status' in error && (error as { status: number }).status === 429);
+    if (isRateLimit) {
+      return NextResponse.json({ sent: false, reason: 'rate_limited' });
+    }
     console.error('Error sending message:', error);
     return NextResponse.json(
       { error: 'Failed to send message' },
