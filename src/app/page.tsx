@@ -54,8 +54,6 @@ export default function Home() {
   const selectedConversationRef = useRef<Conversation | undefined>(undefined);
   selectedConversationRef.current = selectedConversation;
   const { enabled: notifEnabled, permission: notifPermission, toggle: toggleNotif } = useNotification();
-  // Track previous lastMessage per phone for new-message detection
-  const prevLastMessagesRef = useRef<Map<string, string>>(new Map());
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
   const audioUnlockedRef = useRef(false);
 
@@ -122,43 +120,9 @@ export default function Home() {
     });
   }, []);
 
-  // Sync selected conversation + auto-mark new inbound messages as unread
+  // Sync selected conversation when conversation list updates
   const handleConversationsUpdated = useCallback((conversations: Conversation[]) => {
     const selected = selectedConversationRef.current;
-    const prev = prevLastMessagesRef.current;
-    const isFirstLoad = prev.size === 0;
-
-    // Detect new inbound messages → increment unread count
-    if (!isFirstLoad) {
-      const newUnreads: string[] = [];
-      for (const conv of conversations) {
-        const lastMsg = conv.lastMessage;
-        if (!lastMsg) continue;
-        const prevContent = prev.get(conv.phoneNumber);
-        const isNewMessage = prevContent !== lastMsg.content;
-        const isInbound = lastMsg.direction === 'inbound';
-        const isNotSelected = conv.phoneNumber !== selected?.phoneNumber;
-        if (isNewMessage && isInbound && isNotSelected) {
-          newUnreads.push(conv.phoneNumber);
-        }
-      }
-      if (newUnreads.length > 0) {
-        notificationSoundRef.current?.play().catch(() => {});
-        setUnreadCounts(current => {
-          const next = new Map(current);
-          for (const phone of newUnreads) next.set(phone, (next.get(phone) ?? 0) + 1);
-          saveUnreadMap(next);
-          return next;
-        });
-      }
-    }
-
-    // Update previous lastMessage tracking
-    const newPrev = new Map<string, string>();
-    for (const conv of conversations) {
-      if (conv.lastMessage) newPrev.set(conv.phoneNumber, conv.lastMessage.content);
-    }
-    prevLastMessagesRef.current = newPrev;
 
     // Sync selected conversation if IDs or status changed
     if (selected) {

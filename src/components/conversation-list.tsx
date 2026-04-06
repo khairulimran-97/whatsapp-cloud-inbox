@@ -265,8 +265,9 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
     selectByPhoneNumber
   }));
 
-  // Infinite scroll: observe sentinel element at bottom of list
+  // Infinite scroll: observe sentinel element at bottom of list (disabled for unread tab)
   useEffect(() => {
+    if (activeTab === 'unread') return;
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
 
@@ -281,7 +282,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasMore, loadingMore, loadMoreConversations]);
+  }, [hasMore, loadingMore, loadMoreConversations, activeTab]);
 
   const filteredConversations = conversations.filter((conv) => {
     const query = searchQuery.toLowerCase();
@@ -554,8 +555,8 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
         )}
 
         {/* Sentinel for infinite scroll */}
-        <div ref={sentinelRef} className="h-1" />
-        {loadingMore && (
+        {activeTab !== 'unread' && <div ref={sentinelRef} className="h-1" />}
+        {loadingMore && activeTab !== 'unread' && (
           <div className="flex justify-center py-3">
             <Loader2 className="h-5 w-5 animate-spin text-[var(--wa-text-secondary)]" />
           </div>
