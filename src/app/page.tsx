@@ -191,11 +191,17 @@ export default function Home() {
 
     // Message events → refresh messages + conversation list
     if (event.type === 'message_received' || event.type === 'message_sent') {
-      messageViewRef.current?.refresh();
+      // Reaction events are handled optimistically — skip message refresh to avoid
+      // stale Kapso data overwriting the optimistic state. Conversation list still refreshes.
+      const msg = event.data?.message as Record<string, unknown> | undefined;
+      const isReaction = msg?.type === 'reaction';
+      if (!isReaction) {
+        messageViewRef.current?.refresh();
+      }
       conversationListRef.current?.refresh();
 
-      // Inbound message → always play sound + always increment unread
-      if (event.type === 'message_received' && event.phoneNumber) {
+      // Inbound message → play sound + increment unread (skip reactions)
+      if (event.type === 'message_received' && event.phoneNumber && !isReaction) {
         notificationSoundRef.current?.play().catch(() => {});
 
         const selected = selectedConversationRef.current;
