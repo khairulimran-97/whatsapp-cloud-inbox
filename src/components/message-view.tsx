@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { format, isValid, isToday, isYesterday } from 'date-fns';
-import { RefreshCw, Paperclip, Send, X, MessageSquare, ListTree, ArrowLeft, CircleCheck, RotateCcw, MailOpen, MoreVertical, Info, List, Link, Search, ChevronUp, ChevronDown } from 'lucide-react';
+import { Paperclip, Send, X, MessageSquare, ListTree, ArrowLeft, CircleCheck, RotateCcw, MailOpen, MoreVertical, Info, List, Link, Search, ChevronUp, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MediaMessage } from '@/components/media-message';
 import { InteractiveMessageDialog } from '@/components/interactive-message-dialog';
@@ -159,7 +159,6 @@ export type MessageViewRef = {
 export const MessageView = forwardRef<MessageViewRef, Props>(function MessageView({ conversationIds, conversationStatuses, conversationStatus, phoneNumber, contactName, onTemplateSent, onStatusChanged, onMarkUnread, onBack, onInteraction, isVisible = false, pollInterval = 5000, initialUnreadCount = 0 }: Props, ref) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const [messageInput, setMessageInput] = useState('');
   const [sending, setSending] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -322,7 +321,6 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
       console.error('Error fetching messages:', error);
     } finally {
       setLoading(false);
-      setRefreshing(false);
       refreshingRef.current = false;
     }
   }, [conversationIds]);
@@ -369,13 +367,6 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
       return () => viewport.removeEventListener('scroll', handleScroll);
     }
   }, []);
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    refreshingRef.current = true;
-    prevMessageFingerprintRef.current = '';
-    fetchMessages();
-  };
 
   const handleStatusChange = async (newStatus: 'active' | 'ended') => {
     if (!conversationIds || conversationIds.length === 0) return;
@@ -702,15 +693,6 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                 </Button>
               )}
               <Button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                variant="ghost"
-                size="icon"
-                className="text-[var(--wa-text-tertiary)] hover:text-[var(--wa-text-primary)] h-9 w-9 transition-colors duration-200"
-              >
-                <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
-              </Button>
-              <Button
                 onClick={() => setShowMessageSearch(!showMessageSearch)}
                 variant="ghost"
                 size="icon"
@@ -730,15 +712,6 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
 
             {/* Mobile/Tablet: icon buttons + overflow menu */}
             <div className="flex lg:hidden items-center">
-              <Button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                variant="ghost"
-                size="icon"
-                className="text-[var(--wa-text-tertiary)] hover:text-[var(--wa-text-primary)] h-10 w-10 transition-colors duration-200"
-              >
-                <RefreshCw className={cn("h-[18px] w-[18px]", refreshing && "animate-spin")} />
-              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="text-[var(--wa-text-tertiary)] hover:text-[var(--wa-text-primary)] h-10 w-10 transition-colors duration-200">

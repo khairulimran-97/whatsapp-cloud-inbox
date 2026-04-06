@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { X, User, Mail, Phone, MapPin, CreditCard, AlertCircle, Loader2, ExternalLink, ShieldCheck } from 'lucide-react';
+import { X, User, Mail, Phone, MapPin, AlertCircle, Loader2, ExternalLink, ShieldCheck, Copy, Check, Receipt } from 'lucide-react';
 
 type Address = {
   address_lines?: string[];
@@ -71,16 +71,6 @@ function formatRM(amount: number | string | undefined): string {
   return `RM ${(isNaN(num) ? 0 : num).toFixed(2)}`;
 }
 
-function formatDate(dateStr: string | undefined): string {
-  if (!dateStr) return '—';
-  try {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('en-MY', { year: 'numeric', month: 'short', day: 'numeric' });
-  } catch {
-    return dateStr;
-  }
-}
-
 function formatDateTime(dateStr: string | undefined): string {
   if (!dateStr) return '—';
   try {
@@ -100,6 +90,118 @@ function formatAddress(address: Address | undefined): string | null {
   if (address.state) parts.push(address.state);
   if (address.country && address.country !== 'MYS') parts.push(address.country);
   return parts.length > 0 ? parts.join(', ') : null;
+}
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* ignore */ }
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="h-6 w-6 flex items-center justify-center rounded text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)] transition-colors flex-shrink-0"
+      title="Copy link"
+    >
+      {copied ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3" />}
+    </button>
+  );
+}
+
+function ContentAccessItem({ content }: { content: ProtectedContent }) {
+  return (
+    <div className="flex items-start gap-2 py-1.5">
+      <ShieldCheck className="h-3.5 w-3.5 text-green-400 flex-shrink-0 mt-0.5" />
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-medium text-[var(--wa-text-primary)] leading-snug truncate">
+          {content.title}
+        </p>
+        {content.granted_at && (
+          <p className="text-[10px] text-[var(--wa-text-secondary)]">
+            {formatDateTime(content.granted_at)}
+          </p>
+        )}
+      </div>
+      {content.url && (
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          <a
+            href={content.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="h-6 w-6 flex items-center justify-center rounded text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-colors"
+            title="Open content"
+          >
+            <ExternalLink className="h-3 w-3" />
+          </a>
+          <CopyButton text={content.url} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TransactionCard({ tx, protectedContent }: { tx: Transaction; protectedContent?: ProtectedContent[] }) {
+  // Find related protected content for this transaction
+  const relatedContent = protectedContent?.filter(pc => pc.url) ?? [];
+
+  return (
+    <div className="p-3 bg-[var(--wa-hover)] rounded-lg">
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-semibold text-[var(--wa-text-primary)]">
+            {formatRM(tx.amount)}
+          </p>
+          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400">
+            Successful
+          </span>
+        </div>
+        {tx.payment_channel && (
+          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400">
+            {tx.payment_channel}
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-1.5">
+        {tx.order_number && (
+          <p className="text-xs text-[var(--wa-text-secondary)]">
+            {tx.order_number}
+          </p>
+        )}
+        {tx.receipt_url && (
+          <div className="flex items-center gap-0.5">
+            <a
+              href={tx.receipt_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="h-5 w-5 flex items-center justify-center rounded text-orange-400 hover:text-orange-300 hover:bg-orange-500/10 transition-colors"
+              title="View receipt"
+            >
+              <Receipt className="h-3 w-3" />
+            </a>
+            <CopyButton text={tx.receipt_url} />
+          </div>
+        )}
+      </div>
+      <p className="text-xs text-[var(--wa-text-secondary)] mt-0.5">
+        {formatDateTime(tx.created_at)}
+      </p>
+
+      {/* Grouped content access */}
+      {relatedContent.length > 0 && (
+        <div className="mt-2 pt-2 border-t border-[var(--wa-border)]">
+          {relatedContent.map((content, i) => (
+            <ContentAccessItem key={i} content={content} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function CustomerSidebar({ phoneNumber, open, onClose }: Props) {
@@ -232,16 +334,6 @@ export function CustomerSidebar({ phoneNumber, open, onClose }: Props) {
                     </span>
                   </div>
                 )}
-
-                <a
-                  href={`https://bcl.my/customers/${data.customer.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-1.5 mt-3 px-3 py-2 rounded-lg text-xs font-medium bg-[var(--wa-hover)] text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-colors"
-                >
-                  View on BCL
-                  <ExternalLink className="h-3 w-3" />
-                </a>
               </div>
 
               {/* Transaction stats */}
@@ -285,99 +377,41 @@ export function CustomerSidebar({ phoneNumber, open, onClose }: Props) {
                 </div>
               )}
 
-              {/* Recent transactions — success only, max 5 */}
-              {data.recentTransactions && data.recentTransactions.length > 0 && (
-                <div className="border-t border-[var(--wa-border)] pt-4">
-                  <h5 className="text-xs font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-3">
-                    Recent Transactions
-                  </h5>
-                  <div className="space-y-2">
-                    {data.recentTransactions
-                      .filter(tx => tx.status === 'success' || tx.is_paid)
-                      .slice(0, 5)
-                      .map((tx, i) => (
-                      <div
-                        key={tx.id || i}
-                        className="p-3 bg-[var(--wa-hover)] rounded-lg"
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm font-semibold text-[var(--wa-text-primary)]">
-                            {formatRM(tx.amount)}
-                          </p>
-                          {tx.payment_channel && (
-                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400">
-                              {tx.payment_channel}
-                            </span>
-                          )}
-                        </div>
-                        {tx.order_number && (
-                          <div className="flex items-center gap-1.5">
-                            {tx.receipt_url ? (
-                              <a
-                                href={tx.receipt_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1"
-                              >
-                                {tx.order_number}
-                                <ExternalLink className="h-3 w-3" />
-                              </a>
-                            ) : (
-                              <p className="text-xs text-[var(--wa-text-secondary)]">
-                                {tx.order_number}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                        <p className="text-xs text-[var(--wa-text-secondary)] mt-0.5">
-                          {formatDateTime(tx.created_at)}
-                        </p>
-                      </div>
-                    ))}
-                    {data.recentTransactions.filter(tx => tx.status === 'success' || tx.is_paid).length === 0 && (
-                      <p className="text-xs text-[var(--wa-text-secondary)] italic py-2">No successful transactions</p>
-                    )}
+              {/* Recent transactions — success only, max 5, with grouped content access */}
+              {data.recentTransactions && data.recentTransactions.length > 0 && (() => {
+                const successTxns = data.recentTransactions
+                  .filter(tx => tx.status === 'success' || tx.is_paid)
+                  .slice(0, 5);
+                if (successTxns.length === 0) return null;
+                return (
+                  <div className="border-t border-[var(--wa-border)] pt-4">
+                    <h5 className="text-xs font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-3">
+                      Recent Transactions
+                    </h5>
+                    <div className="space-y-2">
+                      {successTxns.map((tx, i) => (
+                        <TransactionCard key={tx.id || i} tx={tx} protectedContent={data.protectedContent} />
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
-              {/* Protected content access */}
+              {/* Standalone content access (not linked to transactions) */}
               {data.protectedContent && data.protectedContent.length > 0 && (
-                <div className="border-t border-[var(--wa-border)] pt-4">
-                  <h5 className="text-xs font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-3 flex items-center gap-1.5">
-                    <ShieldCheck className="h-3.5 w-3.5" />
-                    Content Access
-                  </h5>
-                  <div className="space-y-2">
-                    {data.protectedContent.map((content, i) => (
-                      <div
-                        key={i}
-                        className="p-3 bg-[var(--wa-hover)] rounded-lg"
-                      >
-                        {content.url ? (
-                          <a
-                            href={content.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm font-medium text-blue-400 hover:text-blue-300 hover:underline leading-snug flex items-start gap-1.5"
-                          >
-                            <span className="flex-1">{content.title}</span>
-                            <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
-                          </a>
-                        ) : (
-                          <p className="text-sm font-medium text-[var(--wa-text-primary)] leading-snug">
-                            {content.title}
-                          </p>
-                        )}
-                        {content.granted_at && (
-                          <p className="text-xs text-[var(--wa-text-secondary)] mt-1">
-                            Granted: {formatDateTime(content.granted_at)}
-                          </p>
-                        )}
-                      </div>
-                    ))}
+                (!data.recentTransactions || data.recentTransactions.filter(tx => tx.status === 'success' || tx.is_paid).length === 0) && (
+                  <div className="border-t border-[var(--wa-border)] pt-4">
+                    <h5 className="text-xs font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-3 flex items-center gap-1.5">
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                      Content Access
+                    </h5>
+                    <div className="space-y-2">
+                      {data.protectedContent.map((content, i) => (
+                        <ContentAccessItem key={i} content={content} />
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )
               )}
             </div>
           )}
