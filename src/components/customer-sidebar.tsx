@@ -106,18 +106,18 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="h-6 w-6 flex items-center justify-center rounded text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)] transition-colors flex-shrink-0"
+      className="h-6 w-6 flex items-center justify-center rounded-md text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)] transition-colors flex-shrink-0"
       title="Copy link"
     >
-      {copied ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3" />}
+      {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
     </button>
   );
 }
 
 function ContentAccessItem({ content }: { content: ProtectedContent }) {
   return (
-    <div className="flex items-start gap-2 py-1.5">
-      <ShieldCheck className="h-3.5 w-3.5 text-green-400 flex-shrink-0 mt-0.5" />
+    <div className="flex items-center gap-2 py-1.5">
+      <ShieldCheck className="h-3.5 w-3.5 text-green-400 flex-shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="text-xs font-medium text-[var(--wa-text-primary)] leading-snug truncate">
           {content.title}
@@ -129,15 +129,15 @@ function ContentAccessItem({ content }: { content: ProtectedContent }) {
         )}
       </div>
       {content.url && (
-        <div className="flex items-center gap-0.5 flex-shrink-0">
+        <div className="flex items-center gap-1 flex-shrink-0 ml-auto">
           <a
             href={content.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="h-6 w-6 flex items-center justify-center rounded text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-colors"
+            className="h-6 w-6 flex items-center justify-center rounded-md text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-colors"
             title="Open content"
           >
-            <ExternalLink className="h-3 w-3" />
+            <ExternalLink className="h-3.5 w-3.5" />
           </a>
           <CopyButton text={content.url} />
         </div>
@@ -151,7 +151,8 @@ function TransactionCard({ tx, protectedContent }: { tx: Transaction; protectedC
 
   return (
     <div className="p-3 rounded-lg border border-[var(--wa-border)] bg-[var(--wa-hover)]">
-      <div className="flex items-center justify-between mb-1">
+      {/* Row 1: order number + badges */}
+      <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-2 min-w-0">
           {tx.order_number && (
             <p className="text-sm font-semibold text-[var(--wa-text-primary)] truncate">
@@ -171,29 +172,31 @@ function TransactionCard({ tx, protectedContent }: { tx: Transaction; protectedC
           </span>
         )}
       </div>
-      <div className="flex items-center gap-1.5 mt-1">
+
+      {/* Row 2: date + receipt actions pinned right */}
+      <div className="flex items-center justify-between">
         <p className="text-[11px] text-[var(--wa-text-secondary)]">
           {formatDateTime(tx.created_at)}
         </p>
         {tx.receipt_url && (
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-1 flex-shrink-0 ml-2">
             <a
               href={tx.receipt_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="h-5 w-5 flex items-center justify-center rounded text-orange-400 hover:text-orange-300 hover:bg-orange-500/10 transition-colors"
+              className="h-6 w-6 flex items-center justify-center rounded-md text-orange-400 hover:text-orange-300 hover:bg-orange-500/10 transition-colors"
               title="Download receipt PDF"
             >
-              <ExternalLink className="h-3 w-3" />
+              <ExternalLink className="h-3.5 w-3.5" />
             </a>
             <CopyButton text={tx.receipt_url} />
           </div>
         )}
       </div>
 
-      {/* Grouped content access */}
+      {/* Content access */}
       {relatedContent.length > 0 && (
-        <div className="mt-2.5 pt-2 border-t border-black/15 dark:border-white/15">
+        <div className="mt-2.5 pt-2 border-t border-black/15 dark:border-white/15 space-y-0.5">
           {relatedContent.map((content, i) => (
             <ContentAccessItem key={i} content={content} />
           ))}
