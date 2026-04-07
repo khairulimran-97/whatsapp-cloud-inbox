@@ -192,9 +192,12 @@ export default function Home() {
     if (event.type === 'connected') return;
 
     // Message events → refresh messages + conversation list
+    // Small delay to let Kapso API index the message before fetching
     if (event.type === 'message_received' || event.type === 'message_sent') {
-      messageViewRef.current?.refresh();
-      conversationListRef.current?.refresh();
+      setTimeout(() => {
+        messageViewRef.current?.refresh();
+        conversationListRef.current?.refresh();
+      }, 500);
 
       // Inbound message → play sound + increment unread
       if (event.type === 'message_received' && event.phoneNumber) {
@@ -217,12 +220,12 @@ export default function Home() {
 
     // Status events → refresh messages
     if (event.type === 'message_delivered' || event.type === 'message_read' || event.type === 'message_failed') {
-      messageViewRef.current?.refresh();
+      setTimeout(() => messageViewRef.current?.refresh(), 500);
     }
 
     // Conversation events → refresh list
     if (event.type === 'conversation_started' || event.type === 'conversation_ended' || event.type === 'conversation_inactive') {
-      conversationListRef.current?.refresh();
+      setTimeout(() => conversationListRef.current?.refresh(), 500);
     }
 
     // Unread sync from another browser/tab

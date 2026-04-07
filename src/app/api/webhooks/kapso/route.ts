@@ -12,6 +12,12 @@ function invalidateMessageCache(conversationId: string) {
   if (cache) cache.delete(conversationId);
 }
 
+// Invalidate conversation cache so next fetch gets fresh data
+const CONV_CACHE_KEY = Symbol.for('__kapso_conv_cache_invalidated__');
+function invalidateConversationCache() {
+  (globalThis as Record<symbol, number>)[CONV_CACHE_KEY] = Date.now();
+}
+
 /**
  * Kapso webhook receiver (v2).
  * Headers from Kapso:
@@ -134,6 +140,7 @@ export async function POST(request: Request) {
         if (webhookEvent.conversationId) {
           invalidateMessageCache(webhookEvent.conversationId);
         }
+        invalidateConversationCache();
         publish(webhookEvent);
         published++;
         // Track unread server-side for inbound messages

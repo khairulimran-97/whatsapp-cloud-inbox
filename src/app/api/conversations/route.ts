@@ -57,6 +57,13 @@ let nextApiCursor: string | undefined;
 let allPagesFetched = false;
 const CACHE_TTL_MS = 10_000;
 
+// Check if webhook has invalidated our cache
+const CONV_CACHE_KEY = Symbol.for('__kapso_conv_cache_invalidated__');
+function isCacheInvalidated(): boolean {
+  const invalidatedAt = (globalThis as Record<symbol, number>)[CONV_CACHE_KEY] ?? 0;
+  return invalidatedAt > cacheTimestamp;
+}
+
 function groupConversations(records: ConversationRecord[]): GroupedConversation[] {
   const phoneGroupMap = new Map<string, GroupedConversation>();
 
@@ -229,8 +236,8 @@ export async function GET(request: Request) {
       }
     }
 
-    // ── Polling: return cache if fresh ──
-    if (cachedData && (Date.now() - cacheTimestamp) < CACHE_TTL_MS) {
+    // ── Polling: return cache if fresh and not invalidated by webhook ──
+    if (cachedData && (Date.now() - cacheTimestamp) < CACHE_TTL_MS && !isCacheInvalidated()) {
       return NextResponse.json({ data: cachedData, hasMore: !allPagesFetched });
     }
 
