@@ -13,6 +13,8 @@ function createDb() {
   const sqlite = new Database(DB_PATH);
   sqlite.pragma('journal_mode = WAL');
   sqlite.pragma('busy_timeout = 5000');
+  sqlite.pragma('synchronous = NORMAL');
+  sqlite.pragma('wal_autocheckpoint = 100');
   sqlite.pragma('foreign_keys = ON');
 
   const db = drizzle(sqlite, { schema });

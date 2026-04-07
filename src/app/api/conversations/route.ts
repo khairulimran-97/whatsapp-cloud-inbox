@@ -95,47 +95,49 @@ function markSeedComplete() {
 function persistConversationsToDb(records: ConversationRecord[]) {
   try {
     const db = getDb();
-    for (const conv of records) {
-      const kapso = conv.kapso;
-      const phone = conv.phoneNumber ?? '';
-      if (!phone) continue;
+    db.transaction((tx) => {
+      for (const conv of records) {
+        const kapso = conv.kapso;
+        const phone = conv.phoneNumber ?? '';
+        if (!phone) continue;
 
-      db.insert(schema.conversations)
-        .values({
-          id: conv.id,
-          phone,
-          status: conv.status ?? 'active',
-          phoneNumberId: conv.phoneNumberId ?? PHONE_NUMBER_ID,
-          lastMessageText: typeof kapso?.lastMessageText === 'string' ? kapso.lastMessageText : null,
-          lastMessageType: typeof kapso?.lastMessageType === 'string' ? kapso.lastMessageType : null,
-          lastMessageDirection: parseDirection(kapso),
-          messagesCount: typeof kapso?.messagesCount === 'number' ? kapso.messagesCount : 0,
-          createdAt: conv.createdAt ? new Date(String(conv.createdAt)) : new Date(),
-          updatedAt: conv.updatedAt ? new Date(String(conv.updatedAt)) : new Date(),
-        })
-        .onConflictDoUpdate({
-          target: schema.conversations.id,
-          set: {
-            status: sql`excluded.status`,
-            lastMessageText: sql`coalesce(excluded.last_message_text, last_message_text)`,
-            lastMessageType: sql`coalesce(excluded.last_message_type, last_message_type)`,
-            lastMessageDirection: sql`excluded.last_message_direction`,
-            messagesCount: sql`excluded.messages_count`,
-            updatedAt: sql`excluded.updated_at`,
-          },
-        })
-        .run();
+        tx.insert(schema.conversations)
+          .values({
+            id: conv.id,
+            phone,
+            status: conv.status ?? 'active',
+            phoneNumberId: conv.phoneNumberId ?? PHONE_NUMBER_ID,
+            lastMessageText: typeof kapso?.lastMessageText === 'string' ? kapso.lastMessageText : null,
+            lastMessageType: typeof kapso?.lastMessageType === 'string' ? kapso.lastMessageType : null,
+            lastMessageDirection: parseDirection(kapso),
+            messagesCount: typeof kapso?.messagesCount === 'number' ? kapso.messagesCount : 0,
+            createdAt: conv.createdAt ? new Date(String(conv.createdAt)) : new Date(),
+            updatedAt: conv.updatedAt ? new Date(String(conv.updatedAt)) : new Date(),
+          })
+          .onConflictDoUpdate({
+            target: schema.conversations.id,
+            set: {
+              status: sql`excluded.status`,
+              lastMessageText: sql`coalesce(excluded.last_message_text, last_message_text)`,
+              lastMessageType: sql`coalesce(excluded.last_message_type, last_message_type)`,
+              lastMessageDirection: sql`excluded.last_message_direction`,
+              messagesCount: sql`excluded.messages_count`,
+              updatedAt: sql`excluded.updated_at`,
+            },
+          })
+          .run();
 
-      // Upsert contact
-      const contactName = typeof kapso?.contactName === 'string' ? kapso.contactName : null;
-      db.insert(schema.contacts)
-        .values({ phone, name: contactName, firstSeen: new Date(), lastSeen: new Date() })
-        .onConflictDoUpdate({
-          target: schema.contacts.phone,
-          set: { name: contactName ? sql`${contactName}` : sql`name`, lastSeen: new Date() },
-        })
-        .run();
-    }
+        // Upsert contact
+        const contactName = typeof kapso?.contactName === 'string' ? kapso.contactName : null;
+        tx.insert(schema.contacts)
+          .values({ phone, name: contactName, firstSeen: new Date(), lastSeen: new Date() })
+          .onConflictDoUpdate({
+            target: schema.contacts.phone,
+            set: { name: contactName ? sql`${contactName}` : sql`name`, lastSeen: new Date() },
+          })
+          .run();
+      }
+    });
   } catch (e) {
     console.error('[Conversations] Failed to persist to SQLite:', e);
   }
