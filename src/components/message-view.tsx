@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { format, isValid, isToday, isYesterday } from 'date-fns';
-import { Paperclip, Send, X, MessageSquare, ListTree, ArrowLeft, CircleCheck, RotateCcw, MailOpen, MoreVertical, Info, List, Link, Search, ChevronUp, ChevronDown } from 'lucide-react';
+import { Paperclip, Send, X, MessageSquare, ListTree, ArrowLeft, CircleCheck, RotateCcw, MailOpen, MoreVertical, Info, List, Link, Search, ChevronUp, ChevronDown, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MediaMessage } from '@/components/media-message';
 import { InteractiveMessageDialog } from '@/components/interactive-message-dialog';
@@ -27,6 +27,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { MediaData } from '@kapso/whatsapp-cloud-api';
@@ -173,6 +175,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
   const [messageSearchResults, setMessageSearchResults] = useState<Message[]>([]);
   const [searchMatchIndex, setSearchMatchIndex] = useState(0);
   const [rateLimitWarning, setRateLimitWarning] = useState(false);
+  const [replyTemplates, setReplyTemplates] = useState<{ id: string; title: string; category: string; body: string }[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [isNearBottom, setIsNearBottom] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState(false);
@@ -202,6 +205,14 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
     };
     document.addEventListener('click', unlock, { once: true });
     return () => document.removeEventListener('click', unlock);
+  }, []);
+
+  // Fetch reply templates
+  useEffect(() => {
+    fetch('/api/reply-templates')
+      .then(r => r.json())
+      .then(data => setReplyTemplates(data.templates || []))
+      .catch(() => {});
   }, []);
 
   // Close lightbox on Escape key
@@ -1226,6 +1237,46 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
+                  {replyTemplates.length > 0 && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          disabled={sending}
+                          className="text-amber-500 hover:text-amber-400 h-[44px] w-10 items-center justify-center flex-shrink-0 transition-colors duration-200 disabled:opacity-40 flex"
+                          title="Quick reply templates"
+                        >
+                          <Zap className="h-[20px] w-[20px]" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-72 rounded-xl shadow-lg max-h-[50vh] overflow-y-auto">
+                        {(() => {
+                          const grouped = replyTemplates.reduce<Record<string, typeof replyTemplates>>((acc, t) => {
+                            const cat = t.category || 'General';
+                            if (!acc[cat]) acc[cat] = [];
+                            acc[cat].push(t);
+                            return acc;
+                          }, {});
+                          return Object.entries(grouped).map(([cat, items], gi) => (
+                            <div key={cat}>
+                              {gi > 0 && <DropdownMenuSeparator />}
+                              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-[var(--wa-text-secondary)]">{cat}</DropdownMenuLabel>
+                              {items.map((t) => (
+                                <DropdownMenuItem
+                                  key={t.id}
+                                  onClick={() => setMessageInput(prev => prev ? prev + '\n' + t.body : t.body)}
+                                  className="py-2 flex flex-col items-start gap-0.5 cursor-pointer"
+                                >
+                                  <span className="text-xs font-medium text-[var(--wa-text-primary)]">{t.title}</span>
+                                  <span className="text-[11px] text-[var(--wa-text-secondary)] line-clamp-2 whitespace-pre-wrap">{t.body}</span>
+                                </DropdownMenuItem>
+                              ))}
+                            </div>
+                          ));
+                        })()}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                   <textarea
                     value={messageInput}
                     onChange={(e) => {

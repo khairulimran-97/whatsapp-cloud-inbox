@@ -46,3 +46,4 @@ webhook.log
 # Server data
 /data/
 data/settings.json
+data/reply-templates.json

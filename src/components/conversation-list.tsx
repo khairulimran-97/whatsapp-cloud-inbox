@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { format, isValid, isToday, isYesterday } from 'date-fns';
-import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save } from 'lucide-react';
+import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save, Plus, Pencil, Trash2, MessageSquareText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAutoPolling } from '@/hooks/use-auto-polling';
 import { useTheme } from '@/hooks/use-theme';
@@ -719,11 +719,11 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
         </DialogContent>
       </Dialog>
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
-        <DialogContent className="sm:max-w-[420px] rounded-2xl">
+        <DialogContent className="sm:max-w-[520px] rounded-2xl max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="text-lg">Settings</DialogTitle>
           </DialogHeader>
-          <SettingsForm onClose={() => setShowSettings(false)} />
+          <SettingsDialog onClose={() => setShowSettings(false)} />
         </DialogContent>
       </Dialog>
     </div>
@@ -732,7 +732,49 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
 
 ConversationList.displayName = 'ConversationList';
 
-function SettingsForm({ onClose }: { onClose: () => void }) {
+type ReplyTemplate = {
+  id: string;
+  title: string;
+  category: string;
+  body: string;
+  created_at: string;
+};
+
+function SettingsDialog({ onClose }: { onClose: () => void }) {
+  const [tab, setTab] = useState<'bcl' | 'templates'>('bcl');
+
+  return (
+    <div className="flex flex-col min-h-0 flex-1">
+      <div className="flex border-b border-[var(--wa-border)] mb-4">
+        <button
+          onClick={() => setTab('bcl')}
+          className={cn(
+            "flex-1 py-2 text-sm font-medium transition-colors border-b-2 -mb-px",
+            tab === 'bcl'
+              ? "border-[var(--wa-green)] text-[var(--wa-green)]"
+              : "border-transparent text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]"
+          )}
+        >
+          BCL API
+        </button>
+        <button
+          onClick={() => setTab('templates')}
+          className={cn(
+            "flex-1 py-2 text-sm font-medium transition-colors border-b-2 -mb-px",
+            tab === 'templates'
+              ? "border-[var(--wa-green)] text-[var(--wa-green)]"
+              : "border-transparent text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]"
+          )}
+        >
+          Reply Templates
+        </button>
+      </div>
+      {tab === 'bcl' ? <BclSettingsTab onClose={onClose} /> : <ReplyTemplatesTab onClose={onClose} />}
+    </div>
+  );
+}
+
+function BclSettingsTab({ onClose }: { onClose: () => void }) {
   const [bclKey, setBclKey] = useState('');
   const [maskedKey, setMaskedKey] = useState('');
   const [appPassword, setAdminSecret] = useState('');
@@ -782,7 +824,7 @@ function SettingsForm({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="space-y-4 pt-2">
+    <div className="space-y-4">
       <div>
         <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider">
           BCL API Key
@@ -858,6 +900,248 @@ function SettingsForm({ onClose }: { onClose: () => void }) {
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           Save
         </Button>
+      </div>
+    </div>
+  );
+}
+
+function ReplyTemplatesTab({ onClose }: { onClose: () => void }) {
+  const [templates, setTemplates] = useState<ReplyTemplate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingTemplate, setEditingTemplate] = useState<ReplyTemplate | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState('');
+  const [body, setBody] = useState('');
+  const [appPassword, setAppPassword] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
+
+  const fetchTemplates = useCallback(async () => {
+    try {
+      const res = await fetch('/api/reply-templates');
+      const data = await res.json();
+      setTemplates(data.templates || []);
+    } catch { /* ignore */ }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
+
+  const resetForm = () => {
+    setTitle('');
+    setCategory('');
+    setBody('');
+    setAppPassword('');
+    setEditingTemplate(null);
+    setShowForm(false);
+    setMessage(null);
+  };
+
+  const openEdit = (t: ReplyTemplate) => {
+    setEditingTemplate(t);
+    setTitle(t.title);
+    setCategory(t.category);
+    setBody(t.body);
+    setShowForm(true);
+    setMessage(null);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setMessage(null);
+    try {
+      const isEdit = !!editingTemplate;
+      const res = await fetch('/api/reply-templates', {
+        method: isEdit ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-app-password': appPassword,
+        },
+        body: JSON.stringify({
+          ...(isEdit && { id: editingTemplate.id }),
+          title,
+          category: category || 'General',
+          body,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage({ text: data.error || 'Failed to save', error: true });
+      } else {
+        setMessage({ text: isEdit ? 'Template updated' : 'Template created' });
+        await fetchTemplates();
+        setTimeout(resetForm, 800);
+      }
+    } catch {
+      setMessage({ text: 'Network error', error: true });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    const pw = prompt('Enter app password to delete:');
+    if (!pw) return;
+    try {
+      const res = await fetch(`/api/reply-templates?id=${id}`, {
+        method: 'DELETE',
+        headers: { 'x-app-password': pw },
+      });
+      if (res.ok) {
+        await fetchTemplates();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to delete');
+      }
+    } catch {
+      alert('Network error');
+    }
+  };
+
+  // Group templates by category
+  const grouped = templates.reduce<Record<string, ReplyTemplate[]>>((acc, t) => {
+    const cat = t.category || 'General';
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(t);
+    return acc;
+  }, {});
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-5 w-5 animate-spin text-[var(--wa-text-secondary)]" />
+      </div>
+    );
+  }
+
+  if (showForm) {
+    return (
+      <div className="space-y-3">
+        <h4 className="text-sm font-medium text-[var(--wa-text-primary)]">
+          {editingTemplate ? 'Edit Template' : 'New Template'}
+        </h4>
+        <div>
+          <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider">Title</label>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g. Greeting"
+            className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+          />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider">Category</label>
+          <input
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            placeholder="e.g. Greeting, Payment, Support"
+            className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+          />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider">Message Body</label>
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            placeholder="Type the reply template message..."
+            rows={4}
+            className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50 resize-none"
+          />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider">App Password</label>
+          <input
+            type="password"
+            value={appPassword}
+            onChange={(e) => setAppPassword(e.target.value)}
+            placeholder="Enter app password to confirm"
+            className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+          />
+        </div>
+
+        {message && (
+          <p className={cn("text-xs px-3 py-2 rounded-lg", message.error ? "text-red-400 bg-red-500/10" : "text-green-400 bg-green-500/10")}>
+            {message.text}
+          </p>
+        )}
+
+        <div className="flex justify-end gap-2 pt-1">
+          <Button variant="ghost" onClick={resetForm} className="text-sm">Cancel</Button>
+          <Button
+            onClick={handleSave}
+            disabled={saving || !title.trim() || !body.trim() || !appPassword}
+            className="bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] text-white text-sm gap-1.5"
+          >
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {editingTemplate ? 'Update' : 'Create'}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 flex flex-col min-h-0">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-[var(--wa-text-secondary)]">
+          {templates.length} template{templates.length !== 1 ? 's' : ''}
+        </p>
+        <Button
+          onClick={() => { setShowForm(true); setEditingTemplate(null); }}
+          className="bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] text-white text-xs h-8 px-3 gap-1.5"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Add Template
+        </Button>
+      </div>
+
+      {templates.length === 0 ? (
+        <div className="text-center py-8">
+          <MessageSquareText className="h-8 w-8 mx-auto text-[var(--wa-text-secondary)]/40 mb-2" />
+          <p className="text-sm text-[var(--wa-text-secondary)]">No reply templates yet</p>
+          <p className="text-xs text-[var(--wa-text-secondary)]/60 mt-1">Add templates for quick CS replies</p>
+        </div>
+      ) : (
+        <ScrollArea className="max-h-[40vh] -mx-1 px-1">
+          <div className="space-y-3">
+            {Object.entries(grouped).map(([cat, items]) => (
+              <div key={cat}>
+                <h5 className="text-[10px] font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-1.5">{cat}</h5>
+                <div className="space-y-1.5">
+                  {items.map((t) => (
+                    <div key={t.id} className="group p-2.5 rounded-lg border border-[var(--wa-border)] bg-[var(--wa-hover)] hover:border-[var(--wa-green)]/30 transition-colors">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium text-[var(--wa-text-primary)] truncate">{t.title}</p>
+                          <p className="text-[11px] text-[var(--wa-text-secondary)] mt-0.5 line-clamp-2 whitespace-pre-wrap">{t.body}</p>
+                        </div>
+                        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                          <button
+                            onClick={() => openEdit(t)}
+                            className="h-7 w-7 flex items-center justify-center rounded-md text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-panel-bg)] transition-colors"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(t.id)}
+                            className="h-7 w-7 flex items-center justify-center rounded-md text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
+      )}
+
+      <div className="flex justify-end pt-1">
+        <Button variant="ghost" onClick={onClose} className="text-sm">Close</Button>
       </div>
     </div>
   );
