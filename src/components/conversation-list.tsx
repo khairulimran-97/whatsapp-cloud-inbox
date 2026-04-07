@@ -192,7 +192,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       const response = await fetch('/api/conversations');
       const data = await response.json();
 
-      // API says SQLite is empty — show sync prompt
+      // API says SQLite is empty — trigger sync
       if (data.needsSync) {
         setNeedsSync(true);
         setLoading(false);
@@ -265,6 +265,13 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       setSyncing(false);
     }
   }, []);
+
+  // Auto-start sync when needsSync is detected (e.g. after force resync or migration)
+  useEffect(() => {
+    if (needsSync && !syncing) {
+      startSync();
+    }
+  }, [needsSync, syncing, startSync]);
 
   const loadMoreConversations = useCallback(async () => {
     if (loadingMore || !hasMore) return;
@@ -457,48 +464,25 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
     );
   }
 
-  // Sync prompt — shown when SQLite is empty (first time or after reset)
+  // Sync screen — shown when syncing conversations from Kapso API
   if (needsSync || syncing) {
     return (
       <div className="fixed inset-0 z-50 bg-[var(--wa-panel-bg)] flex items-center justify-center">
         <div className="text-center space-y-5 max-w-sm px-8">
-          {syncing ? (
-            <>
-              <div className="mx-auto h-16 w-16 rounded-full bg-[var(--wa-green)]/10 flex items-center justify-center">
-                <Loader2 className="h-8 w-8 text-[var(--wa-green)] animate-spin" />
-              </div>
-              <div>
-                <p className="text-[17px] font-semibold text-[var(--wa-text-primary)]">Syncing conversations...</p>
-                <p className="text-[14px] text-[var(--wa-text-secondary)] mt-2">{syncCount} contacts loaded</p>
-              </div>
-              <div className="w-full bg-[var(--wa-border)] rounded-full h-1.5 overflow-hidden">
-                <div className="bg-[var(--wa-green)] h-full rounded-full animate-pulse" style={{ width: '60%' }} />
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-red-500/10 border border-red-500/20">
-                <TriangleAlert className="h-4 w-4 text-red-400 flex-shrink-0" />
-                <p className="text-[13px] text-red-400 text-left">Do not close this window until sync is complete.</p>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="mx-auto h-16 w-16 rounded-full bg-[var(--wa-green)]/10 flex items-center justify-center">
-                <CloudDownload className="h-8 w-8 text-[var(--wa-green)]" />
-              </div>
-              <div>
-                <p className="text-[17px] font-semibold text-[var(--wa-text-primary)]">Sync your conversations</p>
-                <p className="text-[14px] text-[var(--wa-text-secondary)] mt-2">
-                  Load your conversation history from WhatsApp Cloud API. This only needs to happen once.
-                </p>
-              </div>
-              <button
-                onClick={startSync}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[var(--wa-green)] text-white text-[15px] font-medium hover:bg-[var(--wa-green)]/90 transition-colors"
-              >
-                <CloudDownload className="h-5 w-5" />
-                Sync Now
-              </button>
-            </>
-          )}
+          <div className="mx-auto h-16 w-16 rounded-full bg-[var(--wa-green)]/10 flex items-center justify-center">
+            <Loader2 className="h-8 w-8 text-[var(--wa-green)] animate-spin" />
+          </div>
+          <div>
+            <p className="text-[17px] font-semibold text-[var(--wa-text-primary)]">Syncing conversations...</p>
+            <p className="text-[14px] text-[var(--wa-text-secondary)] mt-2">{syncCount > 0 ? `${syncCount} contacts loaded` : 'Starting sync...'}</p>
+          </div>
+          <div className="w-full bg-[var(--wa-border)] rounded-full h-1.5 overflow-hidden">
+            <div className="bg-[var(--wa-green)] h-full rounded-full animate-pulse" style={{ width: '60%' }} />
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-red-500/10 border border-red-500/20">
+            <TriangleAlert className="h-4 w-4 text-red-400 flex-shrink-0" />
+            <p className="text-[13px] text-red-400 text-left">Do not close this window until sync is complete.</p>
+          </div>
         </div>
       </div>
     );
