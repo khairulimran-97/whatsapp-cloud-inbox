@@ -412,23 +412,16 @@ export async function GET(request: Request) {
       return NextResponse.json({ data: cachedData, hasMore: !allPagesFetched });
     }
 
-    // ── First load: try SQLite first (instant), then sync with Kapso API ──
-    // If SQLite has data, return it immediately — Kapso API sync happens on next poll
+    // ── First load: try SQLite first (instant, no API call) ──
     const dbConversations = loadConversationsFromDb();
     if (dbConversations.length > 0) {
       cachedData = dbConversations;
       cacheTimestamp = Date.now();
-      // Trigger background API sync to catch any missed updates
-      fetchNextPage(status ?? undefined, 100).then(page => {
-        if (page.length > 0) {
-          cachedData = mergeGrouped(cachedData ?? [], page);
-          cacheTimestamp = Date.now();
-        }
-      }).catch(() => {});
-      return NextResponse.json({ data: dbConversations, hasMore: true });
+      // No background API sync — webhooks keep SQLite fresh
+      return NextResponse.json({ data: dbConversations, hasMore: false });
     }
 
-    // SQLite empty (truly first time) — fetch from Kapso API
+    // SQLite empty (truly first time) — fetch from Kapso API and seed SQLite
     const page = await fetchNextPage(status ?? undefined, 100);
     cachedData = page;
     cacheTimestamp = Date.now();

@@ -228,7 +228,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
   // Auto-polling for conversations (every 30 seconds, uses cache/quick fetch)
   const { isPolling } = useAutoPolling({
     interval: pollInterval,
-    enabled: true,
+    enabled: pollInterval > 0,
     onPoll: fetchConversations
   });
 

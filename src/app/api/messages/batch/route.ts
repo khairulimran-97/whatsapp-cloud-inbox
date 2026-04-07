@@ -330,10 +330,7 @@ export async function GET(request: Request) {
     if (isInitial && !refresh) {
       const dbMessages = loadMessagesFromDb(conversationIds);
       if (dbMessages.length > 0) {
-        // Return SQLite data instantly, trigger background API sync
-        Promise.all(
-          conversationIds.map(id => fetchConversationMessages(id, 50, 0))
-        ).catch(() => {});
+        // Return SQLite data instantly — webhooks keep it fresh, no background sync
         return NextResponse.json({ data: dbMessages });
       }
     }

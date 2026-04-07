@@ -298,9 +298,9 @@ export default function Home() {
 
   const { connected: sseConnected } = useRealtime({ onEvent: handleRealtimeEvent });
 
-  // With SSE: no polling needed (webhook handles everything)
-  // Without SSE: fallback polling
-  const conversationPollInterval = sseConnected ? 60000 : 10000;
+  // SSE connected: zero polling (webhook handles everything via direct injection)
+  // SSE disconnected: fallback polling
+  const conversationPollInterval = sseConnected ? 0 : 10000;
   const messagePollInterval = sseConnected ? 0 : 5000;
 
   // Show loading while checking auth, then login screen if not authenticated
