@@ -396,7 +396,14 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
   }, [conversationIds]);
 
   // Load older messages from additional conversation sessions on demand
+  const loadedSessionIds = useRef<Set<string>>(new Set());
   const hasOlderSessions = (totalConversations ?? 0) > (conversationIds?.length ?? 0);
+  
+  // Reset loaded sessions when conversation changes
+  useEffect(() => {
+    loadedSessionIds.current = new Set(conversationIds ?? []);
+  }, [conversationIds]);
+
   const loadOlderMessages = useCallback(async () => {
     if (!phoneNumber || loadingOlder) return;
     setLoadingOlder(true);
@@ -407,10 +414,14 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
       const data = await r.json();
       const allIds = (data.conversationIds || []) as string[];
 
-      // Find IDs we haven't loaded yet
-      const loadedIds = new Set(conversationIds ?? []);
-      const olderIds = allIds.filter((id: string) => !loadedIds.has(id)).slice(0, 5);
+      // Find IDs we haven't loaded yet (tracked across clicks)
+      const olderIds = allIds.filter((id: string) => !loadedSessionIds.current.has(id)).slice(0, 5);
       if (olderIds.length === 0) return;
+
+      // Mark these as loaded before fetching
+      for (const id of olderIds) {
+        loadedSessionIds.current.add(id);
+      }
 
       // Fetch messages for older sessions (this makes Kapso API calls)
       const params = new URLSearchParams({
