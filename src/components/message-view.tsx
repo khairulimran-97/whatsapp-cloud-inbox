@@ -311,7 +311,16 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
       setMessages(prev => {
         // Skip if already exists (deduplicate)
         if (prev.some(m => m.id === msgId)) return prev;
-        const updated = [...prev, newMsg].sort(
+        // If this is an outbound message, replace any optimistic temp message
+        let base = prev;
+        if (direction === 'outbound' && content) {
+          const tempIdx = prev.findIndex(m => m.id.startsWith('temp-') && m.content === content && m.direction === 'outbound');
+          if (tempIdx !== -1) {
+            base = [...prev];
+            base.splice(tempIdx, 1);
+          }
+        }
+        const updated = [...base, newMsg].sort(
           (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
         );
         prevMessageFingerprintRef.current = updated.map(m => m.id + (m.status || '')).join(',');
@@ -622,15 +631,43 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
 
     if ((!messageInput.trim() && !selectedFile) || !phoneNumber || sending) return;
 
+    const text = messageInput.trim();
+    const file = selectedFile;
+
+    // Optimistic: show message instantly with "sending" status
+    const tempId = `temp-${Date.now()}`;
+    if (text && !file) {
+      const optimisticMsg: Message = {
+        id: tempId,
+        direction: 'outbound',
+        content: text,
+        createdAt: new Date().toISOString(),
+        status: 'sending',
+        phoneNumber,
+        hasMedia: false,
+        messageType: 'text',
+      };
+      setMessages(prev => {
+        const updated = [...prev, optimisticMsg];
+        prevMessageFingerprintRef.current = updated.map(m => m.id + (m.status || '')).join(',');
+        previousMessageCountRef.current = updated.length;
+        return updated;
+      });
+    }
+
+    // Clear input immediately for snappy feel
+    setMessageInput('');
+    if (file) handleRemoveFile();
+
     setSending(true);
     try {
       const formData = new FormData();
       formData.append('to', phoneNumber);
-      if (messageInput.trim()) {
-        formData.append('body', messageInput);
+      if (text) {
+        formData.append('body', text);
       }
-      if (selectedFile) {
-        formData.append('file', selectedFile);
+      if (file) {
+        formData.append('file', file);
       }
 
       const res = await fetch('/api/messages/send', {
@@ -640,16 +677,39 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
 
       const data = await res.json().catch(() => null);
       if (data?.reason === 'rate_limited') {
+        // Remove optimistic message on rate limit
+        setMessages(prev => prev.filter(m => m.id !== tempId));
+        setMessageInput(text);
         setRateLimitWarning(true);
         setTimeout(() => setRateLimitWarning(false), 5000);
         return;
       }
 
-      setMessageInput('');
-      handleRemoveFile();
-      await fetchMessages();
+      if (!res.ok) {
+        // Mark optimistic message as failed
+        setMessages(prev => prev.map(m =>
+          m.id === tempId ? { ...m, status: 'failed' } : m
+        ));
+        return;
+      }
+
+      // Replace temp message with real ID (webhook will update status)
+      const realId = data?.messageId || data?.messages?.[0]?.id;
+      if (realId && text && !file) {
+        setMessages(prev => prev.map(m =>
+          m.id === tempId ? { ...m, id: realId, status: 'sent' } : m
+        ));
+      } else {
+        // File messages or no real ID — fetch to get the actual message
+        setMessages(prev => prev.filter(m => m.id !== tempId));
+        await fetchMessages();
+      }
     } catch (error) {
       console.error('Error sending message:', error);
+      // Mark optimistic message as failed
+      setMessages(prev => prev.map(m =>
+        m.id === tempId ? { ...m, status: 'failed' } : m
+      ));
     } finally {
       setSending(false);
     }
@@ -1278,6 +1338,11 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                             ) : message.status === 'sent' ? (
                               <svg viewBox="0 0 12 11" width="12" height="11" className="flex-shrink-0">
                                 <path d="M11.071.653a.457.457 0 0 0-.304-.102.493.493 0 0 0-.381.178l-6.19 7.636-2.011-2.095a.463.463 0 0 0-.356-.153.591.591 0 0 0-.356.153l-.381.381a.481.481 0 0 0-.127.357c0 .127.051.254.127.33l2.716 2.716a.6.6 0 0 0 .432.178.56.56 0 0 0 .432-.204l6.7-8.271a.592.592 0 0 0 .102-.356.4.4 0 0 0-.102-.305l-.305-.254z" fill="#8696a0" />
+                              </svg>
+                            ) : message.status === 'sending' ? (
+                              <svg viewBox="0 0 16 15" width="16" height="15" className="flex-shrink-0">
+                                <path d="M9.75 7.713H8.244V5.359a.5.5 0 0 0-.494-.5.5.5 0 0 0-.494.5v2.947a.5.5 0 0 0 .494.5H9.75a.5.5 0 0 0 .494-.5.5.5 0 0 0-.494-.593z" fill="#8696a0" />
+                                <path d="M7.75.25a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15zm0 13.5a6 6 0 1 1 0-12 6 6 0 0 1 0 12z" fill="#8696a0" />
                               </svg>
                             ) : null
                           )}
