@@ -94,6 +94,19 @@ type Message = {
   metadata?: {
     mediaId?: string;
     caption?: string;
+    message_type_data?: {
+      type?: string;
+      body_text?: string;
+    };
+    interactive?: {
+      type?: string;
+      body?: { text?: string };
+      action?: {
+        name?: string;
+        parameters?: { display_text?: string; url?: string };
+      };
+    };
+    [key: string]: unknown;
   };
 };
 
@@ -256,6 +269,30 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
       const createdAt = timestamp ? new Date(Number(timestamp) * 1000).toISOString() : new Date().toISOString();
       const hasMedia = Boolean(kapso.has_media);
 
+      // Extract media data for images/videos/etc
+      let mediaData: Message['mediaData'] | undefined;
+      let metadata: Message['metadata'] | undefined;
+      for (const mediaType of ['image', 'video', 'audio', 'document', 'sticker'] as const) {
+        const media = webhookMsg[mediaType] as Record<string, unknown> | undefined;
+        if (media && (media.id || media.link)) {
+          mediaData = {
+            url: `/api/media/${media.id}`,
+            contentType: media.mime_type as string | undefined,
+            filename: media.filename as string | undefined,
+          };
+          break;
+        }
+      }
+
+      // Extract metadata (message_type_data, interactive)
+      const messageTypeData = kapso.message_type_data as Record<string, unknown> | undefined;
+      const interactive = webhookMsg.interactive as Record<string, unknown> | undefined;
+      if (messageTypeData || interactive) {
+        metadata = {} as NonNullable<Message['metadata']>;
+        if (messageTypeData) metadata.message_type_data = messageTypeData as NonNullable<Message['metadata']>['message_type_data'];
+        if (interactive) metadata.interactive = interactive as NonNullable<Message['metadata']>['interactive'];
+      }
+
       const newMsg: Message = {
         id: msgId,
         direction: direction as 'inbound' | 'outbound',
@@ -266,6 +303,8 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
         hasMedia,
         messageType: msgType,
         conversationId,
+        mediaData,
+        metadata,
       };
 
       setMessages(prev => {
@@ -1082,56 +1121,56 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                       )
                     )}
                   >
-                    {message.hasMedia && message.mediaData?.url ? (
-                      <div className={cn('overflow-hidden rounded-[5px]', message.content || message.caption ? 'mb-[3px]' : '')}>
+                    {/* Media rendering — support both direct URLs and mediaId proxy */}
+                    {(() => {
+                      const md = message.mediaData as Record<string, unknown> | undefined;
+                      const mediaUrl = md?.url as string | undefined 
+                        || (md?.mediaId ? `/api/media/${md.mediaId}` : undefined)
+                        || (message.metadata?.mediaId ? `/api/media/${message.metadata.mediaId}` : undefined);
+                      const hasMediaContent = message.hasMedia && mediaUrl;
+                      
+                      if (!hasMediaContent) return null;
+                      
+                      return (
+                      <div className={cn('overflow-hidden rounded-[5px]', message.content && message.content !== '[Image attached]' || message.caption ? 'mb-[3px]' : '')}>
                         {message.messageType === 'sticker' ? (
                           <img
-                            src={message.mediaData.url}
+                            src={mediaUrl}
                             alt="Sticker"
                             className="max-w-[150px] max-h-[150px] h-auto"
                           />
-                        ) : message.mediaData.contentType?.startsWith('image/') || message.messageType === 'image' ? (
+                        ) : (md?.contentType as string)?.startsWith('image/') || message.messageType === 'image' ? (
                           <img
-                            src={message.mediaData.url}
+                            src={mediaUrl}
                             alt="Media"
                             className="rounded-[5px] max-w-full h-auto max-h-[330px] object-cover cursor-pointer"
-                            onClick={() => setLightboxUrl(message.mediaData!.url)}
+                            onClick={() => setLightboxUrl(mediaUrl)}
                           />
-                        ) : message.mediaData.contentType?.startsWith('video/') || message.messageType === 'video' ? (
+                        ) : (md?.contentType as string)?.startsWith('video/') || message.messageType === 'video' ? (
                           <video
-                            src={message.mediaData.url}
+                            src={mediaUrl}
                             controls
                             className="rounded-[5px] max-w-full h-auto max-h-[330px]"
                           />
-                        ) : message.mediaData.contentType?.startsWith('audio/') || message.messageType === 'audio' ? (
+                        ) : (md?.contentType as string)?.startsWith('audio/') || message.messageType === 'audio' ? (
                           <div className="px-2 pt-2">
-                            <audio src={message.mediaData.url} controls className="w-full max-w-[280px]" />
+                            <audio src={mediaUrl} controls className="w-full max-w-[280px]" />
                           </div>
                         ) : (
                           <div className="px-2 pt-2">
                             <a
-                              href={message.mediaData.url}
+                              href={mediaUrl}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="flex items-center gap-2 text-sm text-[var(--wa-green)] hover:underline"
                             >
-                              📎 {message.mediaData.filename || message.filename || 'Download file'}
+                              📎 {(md?.filename as string) || message.filename || 'Download file'}
                             </a>
                           </div>
                         )}
                       </div>
-                    ) : message.metadata?.mediaId && message.messageType ? (
-                      <div className={message.content || message.caption ? 'mb-[3px]' : ''}>
-                        <MediaMessage
-                          mediaId={message.metadata.mediaId}
-                          messageType={message.messageType}
-                          caption={message.caption}
-                          filename={message.filename}
-                          isOutbound={message.direction === 'outbound'}
-                          onImageClick={setLightboxUrl}
-                        />
-                      </div>
-                    ) : null}
+                      );
+                    })()}
 
                     {message.caption && (
                       <p className={cn(
@@ -1142,10 +1181,38 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                       </p>
                     )}
 
-                    {message.content && !message.hasMedia && !(message.metadata?.mediaId && message.messageType) && (
+                    {message.content && !message.hasMedia && !(message.metadata?.mediaId && message.messageType) && message.content !== '[Image attached]' && (
                       <p className="text-[14.2px] leading-[19px] break-words overflow-wrap-anywhere whitespace-pre-wrap">
                         {message.content}
                       </p>
+                    )}
+
+                    {/* CTA URL button — WhatsApp-style action button at bottom */}
+                    {message.messageType === 'interactive' && (
+                      message.metadata?.message_type_data?.type === 'cta_url' ||
+                      message.metadata?.interactive?.type === 'cta_url'
+                    ) && (
+                      <div className="mt-[2px] -mx-[9px] -mb-[8px] border-t border-[var(--wa-border)]">
+                        <div className="flex items-center justify-center gap-1.5 py-[7px] text-[var(--wa-green)] text-[14.2px] cursor-default">
+                          <Link className="h-4 w-4" />
+                          <span>{message.metadata?.interactive?.action?.parameters?.display_text || 'Open Link'}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Button reply — show selected button label */}
+                    {message.messageType === 'interactive' && (
+                      message.metadata?.message_type_data?.type === 'button_reply' ||
+                      message.metadata?.interactive?.type === 'button_reply'
+                    ) && !message.content?.startsWith('Selected:') && (
+                      <div className="mt-[2px] -mx-[9px] -mb-[8px] border-t border-[var(--wa-border)]">
+                        <div className="flex items-center justify-center gap-1.5 py-[7px] text-[var(--wa-green)] text-[14.2px]">
+                          <Zap className="h-3.5 w-3.5" />
+                          <span>{(message.metadata?.interactive as Record<string, unknown>)?.button_reply 
+                            ? ((message.metadata?.interactive as Record<string, unknown>).button_reply as Record<string, unknown>).title as string 
+                            : 'Button Reply'}</span>
+                        </div>
+                      </div>
                     )}
 
                     {/* Error notice — shown before timestamp for failed messages */}
@@ -1168,7 +1235,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
 
                     {/* Timestamp + status — inline float for text, overlay for media-only */}
                     {(() => {
-                      const isMediaOnly = (message.hasMedia || message.metadata?.mediaId) && !message.content && !message.caption;
+                      const isMediaOnly = (message.hasMedia || message.metadata?.mediaId) && (!message.content || message.content === '[Image attached]') && !message.caption;
                       return (
                         <span className={cn(
                           "flex items-center gap-1 text-[11px] leading-none select-none",
