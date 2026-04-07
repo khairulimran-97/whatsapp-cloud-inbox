@@ -160,6 +160,7 @@ type Props = {
   totalConversations?: number;
   onTemplateSent?: (phoneNumber: string) => Promise<void>;
   onStatusChanged?: () => Promise<void>;
+  onConversationStatusUpdate?: (conversationId: string, status: string) => void;
   onMarkUnread?: (phoneNumber: string) => void;
   onBack?: () => void;
   onInteraction?: () => void;
@@ -174,7 +175,7 @@ export type MessageViewRef = {
   updateMessageStatus: (messageId: string, status: string) => void;
 };
 
-export const MessageView = forwardRef<MessageViewRef, Props>(function MessageView({ conversationIds, conversationStatuses, conversationStatus, phoneNumber, contactName, totalConversations, onTemplateSent, onStatusChanged, onMarkUnread, onBack, onInteraction, isVisible = false, pollInterval = 5000, initialUnreadCount = 0 }: Props, ref) {
+export const MessageView = forwardRef<MessageViewRef, Props>(function MessageView({ conversationIds, conversationStatuses, conversationStatus, phoneNumber, contactName, totalConversations, onTemplateSent, onStatusChanged, onConversationStatusUpdate, onMarkUnread, onBack, onInteraction, isVisible = false, pollInterval = 5000, initialUnreadCount = 0 }: Props, ref) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -512,10 +513,22 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
         unreadDividerRef.current = null;
         prevMessageFingerprintRef.current = '';
         fetchMessages();
+
+        // Refresh conversation status from Kapso API (non-blocking fallback)
+        if (conversationIds.length > 0) {
+          fetch(`/api/conversations/${conversationIds[0]}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+              if (!data?.status) return;
+              onConversationStatusUpdate?.(conversationIds[0], data.status);
+            })
+            .catch(() => {});
+        }
       }
       // Same phone, new session ID added via webhook — skip fetch,
       // messages are injected directly via injectMessage()
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationIds, fetchMessages, phoneNumber]);
 
   useEffect(() => {

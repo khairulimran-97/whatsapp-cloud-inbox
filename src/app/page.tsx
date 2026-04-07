@@ -176,6 +176,20 @@ export default function Home() {
     window.history.back();
   };
 
+  // Update conversation status from API (called on chat open as fallback)
+  const handleConversationStatusUpdate = useCallback((conversationId: string, apiStatus: string) => {
+    setSelectedConversation(prev => {
+      if (!prev) return prev;
+      const currentStatus = prev.conversationStatuses[conversationId];
+      if (currentStatus === apiStatus) return prev; // no change
+      const updatedStatuses = { ...prev.conversationStatuses, [conversationId]: apiStatus };
+      const overallStatus = Object.values(updatedStatuses).some(s => s === 'active') ? 'active' : 'ended';
+      const updated = { ...prev, conversationStatuses: updatedStatuses, status: overallStatus };
+      conversationListRef.current?.updateConversation?.(updated);
+      return updated;
+    });
+  }, []);
+
   // PWA back button support: listen for popstate to return to conversation list
   useEffect(() => {
     const handlePopState = () => {
@@ -339,6 +353,7 @@ export default function Home() {
         totalConversations={selectedConversation?.totalConversations}
         onTemplateSent={handleTemplateSent}
         onStatusChanged={handleStatusChanged}
+        onConversationStatusUpdate={handleConversationStatusUpdate}
         onMarkUnread={handleMarkUnread}
         onBack={handleBackToList}
         onInteraction={clearUnreadForSelected}
