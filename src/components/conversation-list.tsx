@@ -241,6 +241,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
         setHasMore(!!data.hasMore);
         prevDataRef.current = JSON.stringify(newConversations.map((c: Conversation) => c.id + c.status + c.lastActiveAt + (c.lastMessage?.content || '')));
         setConversations(newConversations);
+        onConversationsUpdatedRef.current?.(newConversations);
         return newConversations;
       } catch {
         return conversations;

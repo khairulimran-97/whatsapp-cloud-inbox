@@ -191,12 +191,14 @@ export default function Home() {
   const handleRealtimeEvent = useCallback((event: RealtimeEvent) => {
     if (event.type === 'connected') return;
 
-    // Message events → refresh messages + conversation list
+    // Message events → refresh conversation list first (to get new IDs), then messages
     // Small delay to let Kapso API index the message before fetching
     if (event.type === 'message_received' || event.type === 'message_sent') {
-      setTimeout(() => {
+      setTimeout(async () => {
+        // Refresh conversation list first — may discover new conversation IDs
+        await conversationListRef.current?.refresh();
+        // Then refresh messages with potentially updated conversation IDs
         messageViewRef.current?.refresh();
-        conversationListRef.current?.refresh();
       }, 500);
 
       // Inbound message → play sound + increment unread
