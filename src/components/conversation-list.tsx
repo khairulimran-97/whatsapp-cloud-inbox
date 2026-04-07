@@ -381,7 +381,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
         next.sort((a, b) => {
           if (!a.lastActiveAt) return 1;
           if (!b.lastActiveAt) return -1;
-          return b.lastActiveAt.localeCompare(a.lastActiveAt);
+          return new Date(b.lastActiveAt).getTime() - new Date(a.lastActiveAt).getTime();
         });
         return next;
       });
