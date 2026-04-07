@@ -433,6 +433,13 @@ export async function GET(request: Request) {
       }
     }
 
+    // ── Check if seed is complete (must be before cache paths) ──
+    const seedComplete = isSeedComplete();
+    if (!seedComplete) {
+      // Seed not done — tell client to sync (ignore partial in-memory cache)
+      return NextResponse.json({ data: [], hasMore: false, needsSync: true });
+    }
+
     // ── Polling: return cache if fresh and not invalidated by webhook ──
     if (cachedData && (Date.now() - cacheTimestamp) < CACHE_TTL_MS && !isCacheInvalidated()) {
       return NextResponse.json({ data: cachedData, hasMore: !allPagesFetched });
@@ -447,19 +454,16 @@ export async function GET(request: Request) {
       return NextResponse.json({ data: cachedData, hasMore: !allPagesFetched });
     }
 
-    // ── First load: try SQLite if seed was completed ──
-    const seedComplete = isSeedComplete();
-    if (seedComplete) {
-      const dbConversations = loadConversationsFromDb();
-      if (dbConversations.length > 0) {
-        cachedData = dbConversations;
-        cacheTimestamp = Date.now();
-        allPagesFetched = true;
-        return NextResponse.json({ data: dbConversations, hasMore: false });
-      }
+    // ── First load: load from SQLite (seed is complete at this point) ──
+    const dbConversations = loadConversationsFromDb();
+    if (dbConversations.length > 0) {
+      cachedData = dbConversations;
+      cacheTimestamp = Date.now();
+      allPagesFetched = true;
+      return NextResponse.json({ data: dbConversations, hasMore: false });
     }
 
-    // SQLite empty OR seed incomplete — tell client to trigger sync manually
+    // SQLite empty but seed marked complete — shouldn't happen, re-sync
     return NextResponse.json({ data: [], hasMore: false, needsSync: true });
   } catch (error) {
     console.error('Error fetching conversations:', error);
