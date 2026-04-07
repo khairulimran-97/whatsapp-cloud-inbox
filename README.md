@@ -12,22 +12,28 @@ A WhatsApp Web-style inbox built with Next.js for the WhatsApp Cloud API via [Ka
 - **Password protection** — Simple password gate with localStorage persistence
 - **PWA installable** — Add to home screen with app manifest and service worker
 - **Template messages** — Full support for WhatsApp templates with parameters (header, body, buttons)
-- **Interactive messages** — Send button messages with up to 3 custom actions
+- **Interactive messages** — Send button messages, list messages, and CTA URL messages
 - **Media support** — Send and receive images, videos, documents, and audio with lightbox viewer
 - **24-hour window enforcement** — Automatically restricts messaging outside WhatsApp's window
 - **Conversation management** — Close/reopen conversations with status indicators
 - **Mark as read/unread** — Mark conversations via WhatsApp Cloud API
+- **Message reactions** — React to messages with emojis
+- **Message search** — Search messages within conversations
 - **Dark mode** — Full dark theme matching WhatsApp Web with toggle
 - **Mobile responsive** — Slide panel navigation for mobile screens
 - **Business profile** — Shows WhatsApp business profile picture, name, and phone number
 - **Failed message indicators** — Visual feedback for delivery failures
+- **BCL customer sidebar** — Customer info, transactions, and protected content from BCL.my API
+- **CS reply templates** — Admin-managed quick reply templates with categories
+- **SQLite database** — Persistent storage with atomic operations (replaces JSON files)
+- **Docker support** — Multi-stage Dockerfile with standalone output (~238MB image)
 
 ## Architecture
 
 ```
 WhatsApp → Kapso Cloud → Webhook POST → SSE Stream → Browser (~1-2s)
                                       → Web Push → FCM → Notification (background)
-                                      → Unread sync → data/unread.json
+                                      → Unread sync → SQLite (atomic increment)
 
 Fallback: Browser → Adaptive Polling → Kapso API → Messages
           (10s/5s without webhook, 30s with webhook)
@@ -38,23 +44,21 @@ Fallback: Browser → Adaptive Polling → Kapso API → Messages
 | File | Description |
 |---|---|
 | `src/app/page.tsx` | Main orchestrator — state, unread counts, realtime events, auth |
-| `src/components/message-view.tsx` | Chat view with message bubbles, input, media |
-| `src/components/conversation-list.tsx` | Sidebar with conversation list + unread badges |
+| `src/components/message-view.tsx` | Chat view with message bubbles, input, media, template picker |
+| `src/components/conversation-list.tsx` | Sidebar with conversation list, settings, unread badges |
+| `src/components/customer-sidebar.tsx` | BCL customer info panel (inline on desktop, slideover on mobile) |
 | `src/components/login-screen.tsx` | Password login screen with WhatsApp-style UI |
-| `src/components/pwa-install-banner.tsx` | PWA install prompt banner |
 | `src/app/api/webhooks/kapso/route.ts` | Webhook receiver + unread tracking + push notifications |
 | `src/app/api/events/route.ts` | SSE streaming endpoint for real-time browser updates |
 | `src/app/api/unread/route.ts` | Server-side unread storage with SSE broadcast |
 | `src/app/api/push/route.ts` | Push subscription management (subscribe/unsubscribe) |
-| `src/app/api/auth/route.ts` | Password authentication endpoint |
-| `src/app/api/messages/mark-read/route.ts` | WhatsApp mark-as-read API |
+| `src/app/api/settings/route.ts` | Admin settings management (BCL API key) |
+| `src/app/api/reply-templates/route.ts` | CS reply template CRUD |
+| `src/app/api/customers/route.ts` | BCL.my customer lookup with transaction history |
 | `src/app/api/messages/batch/route.ts` | Batch messages endpoint with server-side caching |
+| `src/lib/db/` | SQLite database (Drizzle ORM) — schema + singleton connection |
 | `src/lib/event-bus.ts` | In-memory pub/sub for webhook → SSE communication |
 | `src/lib/web-push.ts` | Server-side push notification sender via web-push |
-| `src/hooks/use-realtime.ts` | Frontend EventSource hook with auto-reconnect |
-| `src/hooks/use-notification.ts` | Push notification subscription + toggle hook |
-| `public/sw.js` | Service worker for push notifications + cache management |
-| `public/manifest.json` | PWA app manifest |
 
 ## Setup
 
@@ -217,7 +221,7 @@ Two-layer update system with adaptive polling:
 
 ### Unread Counts
 
-- Server-side storage in `data/unread.json` (persists across browser sessions)
+- Server-side storage in SQLite with atomic increments (no race conditions)
 - Real-time sync across browsers via SSE `unread_update` events
 - Webhook increments unread even with no browser open
 - Mark-as-read via WhatsApp Cloud API on conversation open
@@ -260,20 +264,45 @@ Automatically enforces WhatsApp's messaging policy:
 ## Tech Stack
 
 - **Framework:** Next.js 15 (Turbopack)
-- **UI:** Tailwind CSS + shadcn/ui
-- **API:** Kapso WhatsApp Cloud API
+- **UI:** Tailwind CSS v4 + shadcn/ui
+- **Database:** SQLite 3.51 (better-sqlite3 + Drizzle ORM)
+- **API:** Kapso WhatsApp Cloud API (`@kapso/whatsapp-cloud-api`)
 - **Real-time:** Webhook + Server-Sent Events (SSE)
 - **Push:** web-push + FCM + Service Worker
 - **Language:** TypeScript
+- **Container:** Docker (multi-stage, standalone output)
 
 ## Data Storage
 
-Runtime data is stored in the `data/` directory (gitignored):
+All persistent data is stored in SQLite at `data/app.db` (gitignored, volume-mounted in Docker):
 
-| File | Description |
+| Table | Description |
 |---|---|
-| `data/unread.json` | Unread message counts per conversation |
-| `data/push-subscriptions.json` | Web Push notification subscriptions |
+| `settings` | Key-value store (BCL API key, etc.) |
+| `reply_templates` | CS quick reply templates with categories |
+| `unread_counts` | Unread message counts per phone (atomic increment) |
+| `push_subscriptions` | Web Push notification subscriptions |
+
+SQLite runs in WAL mode for concurrent read/write performance. The database is auto-created on first run with no migration step needed.
+
+## Docker
+
+### Build and Run
+
+```bash
+docker compose up -d              # Start
+docker compose down               # Stop
+docker compose up -d --build      # Rebuild after code changes
+```
+
+### Manual Docker
+
+```bash
+docker build -t whatsapp-inbox .
+docker run -d -p 4000:4000 --env-file .env -v ./data:/app/data whatsapp-inbox
+```
+
+The `data/` directory is volume-mounted to persist the SQLite database across container restarts.
 
 ## Contributing
 
