@@ -6,7 +6,7 @@ import {
 } from '@kapso/whatsapp-cloud-api';
 import { whatsappClient, PHONE_NUMBER_ID } from '@/lib/whatsapp-client';
 import { getDb, schema } from '@/lib/db';
-import { sql, desc } from 'drizzle-orm';
+import { sql, desc, eq } from 'drizzle-orm';
 
 function parseDirection(kapso?: ConversationKapsoExtensions): 'inbound' | 'outbound' {
   if (!kapso) {
@@ -68,6 +68,27 @@ const CONV_CACHE_KEY = Symbol.for('__kapso_conv_cache_invalidated__');
 function isCacheInvalidated(): boolean {
   const invalidatedAt = (globalThis as Record<symbol, number>)[CONV_CACHE_KEY] ?? 0;
   return invalidatedAt > cacheTimestamp;
+}
+
+// Track whether initial API seed has completed (survives restarts via SQLite)
+function isSeedComplete(): boolean {
+  try {
+    const db = getDb();
+    const row = db.select().from(schema.settings).where(eq(schema.settings.key, 'seed_complete')).get();
+    return row?.value === 'true';
+  } catch { return false; }
+}
+
+function markSeedComplete() {
+  try {
+    const db = getDb();
+    db.insert(schema.settings)
+      .values({ key: 'seed_complete', value: 'true' })
+      .onConflictDoUpdate({ target: schema.settings.key, set: { value: 'true', updatedAt: new Date() } })
+      .run();
+  } catch (e) {
+    console.error('[Conversations] Failed to mark seed complete:', e);
+  }
 }
 
 // Persist Kapso API conversations to SQLite for cache-first loading
@@ -327,7 +348,10 @@ async function fetchNextPage(status?: string, limit = 100): Promise<GroupedConve
   const records = response.data as ConversationRecord[];
 
   nextApiCursor = response.paging?.cursors?.after ?? undefined;
-  if (!nextApiCursor) allPagesFetched = true;
+  if (!nextApiCursor) {
+    allPagesFetched = true;
+    markSeedComplete();
+  }
 
   // Persist to SQLite for cache-first loading on next startup
   persistConversationsToDb(records);
@@ -412,16 +436,19 @@ export async function GET(request: Request) {
       return NextResponse.json({ data: cachedData, hasMore: !allPagesFetched });
     }
 
-    // ── First load: try SQLite first (instant, no API call) ──
-    const dbConversations = loadConversationsFromDb();
-    if (dbConversations.length > 0) {
-      cachedData = dbConversations;
-      cacheTimestamp = Date.now();
-      // No background API sync — webhooks keep SQLite fresh
-      return NextResponse.json({ data: dbConversations, hasMore: false });
+    // ── First load: try SQLite if seed was completed ──
+    const seedComplete = isSeedComplete();
+    if (seedComplete) {
+      const dbConversations = loadConversationsFromDb();
+      if (dbConversations.length > 0) {
+        cachedData = dbConversations;
+        cacheTimestamp = Date.now();
+        allPagesFetched = true;
+        return NextResponse.json({ data: dbConversations, hasMore: false });
+      }
     }
 
-    // SQLite empty (truly first time) — fetch from Kapso API and seed SQLite
+    // SQLite empty OR seed incomplete — fetch from Kapso API
     const page = await fetchNextPage(status ?? undefined, 100);
     cachedData = page;
     cacheTimestamp = Date.now();
