@@ -50,3 +50,4 @@ data/reply-templates.json
 data/app.db
 data/app.db-wal
 data/app.db-shm
+db-query.sh
