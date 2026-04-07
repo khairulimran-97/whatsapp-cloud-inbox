@@ -191,6 +191,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
   const refreshingRef = useRef(false);
   const markedReadRef = useRef<string>('');
+  const prevPhoneRef = useRef<string | undefined>(undefined);
 
   // Initialize notification sound — shares unlock from parent's first click
   useEffect(() => {
@@ -225,11 +226,10 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
     return () => window.removeEventListener('keydown', handleKey);
   }, [lightboxUrl]);
 
-  // Expose refresh method to parent
+  // Expose refresh method to parent — background refresh, no UI disruption
   useImperativeHandle(ref, () => ({
     refresh: () => {
       refreshingRef.current = true;
-      prevMessageFingerprintRef.current = '';
       fetchMessages();
     }
   }));
@@ -342,14 +342,22 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
 
   useEffect(() => {
     if (conversationIds && conversationIds.length > 0) {
-      setLoading(true);
-      // Reset scroll state when switching conversations
-      setIsNearBottom(true);
-      unreadDividerRef.current = null;
-      prevMessageFingerprintRef.current = '';
+      const isNewChat = phoneNumber !== prevPhoneRef.current;
+      prevPhoneRef.current = phoneNumber;
+
+      if (isNewChat) {
+        // User switched to a different conversation — full reset
+        setLoading(true);
+        setIsNearBottom(true);
+        unreadDividerRef.current = null;
+        prevMessageFingerprintRef.current = '';
+      } else {
+        // Same phone, new session ID added — background refresh only
+        refreshingRef.current = true;
+      }
       fetchMessages();
     }
-  }, [conversationIds, fetchMessages]);
+  }, [conversationIds, fetchMessages, phoneNumber]);
 
   useEffect(() => {
     if (isNearBottom) {
