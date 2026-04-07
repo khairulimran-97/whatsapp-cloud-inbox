@@ -824,14 +824,6 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                 </Button>
               )}
               <Button
-                onClick={() => { refreshingRef.current = true; fetchMessages(); }}
-                variant="ghost"
-                size="sm"
-                className="text-[var(--wa-text-tertiary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover-bg)] text-xs gap-1.5 h-9 px-3 transition-colors duration-200"
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-              </Button>
-              <Button
                 onClick={() => setShowCustomerSidebar(!showCustomerSidebar)}
                 variant="ghost"
                 className={cn("xl:hidden h-9 px-2.5 text-xs font-medium gap-1.5 transition-colors duration-200 text-amber-500", showCustomerSidebar ? "bg-amber-500/10" : "hover:bg-amber-500/10")}
@@ -843,14 +835,6 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
 
             {/* Mobile/Tablet: icon buttons + overflow menu */}
             <div className="flex lg:hidden items-center">
-              <Button
-                onClick={() => { refreshingRef.current = true; fetchMessages(); }}
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 text-[var(--wa-text-tertiary)] hover:text-[var(--wa-text-primary)] transition-colors duration-200"
-              >
-                <RefreshCw className="h-4 w-4" />
-              </Button>
               <Button
                 onClick={() => setShowCustomerSidebar(!showCustomerSidebar)}
                 variant="ghost"
@@ -894,10 +878,6 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                   <DropdownMenuItem onClick={() => setShowMessageSearch(!showMessageSearch)} className="py-2.5">
                     <Search className="h-4 w-4 mr-3" />
                     Search messages
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { refreshingRef.current = true; fetchMessages(); }} className="py-2.5">
-                    <RefreshCw className="h-4 w-4 mr-3" />
-                    Refresh messages
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
