@@ -22,29 +22,20 @@ type Conversation = {
   lastMessage?: { content: string; direction: string; type?: string };
 };
 
-const UNREAD_STORAGE_KEY = 'whatsapp-inbox-unread';
-
-function loadUnreadMap(): Map<string, number> {
-  try {
-    const stored = localStorage.getItem(UNREAD_STORAGE_KEY);
-    if (!stored) return new Map();
-    const parsed = JSON.parse(stored);
-    if (Array.isArray(parsed)) {
-      return new Map(parsed.map((phone: string) => [phone, 1]));
-    }
-    return new Map(Object.entries(parsed as Record<string, number>));
-  } catch {
-    return new Map();
-  }
+// Server-side unread operations (SQLite is the single source of truth)
+function clearUnreadOnServer(phone: string) {
+  fetch('/api/unread', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clear: [phone] }),
+  }).catch(() => {});
 }
 
-function saveUnreadMap(unread: Map<string, number>) {
-  localStorage.setItem(UNREAD_STORAGE_KEY, JSON.stringify(Object.fromEntries(unread)));
-  // Fire-and-forget sync to server
+function markUnreadOnServer(phone: string) {
   fetch('/api/unread', {
-    method: 'PUT',
+    method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(Object.fromEntries(unread)),
+    body: JSON.stringify({ increment: [phone] }),
   }).catch(() => {});
 }
 
@@ -63,17 +54,10 @@ export default function Home() {
   const audioUnlockedRef = useRef(false);
 
   useEffect(() => {
-    // Load from localStorage first (instant), then sync from server
-    setUnreadCounts(loadUnreadMap());
+    // Load unread counts from server (SQLite is the single source of truth)
     fetch('/api/unread').then(r => r.json()).then(data => {
       if (data && typeof data === 'object' && !Array.isArray(data)) {
-        const serverMap = new Map(Object.entries(data as Record<string, number>));
-        // Merge: server wins for any key it has, keep local-only keys
-        setUnreadCounts(prev => {
-          const merged = new Map(prev);
-          for (const [k, v] of serverMap) merged.set(k, v as number);
-          return merged;
-        });
+        setUnreadCounts(new Map(Object.entries(data as Record<string, number>)));
       }
     }).catch(() => {});
 
@@ -108,9 +92,9 @@ export default function Home() {
       setUnreadCounts(prev => {
         const next = new Map(prev);
         next.delete(conversation.phoneNumber);
-        saveUnreadMap(next);
         return next;
       });
+      clearUnreadOnServer(conversation.phoneNumber);
     }
   }, [unreadCounts]);
 
@@ -122,9 +106,9 @@ export default function Home() {
       if (!prev.has(selected.phoneNumber)) return prev;
       const next = new Map(prev);
       next.delete(selected.phoneNumber);
-      saveUnreadMap(next);
       return next;
     });
+    if (selected) clearUnreadOnServer(selected.phoneNumber);
   }, []);
 
   // Sync selected conversation when conversation list updates
@@ -148,9 +132,9 @@ export default function Home() {
     setUnreadCounts(prev => {
       const next = new Map(prev);
       next.set(phoneNumber, Math.max(next.get(phoneNumber) ?? 0, 1));
-      saveUnreadMap(next);
       return next;
     });
+    markUnreadOnServer(phoneNumber);
   }, []);
 
   const handleTemplateSent = async (phoneNumber: string) => {
@@ -222,11 +206,10 @@ export default function Home() {
           setInitialUnreadCount(prev => prev + 1);
         }
 
-        // Always increment sidebar badge
+        // Always increment sidebar badge (server already incremented via webhook)
         setUnreadCounts(current => {
           const next = new Map(current);
           next.set(event.phoneNumber!, (next.get(event.phoneNumber!) ?? 0) + 1);
-          saveUnreadMap(next);
           return next;
         });
       }
@@ -245,9 +228,7 @@ export default function Home() {
     // Unread sync from another browser/tab
     if (event.type === 'unread_update' && event.data) {
       const serverUnread = event.data as Record<string, number>;
-      const serverMap = new Map(Object.entries(serverUnread));
-      setUnreadCounts(serverMap);
-      localStorage.setItem(UNREAD_STORAGE_KEY, JSON.stringify(serverUnread));
+      setUnreadCounts(new Map(Object.entries(serverUnread)));
     }
   }, []);
 
