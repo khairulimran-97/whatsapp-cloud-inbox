@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { format, isValid, isToday, isYesterday } from 'date-fns';
-import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save, Plus, Pencil, Trash2, MessageSquareText, CloudDownload } from 'lucide-react';
+import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save, Plus, Pencil, Trash2, MessageSquareText, CloudDownload, TriangleAlert } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAutoPolling } from '@/hooks/use-auto-polling';
 import { useTheme } from '@/hooks/use-theme';
@@ -277,6 +277,16 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
     onPoll: fetchConversations
   });
 
+  // Prevent closing window during sync
+  useEffect(() => {
+    if (!syncing) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [syncing]);
+
   const selectByPhoneNumber = (phoneNumber: string) => {
     const conversation = conversations.find(conv => conv.phoneNumber === phoneNumber);
     if (conversation) {
@@ -421,6 +431,10 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
               </div>
               <div className="w-full bg-[var(--wa-border)] rounded-full h-1.5 overflow-hidden">
                 <div className="bg-[var(--wa-green)] h-full rounded-full animate-pulse" style={{ width: '60%' }} />
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-red-500/10 border border-red-500/20">
+                <TriangleAlert className="h-4 w-4 text-red-400 flex-shrink-0" />
+                <p className="text-[13px] text-red-400 text-left">Do not close this window until sync is complete.</p>
               </div>
             </>
           ) : (
