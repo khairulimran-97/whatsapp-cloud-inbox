@@ -105,6 +105,10 @@ function createDb() {
   try {
     sqlite.exec(`ALTER TABLE messages ADD COLUMN source TEXT DEFAULT 'api'`);
   } catch { /* column already exists */ }
+  // Migration: add last_message_at column
+  try {
+    sqlite.exec(`ALTER TABLE conversations ADD COLUMN last_message_at INTEGER`);
+  } catch { /* column already exists */ }
 
   // Run cleanup on startup
   cleanupOldData(sqlite);

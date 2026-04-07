@@ -45,6 +45,7 @@ const KAPSO_FIELDS = buildKapsoFields([
   'messages_count',
   'last_message_type',
   'last_message_text',
+  'last_message_timestamp',
   'last_inbound_at',
   'last_outbound_at'
 ]);
@@ -110,6 +111,11 @@ function persistConversationsToDb(records: ConversationRecord[]) {
         const phone = conv.phoneNumber ?? '';
         if (!phone) continue;
 
+        // Prefer last_message_timestamp for display, fall back to updatedAt
+        const lastMsgTs = typeof kapso?.lastMessageTimestamp === 'string'
+          ? new Date(String(kapso.lastMessageTimestamp))
+          : null;
+
         tx.insert(schema.conversations)
           .values({
             id: conv.id,
@@ -119,6 +125,7 @@ function persistConversationsToDb(records: ConversationRecord[]) {
             lastMessageText: typeof kapso?.lastMessageText === 'string' ? kapso.lastMessageText : null,
             lastMessageType: typeof kapso?.lastMessageType === 'string' ? kapso.lastMessageType : null,
             lastMessageDirection: parseDirection(kapso),
+            lastMessageAt: lastMsgTs,
             messagesCount: typeof kapso?.messagesCount === 'number' ? kapso.messagesCount : 0,
             createdAt: conv.createdAt ? new Date(String(conv.createdAt)) : new Date(),
             updatedAt: conv.updatedAt ? new Date(String(conv.updatedAt)) : new Date(),
@@ -130,6 +137,7 @@ function persistConversationsToDb(records: ConversationRecord[]) {
               lastMessageText: sql`coalesce(excluded.last_message_text, last_message_text)`,
               lastMessageType: sql`coalesce(excluded.last_message_type, last_message_type)`,
               lastMessageDirection: sql`excluded.last_message_direction`,
+              lastMessageAt: sql`coalesce(excluded.last_message_at, last_message_at)`,
               messagesCount: sql`excluded.messages_count`,
               updatedAt: sql`excluded.updated_at`,
             },
@@ -167,7 +175,10 @@ function loadConversationsFromDb(): GroupedConversation[] {
     const phoneGroupMap = new Map<string, GroupedConversation>();
     for (const row of rows) {
       const phone = row.phone;
+      // Prefer last_message_at for display; fall back to updatedAt
+      const lastMessageAt = row.lastMessageAt ? new Date(row.lastMessageAt).toISOString() : undefined;
       const updatedAt = row.updatedAt ? new Date(row.updatedAt).toISOString() : undefined;
+      const displayTimestamp = lastMessageAt || updatedAt;
       const existing = phoneGroupMap.get(phone);
 
       if (!existing) {
@@ -177,7 +188,7 @@ function loadConversationsFromDb(): GroupedConversation[] {
           conversationStatuses: { [row.id]: row.status },
           phoneNumber: phone,
           status: row.status,
-          lastActiveAt: updatedAt,
+          lastActiveAt: displayTimestamp,
           phoneNumberId: row.phoneNumberId ?? PHONE_NUMBER_ID,
           metadata: {},
           contactName: contactMap.get(phone) ?? undefined,
@@ -190,11 +201,11 @@ function loadConversationsFromDb(): GroupedConversation[] {
         existing.conversationIds.push(row.id);
         existing.conversationStatuses[row.id] = row.status;
         existing.messagesCount = (existing.messagesCount ?? 0) + (row.messagesCount ?? 0);
-        const isNewer = updatedAt && (!existing.lastActiveAt || updatedAt > existing.lastActiveAt);
+        const isNewer = displayTimestamp && (!existing.lastActiveAt || displayTimestamp > existing.lastActiveAt);
         if (isNewer) {
           existing.id = row.id;
           existing.status = row.status;
-          existing.lastActiveAt = updatedAt;
+          existing.lastActiveAt = displayTimestamp;
           if (row.lastMessageText) {
             existing.lastMessage = { content: row.lastMessageText, direction: row.lastMessageDirection ?? 'inbound', type: row.lastMessageType ?? undefined };
           }
@@ -216,7 +227,7 @@ function loadConversationsFromDb(): GroupedConversation[] {
     return Array.from(phoneGroupMap.values()).sort((a, b) => {
       if (!a.lastActiveAt) return 1;
       if (!b.lastActiveAt) return -1;
-      return b.lastActiveAt.localeCompare(a.lastActiveAt);
+      return new Date(b.lastActiveAt).getTime() - new Date(a.lastActiveAt).getTime();
     });
   } catch (e) {
     console.error('[Conversations] Failed to load from SQLite:', e);
@@ -232,7 +243,10 @@ function groupConversations(records: ConversationRecord[], maxIdsPerGroup = 3): 
   for (const conversation of records) {
     const kapso = conversation.kapso;
     const phone = conversation.phoneNumber ?? '';
-    const lastActiveAt = typeof conversation.lastActiveAt === 'string' ? conversation.lastActiveAt : undefined;
+    // Prefer lastMessageTimestamp for display over lastActiveAt/updatedAt
+    const lastMsgTs = typeof kapso?.lastMessageTimestamp === 'string' ? kapso.lastMessageTimestamp : undefined;
+    const fallbackTs = typeof conversation.lastActiveAt === 'string' ? conversation.lastActiveAt : undefined;
+    const lastActiveAt = lastMsgTs || fallbackTs;
     const convStatus = conversation.status ?? 'unknown';
 
     if (lastActiveAt) convTimestamps.set(conversation.id, lastActiveAt);
@@ -302,7 +316,7 @@ function groupConversations(records: ConversationRecord[], maxIdsPerGroup = 3): 
   return Array.from(phoneGroupMap.values()).sort((a, b) => {
     if (!a.lastActiveAt) return 1;
     if (!b.lastActiveAt) return -1;
-    return b.lastActiveAt.localeCompare(a.lastActiveAt);
+    return new Date(b.lastActiveAt).getTime() - new Date(a.lastActiveAt).getTime();
   });
 }
 
@@ -337,7 +351,7 @@ function mergeGrouped(existing: GroupedConversation[], incoming: GroupedConversa
   return Array.from(map.values()).sort((a, b) => {
     if (!a.lastActiveAt) return 1;
     if (!b.lastActiveAt) return -1;
-    return b.lastActiveAt.localeCompare(a.lastActiveAt);
+    return new Date(b.lastActiveAt).getTime() - new Date(a.lastActiveAt).getTime();
   });
 }
 
@@ -490,6 +504,38 @@ export async function GET(request: Request) {
     }
     return NextResponse.json(
       { error: 'Failed to fetch conversations' },
+      { status: 500 }
+    );
+  }
+}
+
+// POST: Force resync — clears conversation cache and re-seeds from Kapso API
+export async function POST() {
+  try {
+    const db = getDb();
+
+    // Reset seed_complete flag
+    db.insert(schema.settings)
+      .values({ key: 'seed_complete', value: 'false' })
+      .onConflictDoUpdate({ target: schema.settings.key, set: { value: 'false', updatedAt: new Date() } })
+      .run();
+
+    // Clear conversations table to get fresh metadata from Kapso
+    // Messages are kept — they'll be supplemented with API data on chat open
+    db.delete(schema.conversations).run();
+
+    // Reset in-memory state
+    cachedData = null;
+    cacheTimestamp = 0;
+    nextApiCursor = undefined;
+    allPagesFetched = false;
+    allIdsPerPhone.clear();
+
+    return NextResponse.json({ success: true, message: 'Resync triggered. Reload the page to start syncing.' });
+  } catch (error) {
+    console.error('Error triggering resync:', error);
+    return NextResponse.json(
+      { error: 'Failed to trigger resync' },
       { status: 500 }
     );
   }

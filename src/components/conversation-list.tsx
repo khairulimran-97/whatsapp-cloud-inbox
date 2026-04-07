@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { format, isValid, isToday, isYesterday } from 'date-fns';
-import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save, Plus, Pencil, Trash2, MessageSquareText, CloudDownload, TriangleAlert } from 'lucide-react';
+import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save, Plus, Pencil, Trash2, MessageSquareText, CloudDownload, TriangleAlert, RefreshCw, Database } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAutoPolling } from '@/hooks/use-auto-polling';
 import { useTheme } from '@/hooks/use-theme';
@@ -926,7 +926,7 @@ type ReplyTemplate = {
 };
 
 function SettingsDialog({ onClose }: { onClose: () => void }) {
-  const [tab, setTab] = useState<'bcl' | 'templates'>('bcl');
+  const [tab, setTab] = useState<'bcl' | 'templates' | 'data'>('bcl');
 
   return (
     <div className="flex flex-col min-h-0 flex-1">
@@ -951,10 +951,21 @@ function SettingsDialog({ onClose }: { onClose: () => void }) {
               : "border-transparent text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]"
           )}
         >
-          Reply Templates
+          Templates
+        </button>
+        <button
+          onClick={() => setTab('data')}
+          className={cn(
+            "flex-1 py-2 text-sm font-medium transition-colors border-b-2 -mb-px",
+            tab === 'data'
+              ? "border-[var(--wa-green)] text-[var(--wa-green)]"
+              : "border-transparent text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]"
+          )}
+        >
+          Data
         </button>
       </div>
-      {tab === 'bcl' ? <BclSettingsTab onClose={onClose} /> : <ReplyTemplatesTab onClose={onClose} />}
+      {tab === 'bcl' ? <BclSettingsTab onClose={onClose} /> : tab === 'templates' ? <ReplyTemplatesTab onClose={onClose} /> : <DataTab />}
     </div>
   );
 }
@@ -1328,6 +1339,83 @@ function ReplyTemplatesTab({ onClose }: { onClose: () => void }) {
       <div className="flex justify-end pt-1">
         <Button variant="ghost" onClick={onClose} className="text-sm">Close</Button>
       </div>
+    </div>
+  );
+}
+
+function DataTab() {
+  const [syncing, setSyncing] = useState(false);
+  const [dbStats, setDbStats] = useState<{ conversations: number; messages: number; contacts: number } | null>(null);
+  const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/db-status')
+      .then(r => r.json())
+      .then(data => setDbStats({ conversations: data.conversations, messages: data.messages, contacts: data.contacts }))
+      .catch(() => {});
+  }, []);
+
+  const handleResync = async () => {
+    setSyncing(true);
+    setMessage(null);
+    try {
+      const res = await fetch('/api/conversations', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        setMessage({ text: data.message || 'Resync triggered successfully' });
+        setTimeout(() => window.location.reload(), 1500);
+      } else {
+        setMessage({ text: data.error || 'Failed to resync', error: true });
+      }
+    } catch {
+      setMessage({ text: 'Network error', error: true });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {dbStats && (
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: 'Conversations', value: dbStats.conversations },
+            { label: 'Messages', value: dbStats.messages },
+            { label: 'Contacts', value: dbStats.contacts },
+          ].map(({ label, value }) => (
+            <div key={label} className="bg-[var(--wa-hover)] rounded-lg p-3 text-center">
+              <p className="text-lg font-semibold text-[var(--wa-text-primary)]">{value.toLocaleString()}</p>
+              <p className="text-[10px] text-[var(--wa-text-secondary)] uppercase tracking-wider">{label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="bg-[var(--wa-hover)] rounded-lg p-4 space-y-3">
+        <div className="flex items-start gap-3">
+          <Database className="h-5 w-5 text-[var(--wa-text-secondary)] flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="text-sm font-medium text-[var(--wa-text-primary)]">Force Resync</h3>
+            <p className="text-xs text-[var(--wa-text-secondary)] mt-1 leading-relaxed">
+              Re-fetch all conversations from Kapso API. Existing messages are kept — only conversation metadata (status, timestamps, contacts) is refreshed.
+            </p>
+          </div>
+        </div>
+        <Button
+          onClick={handleResync}
+          disabled={syncing}
+          className="w-full bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] text-white text-sm gap-2"
+        >
+          {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          {syncing ? 'Resyncing...' : 'Resync All Conversations'}
+        </Button>
+      </div>
+
+      {message && (
+        <p className={cn("text-xs px-3 py-2 rounded-lg", message.error ? "text-red-400 bg-red-500/10" : "text-green-400 bg-green-500/10")}>
+          {message.text}
+        </p>
+      )}
     </div>
   );
 }

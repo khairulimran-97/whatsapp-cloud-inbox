@@ -44,6 +44,7 @@ export const conversations = sqliteTable('conversations', {
   lastMessageText: text('last_message_text'),
   lastMessageType: text('last_message_type'),
   lastMessageDirection: text('last_message_direction'),
+  lastMessageAt: integer('last_message_at', { mode: 'timestamp' }),
   messagesCount: integer('messages_count').default(0),
   source: text('source').default('api'),
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),

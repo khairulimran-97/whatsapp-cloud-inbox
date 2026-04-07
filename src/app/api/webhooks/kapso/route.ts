@@ -58,6 +58,9 @@ function persistConversation(conv: Record<string, unknown>) {
     const lastOutbound = kapso?.last_outbound_at as string | undefined;
     const lastMessageDirection = lastOutbound && (!lastInbound || lastOutbound > lastInbound) ? 'outbound' : 'inbound';
 
+    const lastMessageTimestamp = kapso?.last_message_timestamp as string | undefined;
+    const lastMessageAt = lastMessageTimestamp ? new Date(lastMessageTimestamp) : null;
+
     if (!convId || !phone) return;
 
     db.insert(schema.conversations)
@@ -69,6 +72,7 @@ function persistConversation(conv: Record<string, unknown>) {
         lastMessageText,
         lastMessageType,
         lastMessageDirection,
+        lastMessageAt,
         messagesCount: messagesCount ?? 0,
         source: 'webhook',
         createdAt: conv.created_at ? new Date(String(conv.created_at)) : new Date(),
@@ -81,6 +85,7 @@ function persistConversation(conv: Record<string, unknown>) {
           lastMessageText: sql`coalesce(${lastMessageText ?? null}, last_message_text)`,
           lastMessageType: sql`coalesce(${lastMessageType ?? null}, last_message_type)`,
           lastMessageDirection: sql`${lastMessageDirection}`,
+          lastMessageAt: sql`coalesce(${lastMessageAt ? lastMessageAt.getTime() / 1000 : null}, last_message_at)`,
           messagesCount: sql`${messagesCount ?? sql`messages_count`}`,
           updatedAt: new Date(),
         },
