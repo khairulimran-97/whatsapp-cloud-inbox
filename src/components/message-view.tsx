@@ -320,8 +320,8 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
     const isRefresh = refreshingRef.current;
 
     try {
-      // Always refresh on initial load/page refresh/conversation switch + manual refresh
-      const shouldRefresh = isRefresh || isInitialLoad;
+      // Only force refresh on manual refresh, not on initial load/conversation switch
+      const shouldRefresh = isRefresh;
 
       // Single batch API call (server handles caching + parallel fetching)
       const params = new URLSearchParams({
