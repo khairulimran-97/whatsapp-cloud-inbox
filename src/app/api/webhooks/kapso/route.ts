@@ -31,10 +31,13 @@ function persistConversation(conv: Record<string, unknown>) {
     const lastMessageType = kapso?.last_message_type as string | undefined;
     const messagesCount = kapso?.messages_count as number | undefined;
     const contactName = conv.contact_name as string | undefined;
+    // Determine direction from timestamps
+    const lastInbound = kapso?.last_inbound_at as string | undefined;
+    const lastOutbound = kapso?.last_outbound_at as string | undefined;
+    const lastMessageDirection = lastOutbound && (!lastInbound || lastOutbound > lastInbound) ? 'outbound' : 'inbound';
 
     if (!convId || !phone) return;
 
-    // Upsert conversation
     db.insert(schema.conversations)
       .values({
         id: convId,
@@ -43,10 +46,11 @@ function persistConversation(conv: Record<string, unknown>) {
         phoneNumberId,
         lastMessageText,
         lastMessageType,
+        lastMessageDirection,
         messagesCount: messagesCount ?? 0,
         source: 'webhook',
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: conv.created_at ? new Date(String(conv.created_at)) : new Date(),
+        updatedAt: conv.updated_at ? new Date(String(conv.updated_at)) : new Date(),
       })
       .onConflictDoUpdate({
         target: schema.conversations.id,
@@ -54,6 +58,7 @@ function persistConversation(conv: Record<string, unknown>) {
           status: sql`${status ?? 'active'}`,
           lastMessageText: sql`coalesce(${lastMessageText ?? null}, last_message_text)`,
           lastMessageType: sql`coalesce(${lastMessageType ?? null}, last_message_type)`,
+          lastMessageDirection: sql`${lastMessageDirection}`,
           messagesCount: sql`${messagesCount ?? sql`messages_count`}`,
           updatedAt: new Date(),
         },
@@ -101,8 +106,57 @@ function persistMessage(msg: Record<string, unknown>, conv: Record<string, unkno
     const createdAt = timestamp ? new Date(Number(timestamp) * 1000) : new Date();
 
     if (!phone) return;
-    // Skip reactions
     if (messageType === 'reaction') return;
+
+    // Extract rich metadata from webhook (message_type_data, interactive, template, context)
+    const metadata: Record<string, unknown> = {};
+    if (kapso.message_type_data) metadata.message_type_data = kapso.message_type_data;
+    if (kapso.origin) metadata.origin = kapso.origin;
+    if (msg.interactive) metadata.interactive = msg.interactive;
+    if (msg.template) metadata.template = msg.template;
+    if (msg.context) metadata.context = msg.context;
+    if (msg.image) metadata.image = msg.image;
+    if (msg.video) metadata.video = msg.video;
+    if (msg.audio) metadata.audio = msg.audio;
+    if (msg.document) metadata.document = msg.document;
+    if (msg.sticker) metadata.sticker = msg.sticker;
+    if (msg.location) metadata.location = msg.location;
+    if (msg.contacts) metadata.contacts = msg.contacts;
+    const metadataJson = Object.keys(metadata).length > 0 ? JSON.stringify(metadata) : null;
+
+    // Extract media URL from template header or media fields
+    let mediaDataJson: string | null = null;
+    const typeData = kapso.message_type_data as Record<string, unknown> | undefined;
+    if (typeData?.components) {
+      const components = typeData.components as Array<Record<string, unknown>>;
+      const header = components.find(c => c.type === 'header');
+      const params = header?.parameters as Array<Record<string, unknown>> | undefined;
+      const mediaParam = params?.find(p => ['image', 'video', 'document'].includes(p.type as string));
+      if (mediaParam) {
+        const mediaObj = mediaParam[mediaParam.type as string] as Record<string, unknown>;
+        if (mediaObj?.link) {
+          mediaDataJson = JSON.stringify({ url: mediaObj.link, type: mediaParam.type });
+        }
+      }
+    }
+    // Also check direct media fields (image/video/audio/document)
+    for (const mediaType of ['image', 'video', 'audio', 'document'] as const) {
+      const media = msg[mediaType] as Record<string, unknown> | undefined;
+      if (media && (media.id || media.link)) {
+        mediaDataJson = JSON.stringify({
+          mediaId: media.id,
+          url: media.link,
+          mimeType: media.mime_type,
+          type: mediaType,
+        });
+        break;
+      }
+    }
+
+    // Extract caption from media messages
+    const caption = (msg.image as Record<string, unknown>)?.caption as string ??
+      (msg.video as Record<string, unknown>)?.caption as string ??
+      (msg.document as Record<string, unknown>)?.caption as string ?? null;
 
     db.insert(schema.messages)
       .values({
@@ -113,8 +167,10 @@ function persistMessage(msg: Record<string, unknown>, conv: Record<string, unkno
         content,
         messageType,
         status,
-        hasMedia,
-        caption: null,
+        hasMedia: hasMedia || !!mediaDataJson,
+        caption,
+        mediaDataJson,
+        metadataJson,
         source: 'webhook',
         createdAt,
       })
@@ -122,6 +178,9 @@ function persistMessage(msg: Record<string, unknown>, conv: Record<string, unkno
         target: schema.messages.id,
         set: {
           status: sql`${status ?? sql`status`}`,
+          mediaDataJson: mediaDataJson ? sql`${mediaDataJson}` : sql`media_data_json`,
+          metadataJson: metadataJson ? sql`${metadataJson}` : sql`metadata_json`,
+          caption: caption ? sql`${caption}` : sql`caption`,
         },
       })
       .run();
