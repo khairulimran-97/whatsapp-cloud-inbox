@@ -84,6 +84,18 @@ function createDb() {
     CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id);
     CREATE INDEX IF NOT EXISTS idx_messages_phone ON messages(phone);
     CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(created_at);
+    CREATE TABLE IF NOT EXISTS webhook_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_type TEXT NOT NULL,
+      phone_number TEXT,
+      conversation_id TEXT,
+      message_id TEXT,
+      header_event TEXT,
+      payload TEXT NOT NULL,
+      created_at INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS idx_webhook_logs_created ON webhook_logs(created_at);
+    CREATE INDEX IF NOT EXISTS idx_webhook_logs_event ON webhook_logs(event_type);
   `);
 
   // Migration: add source column to existing tables
@@ -109,8 +121,9 @@ function cleanupOldData(sqlite: Database.Database) {
     const cutoffSeconds = Math.floor(cutoff / 1000);
     const deleted = sqlite.prepare('DELETE FROM messages WHERE created_at < ?').run(cutoffSeconds);
     const deletedConvs = sqlite.prepare('DELETE FROM conversations WHERE updated_at < ?').run(cutoffSeconds);
-    if ((deleted.changes ?? 0) > 0 || (deletedConvs.changes ?? 0) > 0) {
-      console.log(`[DB Cleanup] Deleted ${deleted.changes} messages, ${deletedConvs.changes} conversations older than ${CLEANUP_DAYS} days`);
+    const deletedLogs = sqlite.prepare('DELETE FROM webhook_logs WHERE created_at < ?').run(cutoffSeconds);
+    if ((deleted.changes ?? 0) > 0 || (deletedConvs.changes ?? 0) > 0 || (deletedLogs.changes ?? 0) > 0) {
+      console.log(`[DB Cleanup] Deleted ${deleted.changes} messages, ${deletedConvs.changes} conversations, ${deletedLogs.changes} webhook logs older than ${CLEANUP_DAYS} days`);
     }
   } catch (e) {
     console.error('[DB Cleanup] Error:', e);

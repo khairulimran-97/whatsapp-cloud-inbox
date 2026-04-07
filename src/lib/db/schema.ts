@@ -66,3 +66,14 @@ export const messages = sqliteTable('messages', {
   source: text('source').default('api'),
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 });
+
+export const webhookLogs = sqliteTable('webhook_logs', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  eventType: text('event_type').notNull(),
+  phoneNumber: text('phone_number'),
+  conversationId: text('conversation_id'),
+  messageId: text('message_id'),
+  headerEvent: text('header_event'),
+  payload: text('payload').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+});

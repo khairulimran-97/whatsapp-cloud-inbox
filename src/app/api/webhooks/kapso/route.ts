@@ -18,6 +18,28 @@ function invalidateConversationCache() {
   (globalThis as Record<symbol, number>)[CONV_CACHE_KEY] = Date.now();
 }
 
+// Log webhook to SQLite for debugging
+function logWebhook(headerEvent: string | null, body: Record<string, unknown>) {
+  try {
+    const db = getDb();
+    const conv = body.conversation as Record<string, unknown> | undefined;
+    const msg = body.message as Record<string, unknown> | undefined;
+    db.insert(schema.webhookLogs)
+      .values({
+        eventType: headerEvent ?? 'unknown',
+        phoneNumber: (conv?.phone_number ?? msg?.from ?? msg?.to) as string | undefined,
+        conversationId: conv?.id as string | undefined,
+        messageId: msg?.id as string | undefined,
+        headerEvent,
+        payload: JSON.stringify(body),
+        createdAt: new Date(),
+      })
+      .run();
+  } catch (e) {
+    console.error('[Webhook] Failed to log:', e);
+  }
+}
+
 // Persist conversation data from webhook to SQLite
 function persistConversation(conv: Record<string, unknown>) {
   try {
@@ -295,6 +317,9 @@ export async function POST(request: Request) {
     const body = JSON.parse(rawBody);
     const headerEvent = request.headers.get('x-webhook-event');
     const isBatched = request.headers.get('x-webhook-batch') === 'true';
+
+    // Log ALL incoming webhooks to SQLite for debugging
+    logWebhook(headerEvent, body);
 
     // Handle batched webhooks — Kapso sends { data: [...items] } when batched
     const items: Record<string, unknown>[] = isBatched && Array.isArray(body.data)
