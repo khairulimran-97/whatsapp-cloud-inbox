@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { format, isValid, isToday, isYesterday } from 'date-fns';
-import { Paperclip, Send, X, MessageSquare, ListTree, ArrowLeft, CircleCheck, RotateCcw, MailOpen, MoreVertical, Info, List, Link, Search, ChevronUp, ChevronDown, Zap } from 'lucide-react';
+import { Paperclip, Send, X, MessageSquare, ListTree, ArrowLeft, CircleCheck, RotateCcw, MailOpen, MoreVertical, Info, List, Link, Search, ChevronUp, ChevronDown, Zap, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MediaMessage } from '@/components/media-message';
 import { InteractiveMessageDialog } from '@/components/interactive-message-dialog';
@@ -415,7 +415,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
   // Auto-polling — adaptive interval (fast without webhook, slow as backup with webhook)
   useAutoPolling({
     interval: pollInterval,
-    enabled: !!conversationIds && conversationIds.length > 0,
+    enabled: !!conversationIds && conversationIds.length > 0 && pollInterval > 0,
     onPoll: fetchMessages
   });
 
@@ -714,6 +714,14 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                 </Button>
               )}
               <Button
+                onClick={() => { refreshingRef.current = true; fetchMessages(); }}
+                variant="ghost"
+                size="sm"
+                className="text-[var(--wa-text-tertiary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover-bg)] text-xs gap-1.5 h-9 px-3 transition-colors duration-200"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+              </Button>
+              <Button
                 onClick={() => setShowCustomerSidebar(!showCustomerSidebar)}
                 variant="ghost"
                 className={cn("xl:hidden h-9 px-2.5 text-xs font-medium gap-1.5 transition-colors duration-200 text-amber-500", showCustomerSidebar ? "bg-amber-500/10" : "hover:bg-amber-500/10")}
@@ -768,6 +776,10 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                   <DropdownMenuItem onClick={() => setShowMessageSearch(!showMessageSearch)} className="py-2.5">
                     <Search className="h-4 w-4 mr-3" />
                     Search messages
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { refreshingRef.current = true; fetchMessages(); }} className="py-2.5">
+                    <RefreshCw className="h-4 w-4 mr-3" />
+                    Refresh messages
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

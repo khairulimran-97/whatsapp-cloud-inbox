@@ -252,9 +252,10 @@ export default function Home() {
 
   const { connected: sseConnected } = useRealtime({ onEvent: handleRealtimeEvent });
 
-  // Adaptive polling: fast when no webhook/SSE, slow as backup when connected
+  // Disable message polling when SSE is connected — webhook handles new messages
+  // Keep conversation polling (lighter) as backup to catch status changes
   const conversationPollInterval = sseConnected ? 30000 : 10000;
-  const messagePollInterval = sseConnected ? 30000 : 5000;
+  const messagePollInterval = sseConnected ? 0 : 5000;
 
   // Show loading while checking auth, then login screen if not authenticated
   if (authenticated === null) {
