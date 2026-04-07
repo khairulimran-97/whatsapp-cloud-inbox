@@ -456,16 +456,15 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
       prevPhoneRef.current = phoneNumber;
 
       if (isNewChat) {
-        // User switched to a different conversation — full reset
+        // User switched to a different conversation — full reset + fetch
         setLoading(true);
         setIsNearBottom(true);
         unreadDividerRef.current = null;
         prevMessageFingerprintRef.current = '';
-      } else {
-        // Same phone, new session ID added — background refresh only
-        refreshingRef.current = true;
+        fetchMessages();
       }
-      fetchMessages();
+      // Same phone, new session ID added via webhook — skip fetch,
+      // messages are injected directly via injectMessage()
     }
   }, [conversationIds, fetchMessages, phoneNumber]);
 

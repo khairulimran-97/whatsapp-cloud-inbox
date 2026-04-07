@@ -188,19 +188,6 @@ export default function Home() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Debounced conversation list refresh — only used for new conversation discovery
-  const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const REFRESH_DEBOUNCE_MS = 2000; // 2s debounce — coalesce rapid webhook events
-
-  const scheduleRefresh = useCallback(() => {
-    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
-
-    refreshTimerRef.current = setTimeout(async () => {
-      refreshTimerRef.current = null;
-      await conversationListRef.current?.refresh();
-    }, REFRESH_DEBOUNCE_MS);
-  }, []);
-
   // Update conversation in sidebar from webhook data without API call
   const updateConversationFromWebhook = useCallback((phoneNumber: string, webhookConv: Record<string, unknown>) => {
     const kapso = webhookConv.kapso as Record<string, unknown> | undefined;
@@ -300,10 +287,6 @@ export default function Home() {
       if (webhookConv && event.phoneNumber) {
         updateConversationFromWebhook(event.phoneNumber, webhookConv);
       }
-      // For new conversations, schedule a lightweight list refresh to pick up new IDs
-      if (event.type === 'conversation_started' && event.conversationId) {
-        scheduleRefresh();
-      }
     }
 
     // Unread sync from another browser/tab
@@ -311,7 +294,7 @@ export default function Home() {
       const serverUnread = event.data as Record<string, number>;
       setUnreadCounts(new Map(Object.entries(serverUnread)));
     }
-  }, [scheduleRefresh, updateConversationFromWebhook]);
+  }, [updateConversationFromWebhook]);
 
   const { connected: sseConnected } = useRealtime({ onEvent: handleRealtimeEvent });
 
