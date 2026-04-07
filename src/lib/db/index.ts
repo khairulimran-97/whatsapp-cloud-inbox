@@ -108,6 +108,8 @@ function createDb() {
   // Migration: add last_message_at column
   try {
     sqlite.exec(`ALTER TABLE conversations ADD COLUMN last_message_at INTEGER`);
+    // New column added — mark resync needed so conversations get fresh timestamps
+    sqlite.prepare(`INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES ('seed_complete', 'false', ?)`).run(Math.floor(Date.now() / 1000));
   } catch { /* column already exists */ }
 
   // Run cleanup on startup

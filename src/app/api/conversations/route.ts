@@ -514,15 +514,13 @@ export async function POST() {
   try {
     const db = getDb();
 
-    // Reset seed_complete flag
+    // Reset seed_complete flag so the next load triggers a full re-fetch
+    // Conversations are NOT deleted — persistConversationsToDb uses upsert
+    // so fresh data (including last_message_at) overwrites stale rows
     db.insert(schema.settings)
       .values({ key: 'seed_complete', value: 'false' })
       .onConflictDoUpdate({ target: schema.settings.key, set: { value: 'false', updatedAt: new Date() } })
       .run();
-
-    // Clear conversations table to get fresh metadata from Kapso
-    // Messages are kept — they'll be supplemented with API data on chat open
-    db.delete(schema.conversations).run();
 
     // Reset in-memory state
     cachedData = null;
