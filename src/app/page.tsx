@@ -203,16 +203,18 @@ export default function Home() {
   }, []);
 
   // Update conversation in sidebar from webhook data without API call
-  const updateConversationFromWebhook = useCallback((phoneNumber: string, webhookConv: Record<string, unknown>, forceCurrentTime = false) => {
+  const updateConversationFromWebhook = useCallback((phoneNumber: string, webhookConv: Record<string, unknown>) => {
     const kapso = webhookConv.kapso as Record<string, unknown> | undefined;
     const convId = webhookConv.id as string;
     const convStatus = webhookConv.status as string;
     const lastMessageText = kapso?.last_message_text as string | undefined;
     const lastMessageType = kapso?.last_message_type as string | undefined;
     const contactName = webhookConv.contact_name as string | undefined;
-    const lastActiveAt = forceCurrentTime
-      ? new Date().toISOString()
-      : ((webhookConv.last_active_at ?? webhookConv.updated_at) as string | undefined);
+    // Use the most recent timestamp from webhook data
+    const lastMessageTimestamp = kapso?.last_message_timestamp as string | undefined;
+    const lastActiveAt = lastMessageTimestamp
+      || (webhookConv.last_active_at as string | undefined)
+      || (webhookConv.updated_at as string | undefined);
 
     conversationListRef.current?.updateConversationFromWebhook?.(phoneNumber, {
       conversationId: convId,
@@ -275,7 +277,7 @@ export default function Home() {
 
       // Update conversation sidebar with webhook data — use current time for sorting
       if (webhookConv) {
-        updateConversationFromWebhook(event.phoneNumber!, webhookConv, true);
+        updateConversationFromWebhook(event.phoneNumber!, webhookConv);
       }
     }
 
@@ -286,7 +288,7 @@ export default function Home() {
         messageViewRef.current?.injectMessage(webhookMsg, event.conversationId);
       }
       if (webhookConv && event.phoneNumber) {
-        updateConversationFromWebhook(event.phoneNumber, webhookConv, true);
+        updateConversationFromWebhook(event.phoneNumber, webhookConv);
       }
     }
 
