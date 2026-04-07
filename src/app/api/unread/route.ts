@@ -1,31 +1,16 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { getDb, schema } from '@/lib/db';
+import { eq, sql } from 'drizzle-orm';
 import { publish } from '@/lib/event-bus';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
-const UNREAD_FILE = path.join(DATA_DIR, 'unread.json');
-
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-function readUnread(): Record<string, number> {
-  try {
-    if (!fs.existsSync(UNREAD_FILE)) return {};
-    return JSON.parse(fs.readFileSync(UNREAD_FILE, 'utf8'));
-  } catch {
-    return {};
+function getAllUnread(): Record<string, number> {
+  const db = getDb();
+  const rows = db.select().from(schema.unreadCounts).all();
+  const result: Record<string, number> = {};
+  for (const row of rows) {
+    if (row.count > 0) result[row.phone] = row.count;
   }
-}
-
-function writeUnread(data: Record<string, number>) {
-  ensureDataDir();
-  const cleaned: Record<string, number> = {};
-  for (const [k, v] of Object.entries(data)) {
-    if (v > 0) cleaned[k] = v;
-  }
-  fs.writeFileSync(UNREAD_FILE, JSON.stringify(cleaned, null, 2));
+  return result;
 }
 
 function broadcastUnreadUpdate(unread: Record<string, number>) {
@@ -38,7 +23,7 @@ function broadcastUnreadUpdate(unread: Record<string, number>) {
 
 // GET — load all unread counts
 export async function GET() {
-  return NextResponse.json(readUnread());
+  return NextResponse.json(getAllUnread());
 }
 
 // PUT — full replace (bulk save)
@@ -48,7 +33,18 @@ export async function PUT(request: Request) {
     if (typeof data !== 'object' || data === null || Array.isArray(data)) {
       return NextResponse.json({ error: 'Expected object { phone: count }' }, { status: 400 });
     }
-    writeUnread(data as Record<string, number>);
+
+    const db = getDb();
+    // Clear all and re-insert
+    db.delete(schema.unreadCounts).run();
+    for (const [phone, count] of Object.entries(data as Record<string, number>)) {
+      if (count > 0) {
+        db.insert(schema.unreadCounts)
+          .values({ phone, count, updatedAt: new Date() })
+          .run();
+      }
+    }
+
     broadcastUnreadUpdate(data as Record<string, number>);
     return NextResponse.json({ ok: true });
   } catch {
@@ -63,20 +59,26 @@ export async function PATCH(request: Request) {
       increment?: string[];
       clear?: string[];
     };
-    const current = readUnread();
+    const db = getDb();
 
     if (increment) {
       for (const phone of increment) {
-        current[phone] = (current[phone] ?? 0) + 1;
+        db.insert(schema.unreadCounts)
+          .values({ phone, count: 1, updatedAt: new Date() })
+          .onConflictDoUpdate({
+            target: schema.unreadCounts.phone,
+            set: { count: sql`${schema.unreadCounts.count} + 1`, updatedAt: new Date() },
+          })
+          .run();
       }
     }
     if (clear) {
       for (const phone of clear) {
-        delete current[phone];
+        db.delete(schema.unreadCounts).where(eq(schema.unreadCounts.phone, phone)).run();
       }
     }
 
-    writeUnread(current);
+    const current = getAllUnread();
     broadcastUnreadUpdate(current);
     return NextResponse.json(current);
   } catch {

@@ -47,3 +47,6 @@ webhook.log
 /data/
 data/settings.json
 data/reply-templates.json
+data/app.db
+data/app.db-wal
+data/app.db-shm

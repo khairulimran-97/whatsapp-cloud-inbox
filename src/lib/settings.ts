@@ -1,24 +1,18 @@
-import { promises as fs } from 'fs';
-import path from 'path';
+import { getDb, schema } from '@/lib/db';
+import { eq } from 'drizzle-orm';
 
-const SETTINGS_PATH = path.join(process.cwd(), 'data', 'settings.json');
-
-let cached: { data: Record<string, string>; ts: number } | null = null;
-const CACHE_TTL = 5_000;
-
-export async function getSettings(): Promise<Record<string, string>> {
-  if (cached && Date.now() - cached.ts < CACHE_TTL) return cached.data;
-  try {
-    const raw = await fs.readFile(SETTINGS_PATH, 'utf-8');
-    const data = JSON.parse(raw);
-    cached = { data, ts: Date.now() };
-    return data;
-  } catch {
-    return {};
+export function getSettings(): Record<string, string> {
+  const db = getDb();
+  const rows = db.select().from(schema.settings).all();
+  const result: Record<string, string> = {};
+  for (const row of rows) {
+    result[row.key] = row.value;
   }
+  return result;
 }
 
-export async function getBclApiKey(): Promise<string> {
-  const settings = await getSettings();
-  return settings.bcl_api_key || '';
+export function getBclApiKey(): string {
+  const db = getDb();
+  const row = db.select().from(schema.settings).where(eq(schema.settings.key, 'bcl_api_key')).get();
+  return row?.value || '';
 }

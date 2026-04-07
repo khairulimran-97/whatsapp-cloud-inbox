@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'phone parameter is required' }, { status: 400 });
   }
 
-  const apiKey = await getBclApiKey();
+  const apiKey = getBclApiKey();
   if (!apiKey) {
     return NextResponse.json({ configured: false });
   }

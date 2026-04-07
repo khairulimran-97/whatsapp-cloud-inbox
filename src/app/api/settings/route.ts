@@ -1,21 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
-
-const SETTINGS_PATH = path.join(process.cwd(), 'data', 'settings.json');
-
-async function readSettings(): Promise<Record<string, string>> {
-  try {
-    const raw = await fs.readFile(SETTINGS_PATH, 'utf-8');
-    return JSON.parse(raw);
-  } catch {
-    return {};
-  }
-}
-
-async function writeSettings(settings: Record<string, string>) {
-  await fs.writeFile(SETTINGS_PATH, JSON.stringify(settings, null, 2) + '\n', 'utf-8');
-}
+import { getDb, schema } from '@/lib/db';
+import { eq } from 'drizzle-orm';
 
 function verifyAdmin(request: NextRequest): boolean {
   const secret = process.env.APP_PASSWORD;
@@ -32,8 +17,9 @@ function maskKey(key: string): string {
 // GET: returns masked key (safe, no auth needed)
 export async function GET() {
   const adminConfigured = !!process.env.APP_PASSWORD;
-  const settings = await readSettings();
-  const key = settings.bcl_api_key || '';
+  const db = getDb();
+  const row = db.select().from(schema.settings).where(eq(schema.settings.key, 'bcl_api_key')).get();
+  const key = row?.value || '';
   return NextResponse.json({
     bcl_api_key: maskKey(key),
     bcl_configured: !!key,
@@ -58,15 +44,18 @@ export async function PUT(request: NextRequest) {
   }
 
   const body = await request.json();
-  const settings = await readSettings();
+  const db = getDb();
 
   if (typeof body.bcl_api_key === 'string') {
-    settings.bcl_api_key = body.bcl_api_key.trim();
+    const value = body.bcl_api_key.trim();
+    db.insert(schema.settings)
+      .values({ key: 'bcl_api_key', value, updatedAt: new Date() })
+      .onConflictDoUpdate({ target: schema.settings.key, set: { value, updatedAt: new Date() } })
+      .run();
   }
 
-  await writeSettings(settings);
-
-  const key = settings.bcl_api_key || '';
+  const row = db.select().from(schema.settings).where(eq(schema.settings.key, 'bcl_api_key')).get();
+  const key = row?.value || '';
   return NextResponse.json({
     bcl_api_key: maskKey(key),
     bcl_configured: !!key,

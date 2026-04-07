@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import fs from 'fs';
-import path from 'path';
 import { publish, type WebhookEvent } from '@/lib/event-bus';
 import { sendPushNotification } from '@/lib/web-push';
-
-const UNREAD_FILE = path.join(process.cwd(), 'data', 'unread.json');
+import { getDb, schema } from '@/lib/db';
+import { sql } from 'drizzle-orm';
 
 // Access shared message cache to invalidate on webhook events
 const CACHE_KEY = Symbol.for('__kapso_message_cache__');
@@ -94,12 +92,14 @@ function extractEvent(item: Record<string, unknown>, headerEvent: string | null)
 
 function incrementUnread(phoneNumber: string) {
   try {
-    const dir = path.dirname(UNREAD_FILE);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    let data: Record<string, number> = {};
-    try { data = JSON.parse(fs.readFileSync(UNREAD_FILE, 'utf8')); } catch { /* empty */ }
-    data[phoneNumber] = (data[phoneNumber] ?? 0) + 1;
-    fs.writeFileSync(UNREAD_FILE, JSON.stringify(data, null, 2));
+    const db = getDb();
+    db.insert(schema.unreadCounts)
+      .values({ phone: phoneNumber, count: 1, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: schema.unreadCounts.phone,
+        set: { count: sql`${schema.unreadCounts.count} + 1`, updatedAt: new Date() },
+      })
+      .run();
   } catch (e) {
     console.error('[Webhook] Failed to update unread:', e);
   }

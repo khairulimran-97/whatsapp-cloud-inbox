@@ -1,30 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
 import crypto from 'crypto';
-
-export type ReplyTemplate = {
-  id: string;
-  title: string;
-  category: string;
-  body: string;
-  created_at: string;
-};
-
-const TEMPLATES_PATH = path.join(process.cwd(), 'data', 'reply-templates.json');
-
-async function readTemplates(): Promise<ReplyTemplate[]> {
-  try {
-    const raw = await fs.readFile(TEMPLATES_PATH, 'utf-8');
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
-}
-
-async function writeTemplates(templates: ReplyTemplate[]) {
-  await fs.writeFile(TEMPLATES_PATH, JSON.stringify(templates, null, 2) + '\n', 'utf-8');
-}
+import { getDb, schema } from '@/lib/db';
+import { eq } from 'drizzle-orm';
 
 function verifyAdmin(request: NextRequest): boolean {
   const secret = process.env.APP_PASSWORD;
@@ -35,7 +12,8 @@ function verifyAdmin(request: NextRequest): boolean {
 
 // GET: list all templates (no auth — agents need to read)
 export async function GET() {
-  const templates = await readTemplates();
+  const db = getDb();
+  const templates = db.select().from(schema.replyTemplates).all();
   return NextResponse.json({ templates });
 }
 
@@ -52,17 +30,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Title and body are required' }, { status: 400 });
   }
 
-  const templates = await readTemplates();
-  const newTemplate: ReplyTemplate = {
+  const db = getDb();
+  const newTemplate = {
     id: crypto.randomUUID(),
     title: title.trim(),
     category: (category || 'General').trim(),
     body: templateBody.trim(),
-    created_at: new Date().toISOString(),
+    createdAt: new Date(),
   };
 
-  templates.push(newTemplate);
-  await writeTemplates(templates);
+  db.insert(schema.replyTemplates).values(newTemplate).run();
 
   return NextResponse.json({ template: newTemplate, message: 'Template created' });
 }
@@ -80,19 +57,21 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: 'Template ID is required' }, { status: 400 });
   }
 
-  const templates = await readTemplates();
-  const index = templates.findIndex((t) => t.id === id);
-  if (index === -1) {
+  const db = getDb();
+  const existing = db.select().from(schema.replyTemplates).where(eq(schema.replyTemplates.id, id)).get();
+  if (!existing) {
     return NextResponse.json({ error: 'Template not found' }, { status: 404 });
   }
 
-  if (title?.trim()) templates[index].title = title.trim();
-  if (category?.trim()) templates[index].category = category.trim();
-  if (templateBody?.trim()) templates[index].body = templateBody.trim();
+  const updates: Partial<{ title: string; category: string; body: string }> = {};
+  if (title?.trim()) updates.title = title.trim();
+  if (category?.trim()) updates.category = category.trim();
+  if (templateBody?.trim()) updates.body = templateBody.trim();
 
-  await writeTemplates(templates);
+  db.update(schema.replyTemplates).set(updates).where(eq(schema.replyTemplates.id, id)).run();
 
-  return NextResponse.json({ template: templates[index], message: 'Template updated' });
+  const updated = db.select().from(schema.replyTemplates).where(eq(schema.replyTemplates.id, id)).get();
+  return NextResponse.json({ template: updated, message: 'Template updated' });
 }
 
 // DELETE: remove a template (auth required)
@@ -108,14 +87,13 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Template ID is required' }, { status: 400 });
   }
 
-  const templates = await readTemplates();
-  const filtered = templates.filter((t) => t.id !== id);
-
-  if (filtered.length === templates.length) {
+  const db = getDb();
+  const existing = db.select().from(schema.replyTemplates).where(eq(schema.replyTemplates.id, id)).get();
+  if (!existing) {
     return NextResponse.json({ error: 'Template not found' }, { status: 404 });
   }
 
-  await writeTemplates(filtered);
+  db.delete(schema.replyTemplates).where(eq(schema.replyTemplates.id, id)).run();
 
   return NextResponse.json({ message: 'Template deleted' });
 }
