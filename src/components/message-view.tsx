@@ -599,10 +599,12 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
   return (
     <div
       className={cn(
-        "flex-1 flex flex-col chat-bg panel-slide",
+        "flex-1 flex flex-row chat-bg panel-slide overflow-hidden",
         !isVisible ? "panel-slide-right" : "panel-slide-center"
       )}
     >
+      {/* Main chat column */}
+      <div className="flex-1 flex flex-col min-w-0">
       <div className="border-b border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)] safe-area-top">
         <div className="flex items-center h-[60px] px-2 sm:px-3">
           {/* Back button — overlaps with avatar on mobile like WhatsApp */}
@@ -693,25 +695,25 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                 </Button>
               )}
               <Button
-                onClick={() => setShowMessageSearch(!showMessageSearch)}
-                variant="ghost"
-                size="icon"
-                className={cn("text-[var(--wa-text-tertiary)] hover:text-[var(--wa-text-primary)] h-9 w-9 transition-colors duration-200", showMessageSearch && "text-[var(--wa-green)]")}
-              >
-                <Search className="h-4 w-4" />
-              </Button>
-              <Button
                 onClick={() => setShowCustomerSidebar(!showCustomerSidebar)}
                 variant="ghost"
-                size="icon"
-                className={cn("text-[var(--wa-text-tertiary)] hover:text-[var(--wa-text-primary)] h-9 w-9 transition-colors duration-200", showCustomerSidebar && "text-[var(--wa-green)]")}
+                className={cn("xl:hidden h-9 px-2.5 text-xs font-medium gap-1.5 transition-colors duration-200 text-amber-500", showCustomerSidebar ? "bg-amber-500/10" : "hover:bg-amber-500/10")}
               >
-                <Info className="h-4 w-4" />
+                <Info className="h-3.5 w-3.5" />
+                Info
               </Button>
             </div>
 
             {/* Mobile/Tablet: icon buttons + overflow menu */}
             <div className="flex lg:hidden items-center">
+              <Button
+                onClick={() => setShowCustomerSidebar(!showCustomerSidebar)}
+                variant="ghost"
+                size="icon"
+                className={cn("h-9 w-9 transition-colors duration-200 text-amber-500", showCustomerSidebar ? "bg-amber-500/10" : "hover:bg-amber-500/10")}
+              >
+                <Info className="h-4 w-4" />
+              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="text-[var(--wa-text-tertiary)] hover:text-[var(--wa-text-primary)] h-10 w-10 transition-colors duration-200">
@@ -747,10 +749,6 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                   <DropdownMenuItem onClick={() => setShowMessageSearch(!showMessageSearch)} className="py-2.5">
                     <Search className="h-4 w-4 mr-3" />
                     Search messages
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowCustomerSidebar(true)} className="py-2.5">
-                    <Info className="h-4 w-4 mr-3" />
-                    Customer info
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -1380,11 +1378,29 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
       )}
 
       {phoneNumber && (
-        <CustomerSidebar
-          phoneNumber={phoneNumber}
-          open={showCustomerSidebar}
-          onClose={() => setShowCustomerSidebar(false)}
-        />
+        <>
+          {/* Overlay sidebar for smaller screens */}
+          <div className="xl:hidden">
+            <CustomerSidebar
+              phoneNumber={phoneNumber}
+              open={showCustomerSidebar}
+              onClose={() => setShowCustomerSidebar(false)}
+            />
+          </div>
+        </>
+      )}
+      </div>
+
+      {/* Inline sidebar for desktop (xl+) */}
+      {phoneNumber && (
+        <div className="hidden xl:block">
+          <CustomerSidebar
+            phoneNumber={phoneNumber}
+            open={true}
+            onClose={() => {}}
+            inline
+          />
+        </div>
       )}
     </div>
   );
