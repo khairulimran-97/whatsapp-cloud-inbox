@@ -204,11 +204,11 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       const fingerprint = JSON.stringify(newConversations.map((c: Conversation) => c.id + c.status + c.lastActiveAt + (c.lastMessage?.content || '')));
       if (fingerprint !== prevDataRef.current) {
         prevDataRef.current = fingerprint;
-        // On poll, merge page 1 into existing conversations (keep scrolled-in pages)
         setConversations(prev => {
           if (prev.length <= PAGE_SIZE) return newConversations;
-          // Replace first PAGE_SIZE items, keep the rest
-          const rest = prev.slice(PAGE_SIZE);
+          // Merge: page 1 from server + keep scrolled-in pages, deduplicate by phone
+          const page1Phones = new Set(newConversations.map((c: Conversation) => c.phoneNumber));
+          const rest = prev.slice(PAGE_SIZE).filter((c: Conversation) => !page1Phones.has(c.phoneNumber));
           return [...newConversations, ...rest];
         });
         onConversationsUpdatedRef.current?.(newConversations);
@@ -277,7 +277,9 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       setHasMore(!!data.hasMore);
       if (newPage.length > 0) {
         setConversations(prev => {
-          const merged = [...prev, ...newPage];
+          const existingPhones = new Set(prev.map(c => c.phoneNumber));
+          const uniqueNew = newPage.filter((c: Conversation) => !existingPhones.has(c.phoneNumber));
+          const merged = [...prev, ...uniqueNew];
           prevDataRef.current = JSON.stringify(merged.map((c: Conversation) => c.id + c.status + c.lastActiveAt + (c.lastMessage?.content || '')));
           onConversationsUpdatedRef.current?.(merged);
           return merged;
@@ -342,7 +344,22 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
     updateConversationFromWebhook: (phoneNumber: string, data) => {
       setConversations(prev => {
         const idx = prev.findIndex(c => c.phoneNumber === phoneNumber);
-        if (idx === -1) return prev; // Unknown contact — will appear on next poll
+        if (idx === -1) {
+          // Contact not in current list — add to top with webhook data
+          const newConv: Conversation = {
+            id: data.conversationId,
+            conversationIds: [data.conversationId],
+            conversationStatuses: { [data.conversationId]: data.status },
+            phoneNumber,
+            status: data.status || 'active',
+            lastActiveAt: data.lastActiveAt || new Date().toISOString(),
+            phoneNumberId: '',
+            contactName: data.contactName || phoneNumber,
+            lastMessage: data.lastMessage,
+            totalConversations: 1,
+          };
+          return [newConv, ...prev];
+        }
         const existing = prev[idx];
         const updatedStatuses = { ...existing.conversationStatuses, [data.conversationId]: data.status };
         const updatedIds = existing.conversationIds.includes(data.conversationId)
