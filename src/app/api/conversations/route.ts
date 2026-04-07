@@ -59,9 +59,18 @@ let nextApiCursor: string | undefined;
 // Whether we've exhausted all pages from the Kapso API
 let allPagesFetched = false;
 const CACHE_TTL_MS = 30_000; // 30s — SSE handles freshness
+const PAGE_SIZE = 50; // contacts per page for initial/scroll loading
 
 // Cache ALL conversation IDs per phone (not sliced) for "load older" feature
 const allIdsPerPhone = new Map<string, string[]>();
+
+// Return a page of cached data
+function paginateCache(page: number): { data: GroupedConversation[]; hasMore: boolean; total: number } {
+  if (!cachedData) return { data: [], hasMore: false, total: 0 };
+  const start = (page - 1) * PAGE_SIZE;
+  const slice = cachedData.slice(start, start + PAGE_SIZE);
+  return { data: slice, hasMore: start + PAGE_SIZE < cachedData.length, total: cachedData.length };
+}
 
 // Check if webhook has invalidated our cache
 const CONV_CACHE_KEY = Symbol.for('__kapso_conv_cache_invalidated__');
@@ -380,6 +389,7 @@ export async function GET(request: Request) {
     const status = searchParams.get('status');
     const forceRefresh = searchParams.get('refresh') === 'true';
     const cursorParam = searchParams.get('cursor');
+    const pageParam = Number(searchParams.get('page')) || 1;
     const limitParam = Number(searchParams.get('limit')) || DEFAULT_PAGE_SIZE;
     const olderIdsPhone = searchParams.get('olderIds');
     const syncMode = searchParams.get('sync') === 'true';
@@ -424,12 +434,14 @@ export async function GET(request: Request) {
         const page = await fetchNextPage(status ?? undefined, 100);
         cachedData = page;
         cacheTimestamp = Date.now();
-        return NextResponse.json({ data: page, hasMore: !allPagesFetched });
+        const result = paginateCache(1);
+        return NextResponse.json(result);
       } catch (refreshError) {
         // Restore previous cache on failure
         if (previousCache) {
           cachedData = previousCache;
-          return NextResponse.json({ data: previousCache, hasMore: true });
+          const result = paginateCache(1);
+          return NextResponse.json(result);
         }
         throw refreshError;
       }
@@ -444,7 +456,8 @@ export async function GET(request: Request) {
 
     // ── Polling: return cache if fresh and not invalidated by webhook ──
     if (cachedData && (Date.now() - cacheTimestamp) < CACHE_TTL_MS && !isCacheInvalidated()) {
-      return NextResponse.json({ data: cachedData, hasMore: !allPagesFetched });
+      const result = paginateCache(pageParam);
+      return NextResponse.json(result);
     }
 
     // ── Polling with stale cache: fetch page 1 and merge ──
@@ -453,7 +466,8 @@ export async function GET(request: Request) {
       const recentGrouped = groupConversations(recent);
       cachedData = mergeGrouped(cachedData, recentGrouped);
       cacheTimestamp = Date.now();
-      return NextResponse.json({ data: cachedData, hasMore: !allPagesFetched });
+      const result = paginateCache(pageParam);
+      return NextResponse.json(result);
     }
 
     // ── First load: load from SQLite (seed is complete at this point) ──
@@ -462,7 +476,8 @@ export async function GET(request: Request) {
       cachedData = dbConversations;
       cacheTimestamp = Date.now();
       allPagesFetched = true;
-      return NextResponse.json({ data: dbConversations, hasMore: false });
+      const result = paginateCache(pageParam);
+      return NextResponse.json(result);
     }
 
     // SQLite empty but seed marked complete — shouldn't happen, re-sync
@@ -470,7 +485,8 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Error fetching conversations:', error);
     if (cachedData) {
-      return NextResponse.json({ data: cachedData, hasMore: !allPagesFetched });
+      const result = paginateCache(1);
+      return NextResponse.json(result);
     }
     return NextResponse.json(
       { error: 'Failed to fetch conversations' },

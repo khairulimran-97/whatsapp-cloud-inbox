@@ -156,6 +156,8 @@ export type ConversationListRef = {
   }) => void;
 };
 
+const PAGE_SIZE = 50;
+
 export const ConversationList = forwardRef<ConversationListRef, Props>(
   ({ onSelectConversation, onConversationsUpdated, selectedConversationId, isHidden = false, unreadCounts = new Map(), pollInterval = 10000, notificationEnabled = false, notificationPermission = 'default', onToggleNotification }, ref) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -171,6 +173,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
   const [showSettings, setShowSettings] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const pageRef = useRef(1);
   const { theme, toggleTheme } = useTheme();
   const prevDataRef = useRef<string>('');
   const onConversationsUpdatedRef = useRef(onConversationsUpdated);
@@ -201,7 +204,13 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       const fingerprint = JSON.stringify(newConversations.map((c: Conversation) => c.id + c.status + c.lastActiveAt + (c.lastMessage?.content || '')));
       if (fingerprint !== prevDataRef.current) {
         prevDataRef.current = fingerprint;
-        setConversations(newConversations);
+        // On poll, merge page 1 into existing conversations (keep scrolled-in pages)
+        setConversations(prev => {
+          if (prev.length <= PAGE_SIZE) return newConversations;
+          // Replace first PAGE_SIZE items, keep the rest
+          const rest = prev.slice(PAGE_SIZE);
+          return [...newConversations, ...rest];
+        });
         onConversationsUpdatedRef.current?.(newConversations);
       }
     } catch (error) {
@@ -261,14 +270,18 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
     if (loadingMore || !hasMore) return;
     setLoadingMore(true);
     try {
-      const response = await fetch('/api/conversations?cursor=next');
+      pageRef.current += 1;
+      const response = await fetch(`/api/conversations?page=${pageRef.current}`);
       const data = await response.json();
-      const allConversations: Conversation[] = data.data || [];
+      const newPage: Conversation[] = data.data || [];
       setHasMore(!!data.hasMore);
-      if (allConversations.length > 0) {
-        prevDataRef.current = JSON.stringify(allConversations.map((c: Conversation) => c.id + c.status + c.lastActiveAt + (c.lastMessage?.content || '')));
-        setConversations(allConversations);
-        onConversationsUpdatedRef.current?.(allConversations);
+      if (newPage.length > 0) {
+        setConversations(prev => {
+          const merged = [...prev, ...newPage];
+          prevDataRef.current = JSON.stringify(merged.map((c: Conversation) => c.id + c.status + c.lastActiveAt + (c.lastMessage?.content || '')));
+          onConversationsUpdatedRef.current?.(merged);
+          return merged;
+        });
       }
     } catch (error) {
       console.error('Error loading more conversations:', error);
@@ -308,6 +321,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
   useImperativeHandle(ref, () => ({
     refresh: async () => {
       try {
+        pageRef.current = 1;
         const response = await fetch('/api/conversations?refresh=true');
         if (!response.ok) return conversations;
         const data = await response.json();
