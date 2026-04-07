@@ -66,12 +66,16 @@ function isCacheInvalidated(): boolean {
 
 function groupConversations(records: ConversationRecord[]): GroupedConversation[] {
   const phoneGroupMap = new Map<string, GroupedConversation>();
+  // Track lastActiveAt per conversation ID for sorting
+  const convTimestamps = new Map<string, string>();
 
   for (const conversation of records) {
     const kapso = conversation.kapso;
     const phone = conversation.phoneNumber ?? '';
     const lastActiveAt = typeof conversation.lastActiveAt === 'string' ? conversation.lastActiveAt : undefined;
     const convStatus = conversation.status ?? 'unknown';
+
+    if (lastActiveAt) convTimestamps.set(conversation.id, lastActiveAt);
 
     const existing = phoneGroupMap.get(phone);
     const isNewer = !existing || (lastActiveAt && (!existing.lastActiveAt || lastActiveAt > existing.lastActiveAt));
@@ -109,11 +113,24 @@ function groupConversations(records: ConversationRecord[]): GroupedConversation[
         existing.status = conversation.status ?? 'unknown';
         existing.lastActiveAt = lastActiveAt;
         if (typeof kapso?.contactName === 'string') existing.contactName = kapso.contactName;
-        // Don't overwrite sidebar lastMessage with empty text
         if (lastMessageText) {
           existing.lastMessage = { content: lastMessageText, direction: parseDirection(kapso), type: lastMessageType };
         }
       }
+    }
+  }
+
+  // Sort conversation IDs by most recent first, limit to 5
+  for (const group of phoneGroupMap.values()) {
+    group.conversationIds.sort((a, b) => {
+      const ta = convTimestamps.get(a) ?? '';
+      const tb = convTimestamps.get(b) ?? '';
+      return tb.localeCompare(ta); // newest first
+    });
+    group.conversationIds = group.conversationIds.slice(0, 5);
+    const idSet = new Set(group.conversationIds);
+    for (const key of Object.keys(group.conversationStatuses)) {
+      if (!idSet.has(key)) delete group.conversationStatuses[key];
     }
   }
 
