@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { format, isValid, isToday, isYesterday } from 'date-fns';
-import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save, Plus, Pencil, Trash2, MessageSquareText } from 'lucide-react';
+import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save, Plus, Pencil, Trash2, MessageSquareText, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAutoPolling } from '@/hooks/use-auto-polling';
 import { useTheme } from '@/hooks/use-theme';
@@ -44,6 +44,7 @@ type Conversation = {
   metadata?: Record<string, unknown>;
   contactName?: string;
   messagesCount?: number;
+  totalConversations?: number;
   lastMessage?: {
     content: string;
     direction: string;
@@ -146,6 +147,13 @@ export type ConversationListRef = {
   refresh: () => Promise<Conversation[]>;
   selectByPhoneNumber: (phoneNumber: string) => void;
   updateConversation: (updated: Conversation) => void;
+  updateConversationFromWebhook: (phoneNumber: string, data: {
+    conversationId: string;
+    status: string;
+    lastMessage?: { content: string; direction: string; type?: string };
+    contactName?: string;
+    lastActiveAt?: string;
+  }) => void;
 };
 
 export const ConversationList = forwardRef<ConversationListRef, Props>(
@@ -250,6 +258,36 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
     selectByPhoneNumber,
     updateConversation: (updated: Conversation) => {
       setConversations(prev => prev.map(c => c.phoneNumber === updated.phoneNumber ? updated : c));
+    },
+    updateConversationFromWebhook: (phoneNumber: string, data) => {
+      setConversations(prev => {
+        const idx = prev.findIndex(c => c.phoneNumber === phoneNumber);
+        if (idx === -1) return prev; // Unknown contact — will appear on next poll
+        const existing = prev[idx];
+        const updatedStatuses = { ...existing.conversationStatuses, [data.conversationId]: data.status };
+        const updatedIds = existing.conversationIds.includes(data.conversationId)
+          ? existing.conversationIds
+          : [data.conversationId, ...existing.conversationIds];
+        const overallStatus = Object.values(updatedStatuses).some(s => s === 'active') ? 'active' : 'ended';
+        const updated: Conversation = {
+          ...existing,
+          conversationIds: updatedIds,
+          conversationStatuses: updatedStatuses,
+          status: overallStatus,
+          ...(data.contactName && { contactName: data.contactName }),
+          ...(data.lastMessage && { lastMessage: data.lastMessage }),
+          ...(data.lastActiveAt && { lastActiveAt: data.lastActiveAt }),
+        };
+        const next = [...prev];
+        next[idx] = updated;
+        // Re-sort by lastActiveAt (move updated to top)
+        next.sort((a, b) => {
+          if (!a.lastActiveAt) return 1;
+          if (!b.lastActiveAt) return -1;
+          return b.lastActiveAt.localeCompare(a.lastActiveAt);
+        });
+        return next;
+      });
     }
   }));
 
@@ -394,18 +432,33 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
                 {theme === 'dark' ? 'Light mode' : 'Dark mode'}
               </span>
             </div>
-            <div className="relative group">
-              <Button
-                onClick={() => setShowSettings(true)}
-                variant="ghost"
-                size="icon"
-                className="text-[var(--wa-text-secondary)] hover:bg-[var(--wa-border-strong)]/30 h-9 w-9"
-              >
-                <Settings className="h-[18px] w-[18px]" />
-              </Button>
-              <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 px-2 py-1 text-[11px] rounded-md bg-[var(--wa-tooltip-bg)] text-[var(--wa-tooltip-text)] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-lg">
-                Settings
-              </span>
+            <div className="flex items-center gap-0.5">
+              <div className="relative group">
+                <Button
+                  onClick={() => fetchConversations()}
+                  variant="ghost"
+                  size="icon"
+                  className="text-[var(--wa-text-secondary)] hover:bg-[var(--wa-border-strong)]/30 h-9 w-9"
+                >
+                  <RefreshCw className="h-[16px] w-[16px]" />
+                </Button>
+                <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 px-2 py-1 text-[11px] rounded-md bg-[var(--wa-tooltip-bg)] text-[var(--wa-tooltip-text)] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-lg">
+                  Refresh
+                </span>
+              </div>
+              <div className="relative group">
+                <Button
+                  onClick={() => setShowSettings(true)}
+                  variant="ghost"
+                  size="icon"
+                  className="text-[var(--wa-text-secondary)] hover:bg-[var(--wa-border-strong)]/30 h-9 w-9"
+                >
+                  <Settings className="h-[18px] w-[18px]" />
+                </Button>
+                <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 px-2 py-1 text-[11px] rounded-md bg-[var(--wa-tooltip-bg)] text-[var(--wa-tooltip-text)] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-lg">
+                  Settings
+                </span>
+              </div>
             </div>
           </div>
         </div>

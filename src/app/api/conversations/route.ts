@@ -35,6 +35,7 @@ type GroupedConversation = {
   contactName?: string;
   messagesCount?: number;
   lastMessage?: { content: string; direction: string; type?: string };
+  totalConversations?: number;
 };
 
 const KAPSO_FIELDS = buildKapsoFields([
@@ -55,7 +56,10 @@ let cacheTimestamp = 0;
 let nextApiCursor: string | undefined;
 // Whether we've exhausted all pages from the Kapso API
 let allPagesFetched = false;
-const CACHE_TTL_MS = 10_000;
+const CACHE_TTL_MS = 30_000; // 30s — SSE handles freshness
+
+// Cache ALL conversation IDs per phone (not sliced) for "load older" feature
+const allIdsPerPhone = new Map<string, string[]>();
 
 // Check if webhook has invalidated our cache
 const CONV_CACHE_KEY = Symbol.for('__kapso_conv_cache_invalidated__');
@@ -64,7 +68,7 @@ function isCacheInvalidated(): boolean {
   return invalidatedAt > cacheTimestamp;
 }
 
-function groupConversations(records: ConversationRecord[]): GroupedConversation[] {
+function groupConversations(records: ConversationRecord[], maxIdsPerGroup = 3): GroupedConversation[] {
   const phoneGroupMap = new Map<string, GroupedConversation>();
   // Track lastActiveAt per conversation ID for sorting
   const convTimestamps = new Map<string, string>();
@@ -120,14 +124,19 @@ function groupConversations(records: ConversationRecord[]): GroupedConversation[
     }
   }
 
-  // Sort conversation IDs by most recent first, limit to 5
+  // Sort conversation IDs by most recent first
   for (const group of phoneGroupMap.values()) {
     group.conversationIds.sort((a, b) => {
       const ta = convTimestamps.get(a) ?? '';
       const tb = convTimestamps.get(b) ?? '';
       return tb.localeCompare(ta); // newest first
     });
-    group.conversationIds = group.conversationIds.slice(0, 5);
+    // Store total count so frontend knows if older sessions exist
+    group.totalConversations = group.conversationIds.length;
+    // Store ALL sorted IDs (for "load older" feature) before slicing
+    allIdsPerPhone.set(group.phoneNumber, [...group.conversationIds]);
+    // Only include first N in the active set — frontend loads more on demand
+    group.conversationIds = group.conversationIds.slice(0, maxIdsPerGroup);
     const idSet = new Set(group.conversationIds);
     for (const key of Object.keys(group.conversationStatuses)) {
       if (!idSet.has(key)) delete group.conversationStatuses[key];
@@ -217,6 +226,13 @@ export async function GET(request: Request) {
     const forceRefresh = searchParams.get('refresh') === 'true';
     const cursorParam = searchParams.get('cursor');
     const limitParam = Number(searchParams.get('limit')) || DEFAULT_PAGE_SIZE;
+    const olderIdsPhone = searchParams.get('olderIds'); // phone number to get ALL IDs for
+
+    // ── Older IDs mode: return all conversation IDs for a phone (from cache, no API call) ──
+    if (olderIdsPhone) {
+      const ids = allIdsPerPhone.get(olderIdsPhone) ?? [];
+      return NextResponse.json({ conversationIds: ids });
+    }
 
     // ── Paginated mode: ?cursor=next  (load more) ──
     if (cursorParam === 'next') {

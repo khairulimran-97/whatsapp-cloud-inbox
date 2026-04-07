@@ -144,6 +144,7 @@ type Props = {
   conversationStatus?: string;
   phoneNumber?: string;
   contactName?: string;
+  totalConversations?: number;
   onTemplateSent?: (phoneNumber: string) => Promise<void>;
   onStatusChanged?: () => Promise<void>;
   onMarkUnread?: (phoneNumber: string) => void;
@@ -156,11 +157,14 @@ type Props = {
 
 export type MessageViewRef = {
   refresh: () => void;
+  injectMessage: (webhookMsg: Record<string, unknown>, conversationId?: string) => void;
+  updateMessageStatus: (messageId: string, status: string) => void;
 };
 
-export const MessageView = forwardRef<MessageViewRef, Props>(function MessageView({ conversationIds, conversationStatuses, conversationStatus, phoneNumber, contactName, onTemplateSent, onStatusChanged, onMarkUnread, onBack, onInteraction, isVisible = false, pollInterval = 5000, initialUnreadCount = 0 }: Props, ref) {
+export const MessageView = forwardRef<MessageViewRef, Props>(function MessageView({ conversationIds, conversationStatuses, conversationStatus, phoneNumber, contactName, totalConversations, onTemplateSent, onStatusChanged, onMarkUnread, onBack, onInteraction, isVisible = false, pollInterval = 5000, initialUnreadCount = 0 }: Props, ref) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const [messageInput, setMessageInput] = useState('');
   const [sending, setSending] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -226,12 +230,67 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
     return () => window.removeEventListener('keydown', handleKey);
   }, [lightboxUrl]);
 
-  // Expose refresh method to parent — background refresh, no UI disruption
+  // Expose methods to parent — background refresh + direct injection
   useImperativeHandle(ref, () => ({
     refresh: () => {
       refreshingRef.current = true;
       fetchMessages();
-    }
+    },
+    // Inject a webhook message directly into state — no API call needed
+    injectMessage: (webhookMsg: Record<string, unknown>, conversationId?: string) => {
+      const kapso = webhookMsg.kapso as Record<string, unknown> | undefined;
+      if (!kapso) return;
+
+      const msgId = webhookMsg.id as string;
+      if (!msgId) return;
+
+      // Skip reactions
+      const msgType = webhookMsg.type as string;
+      if (msgType === 'reaction') return;
+
+      const direction = kapso.direction as string ?? 'inbound';
+      const content = typeof kapso.content === 'string' ? kapso.content : 
+        typeof (webhookMsg.text as Record<string, unknown>)?.body === 'string' ? (webhookMsg.text as Record<string, unknown>).body as string : '';
+      const status = kapso.status as string | undefined;
+      const timestamp = webhookMsg.timestamp as string;
+      const createdAt = timestamp ? new Date(Number(timestamp) * 1000).toISOString() : new Date().toISOString();
+      const hasMedia = Boolean(kapso.has_media);
+
+      const newMsg: Message = {
+        id: msgId,
+        direction: direction as 'inbound' | 'outbound',
+        content,
+        createdAt,
+        status,
+        phoneNumber: (webhookMsg.from ?? webhookMsg.to ?? phoneNumber) as string,
+        hasMedia,
+        messageType: msgType,
+        conversationId,
+      };
+
+      setMessages(prev => {
+        // Skip if already exists (deduplicate)
+        if (prev.some(m => m.id === msgId)) return prev;
+        const updated = [...prev, newMsg].sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+        prevMessageFingerprintRef.current = updated.map(m => m.id + (m.status || '')).join(',');
+        previousMessageCountRef.current = updated.length;
+        return updated;
+      });
+    },
+    // Update delivery/read status of a specific message — no API call
+    updateMessageStatus: (messageId: string, status: string) => {
+      setMessages(prev => {
+        const idx = prev.findIndex(m => m.id === messageId);
+        if (idx === -1) return prev;
+        if (prev[idx].status === status) return prev; // already up to date
+        const updated = [...prev];
+        updated[idx] = { ...updated[idx], status };
+        prevMessageFingerprintRef.current = updated.map(m => m.id + (m.status || '')).join(',');
+        return updated;
+      });
+    },
   }));
 
   // Compute 24-hour messaging window status
@@ -335,6 +394,57 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
       refreshingRef.current = false;
     }
   }, [conversationIds]);
+
+  // Load older messages from additional conversation sessions on demand
+  const hasOlderSessions = (totalConversations ?? 0) > (conversationIds?.length ?? 0);
+  const loadOlderMessages = useCallback(async () => {
+    if (!phoneNumber || loadingOlder) return;
+    setLoadingOlder(true);
+    try {
+      // Get ALL conversation IDs for this phone from server cache (no Kapso API call)
+      const r = await fetch(`/api/conversations?olderIds=${encodeURIComponent(phoneNumber)}`);
+      if (!r.ok) return;
+      const data = await r.json();
+      const allIds = (data.conversationIds || []) as string[];
+
+      // Find IDs we haven't loaded yet
+      const loadedIds = new Set(conversationIds ?? []);
+      const olderIds = allIds.filter((id: string) => !loadedIds.has(id)).slice(0, 5);
+      if (olderIds.length === 0) return;
+
+      // Fetch messages for older sessions (this makes Kapso API calls)
+      const params = new URLSearchParams({
+        ids: olderIds.join(','),
+        mode: 'initial',
+        refresh: 'true',
+      });
+      const msgRes = await fetch(`/api/messages/batch?${params}`);
+      if (!msgRes.ok) return;
+      const msgData = await msgRes.json();
+      const olderMessages = (msgData.data || []) as Message[];
+
+      // Merge older messages with existing ones
+      setMessages(prev => {
+        const messageMap = new Map<string, Message>();
+        for (const msg of olderMessages) {
+          if (msg.messageType !== 'reaction') messageMap.set(msg.id, msg);
+        }
+        for (const msg of prev) {
+          messageMap.set(msg.id, msg); // existing messages take priority
+        }
+        const sorted = Array.from(messageMap.values()).sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+        prevMessageFingerprintRef.current = sorted.map(m => m.id + (m.status || '')).join(',');
+        previousMessageCountRef.current = sorted.length;
+        return sorted;
+      });
+    } catch (error) {
+      console.error('Error loading older messages:', error);
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [phoneNumber, conversationIds, loadingOlder]);
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -734,6 +844,14 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
             {/* Mobile/Tablet: icon buttons + overflow menu */}
             <div className="flex lg:hidden items-center">
               <Button
+                onClick={() => { refreshingRef.current = true; fetchMessages(); }}
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 text-[var(--wa-text-tertiary)] hover:text-[var(--wa-text-primary)] transition-colors duration-200"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+              <Button
                 onClick={() => setShowCustomerSidebar(!showCustomerSidebar)}
                 variant="ghost"
                 size="icon"
@@ -834,6 +952,30 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
 
       <ScrollArea ref={messagesContainerRef} className="flex-1 h-0 px-3 py-3 sm:px-4 md:px-[30px]" onClick={onInteraction}>
         <div>
+        {/* Load older messages button — shown at top when more sessions exist */}
+        {hasOlderSessions && messages.length > 0 && (
+          <div className="flex justify-center py-3">
+            <Button
+              onClick={loadOlderMessages}
+              disabled={loadingOlder}
+              variant="ghost"
+              size="sm"
+              className="text-xs gap-1.5 h-8 px-4 text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover-bg)] rounded-full border border-[var(--wa-border)]"
+            >
+              {loadingOlder ? (
+                <>
+                  <RefreshCw className="h-3 w-3 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                <>
+                  <ChevronUp className="h-3 w-3" />
+                  Load older messages
+                </>
+              )}
+            </Button>
+          </div>
+        )}
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center px-4">
             <div className="h-16 w-16 rounded-full bg-[var(--wa-hover)] flex items-center justify-center mb-4">

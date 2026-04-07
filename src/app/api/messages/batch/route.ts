@@ -171,7 +171,7 @@ const g = globalThis as Record<symbol, Map<string, CacheEntry>>;
 if (!g[CACHE_KEY]) g[CACHE_KEY] = new Map();
 const messageCache = g[CACHE_KEY];
 
-const CACHE_TTL_MS = 5_000; // 5s cache — matches poll interval
+const CACHE_TTL_MS = 30_000; // 30s — SSE handles freshness, cache is fallback
 
 function getCached(conversationId: string): TransformedMessage[] | null {
   const entry = messageCache.get(conversationId);

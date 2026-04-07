@@ -20,6 +20,7 @@ type Conversation = {
   contactName?: string;
   messagesCount?: number;
   lastMessage?: { content: string; direction: string; type?: string };
+  totalConversations?: number;
 };
 
 // Server-side unread operations (SQLite is the single source of truth)
@@ -187,60 +188,122 @@ export default function Home() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Debounced refresh timers to coalesce rapid webhook events into a single refresh
+  // Debounced conversation list refresh — only used for new conversation discovery
   const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const REFRESH_DEBOUNCE_MS = 800;
+  const REFRESH_DEBOUNCE_MS = 2000; // 2s debounce — coalesce rapid webhook events
 
-  const scheduleRefresh = useCallback((includeMessages: boolean) => {
-    // Cancel any pending refresh
+  const scheduleRefresh = useCallback(() => {
     if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
 
     refreshTimerRef.current = setTimeout(async () => {
       refreshTimerRef.current = null;
-      // Refresh conversation list first — may discover new conversation IDs
       await conversationListRef.current?.refresh();
-      // Then refresh messages with potentially updated conversation IDs
-      if (includeMessages) {
-        messageViewRef.current?.refresh();
-      }
     }, REFRESH_DEBOUNCE_MS);
   }, []);
 
-  // Real-time updates via webhook SSE — triggers debounced refresh on events
+  // Update conversation in sidebar from webhook data without API call
+  const updateConversationFromWebhook = useCallback((phoneNumber: string, webhookConv: Record<string, unknown>) => {
+    const kapso = webhookConv.kapso as Record<string, unknown> | undefined;
+    const convId = webhookConv.id as string;
+    const convStatus = webhookConv.status as string;
+    const lastMessageText = kapso?.last_message_text as string | undefined;
+    const lastMessageType = kapso?.last_message_type as string | undefined;
+    const contactName = webhookConv.contact_name as string | undefined;
+
+    conversationListRef.current?.updateConversationFromWebhook?.(phoneNumber, {
+      conversationId: convId,
+      status: convStatus,
+      lastMessage: lastMessageText ? { content: lastMessageText, direction: 'inbound', type: lastMessageType } : undefined,
+      contactName,
+      lastActiveAt: (webhookConv.last_active_at ?? webhookConv.updated_at) as string | undefined,
+    });
+
+    // Also update selected conversation if it's the same phone
+    const selected = selectedConversationRef.current;
+    if (selected && selected.phoneNumber === phoneNumber) {
+      setSelectedConversation(prev => {
+        if (!prev) return prev;
+        const updatedStatuses = { ...prev.conversationStatuses, [convId]: convStatus };
+        const updatedIds = prev.conversationIds.includes(convId)
+          ? prev.conversationIds
+          : [convId, ...prev.conversationIds];
+        const overallStatus = Object.values(updatedStatuses).some(s => s === 'active') ? 'active' : 'ended';
+        return {
+          ...prev,
+          conversationIds: updatedIds,
+          conversationStatuses: updatedStatuses,
+          status: overallStatus,
+          ...(contactName && { contactName }),
+          ...(lastMessageText && { lastMessage: { content: lastMessageText, direction: 'inbound', type: lastMessageType } }),
+        };
+      });
+    }
+  }, []);
+
+  // Real-time updates via webhook SSE — injects data directly, no API calls
   const handleRealtimeEvent = useCallback((event: RealtimeEvent) => {
     if (event.type === 'connected') return;
 
-    // Message events → refresh conversations + messages (debounced)
-    if (event.type === 'message_received' || event.type === 'message_sent') {
-      scheduleRefresh(true);
+    // Extract webhook payload for direct injection
+    const webhookData = event.data as Record<string, unknown> | undefined;
+    const webhookConv = webhookData?.conversation as Record<string, unknown> | undefined;
+    const webhookMsg = webhookData?.message as Record<string, unknown> | undefined;
 
-      // Inbound message → play sound + increment unread (immediate, not debounced)
-      if (event.type === 'message_received' && event.phoneNumber) {
-        notificationSoundRef.current?.play().catch(() => {});
+    // Inbound message → inject message + update conversation sidebar
+    if (event.type === 'message_received' && event.phoneNumber) {
+      notificationSoundRef.current?.play().catch(() => {});
 
-        const selected = selectedConversationRef.current;
-        if (selected && event.phoneNumber === selected.phoneNumber) {
-          // Currently viewing this conversation — show unread divider line
-          setInitialUnreadCount(prev => prev + 1);
+      const selected = selectedConversationRef.current;
+      if (selected && event.phoneNumber === selected.phoneNumber) {
+        setInitialUnreadCount(prev => prev + 1);
+        // Inject message directly into MessageView — no API call
+        if (webhookMsg) {
+          messageViewRef.current?.injectMessage(webhookMsg, event.conversationId);
         }
+      }
 
-        // Always increment sidebar badge (server already incremented via webhook)
-        setUnreadCounts(current => {
-          const next = new Map(current);
-          next.set(event.phoneNumber!, (next.get(event.phoneNumber!) ?? 0) + 1);
-          return next;
-        });
+      // Always increment sidebar badge (server already incremented via webhook)
+      setUnreadCounts(current => {
+        const next = new Map(current);
+        next.set(event.phoneNumber!, (next.get(event.phoneNumber!) ?? 0) + 1);
+        return next;
+      });
+
+      // Update conversation sidebar with webhook data — no API call
+      if (webhookConv) {
+        updateConversationFromWebhook(event.phoneNumber!, webhookConv);
       }
     }
 
-    // Status events → refresh messages (debounced)
-    if (event.type === 'message_delivered' || event.type === 'message_read' || event.type === 'message_failed') {
-      scheduleRefresh(true);
+    // Outbound message → inject into current chat view
+    if (event.type === 'message_sent') {
+      const selected = selectedConversationRef.current;
+      if (selected && event.phoneNumber === selected.phoneNumber && webhookMsg) {
+        messageViewRef.current?.injectMessage(webhookMsg, event.conversationId);
+      }
+      if (webhookConv && event.phoneNumber) {
+        updateConversationFromWebhook(event.phoneNumber, webhookConv);
+      }
     }
 
-    // Conversation events → refresh list only (debounced)
+    // Status updates (delivered/read) → update message status inline
+    if (event.type === 'message_delivered' || event.type === 'message_read') {
+      const selected = selectedConversationRef.current;
+      if (selected && event.phoneNumber === selected.phoneNumber && event.messageId) {
+        const newStatus = event.type === 'message_read' ? 'read' : 'delivered';
+        messageViewRef.current?.updateMessageStatus(event.messageId, newStatus);
+      }
+    }
+
+    // Conversation events → update sidebar status (no API call)
     if (event.type === 'conversation_started' || event.type === 'conversation_ended' || event.type === 'conversation_inactive') {
-      scheduleRefresh(true);
+      if (webhookConv && event.phoneNumber) {
+        updateConversationFromWebhook(event.phoneNumber, webhookConv);
+      }
+      // For new conversations, schedule a lightweight list refresh to pick up new IDs
+      if (event.type === 'conversation_started' && event.conversationId) {
+        scheduleRefresh();
+      }
     }
 
     // Unread sync from another browser/tab
@@ -248,13 +311,13 @@ export default function Home() {
       const serverUnread = event.data as Record<string, number>;
       setUnreadCounts(new Map(Object.entries(serverUnread)));
     }
-  }, [scheduleRefresh]);
+  }, [scheduleRefresh, updateConversationFromWebhook]);
 
   const { connected: sseConnected } = useRealtime({ onEvent: handleRealtimeEvent });
 
-  // Disable message polling when SSE is connected — webhook handles new messages
-  // Keep conversation polling (lighter) as backup to catch status changes
-  const conversationPollInterval = sseConnected ? 30000 : 10000;
+  // With SSE: no polling needed (webhook handles everything)
+  // Without SSE: fallback polling
+  const conversationPollInterval = sseConnected ? 60000 : 10000;
   const messagePollInterval = sseConnected ? 0 : 5000;
 
   // Show loading while checking auth, then login screen if not authenticated
@@ -287,6 +350,7 @@ export default function Home() {
         conversationStatus={selectedConversation?.status}
         phoneNumber={selectedConversation?.phoneNumber}
         contactName={selectedConversation?.contactName}
+        totalConversations={selectedConversation?.totalConversations}
         onTemplateSent={handleTemplateSent}
         onStatusChanged={handleStatusChanged}
         onMarkUnread={handleMarkUnread}
