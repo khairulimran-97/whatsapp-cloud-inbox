@@ -18,6 +18,116 @@ function invalidateConversationCache() {
   (globalThis as Record<symbol, number>)[CONV_CACHE_KEY] = Date.now();
 }
 
+// Persist conversation data from webhook to SQLite
+function persistConversation(conv: Record<string, unknown>) {
+  try {
+    const db = getDb();
+    const kapso = conv.kapso as Record<string, unknown> | undefined;
+    const convId = conv.id as string;
+    const phone = conv.phone_number as string;
+    const status = conv.status as string;
+    const phoneNumberId = conv.phone_number_id as string | undefined;
+    const lastMessageText = kapso?.last_message_text as string | undefined;
+    const lastMessageType = kapso?.last_message_type as string | undefined;
+    const messagesCount = kapso?.messages_count as number | undefined;
+    const contactName = conv.contact_name as string | undefined;
+
+    if (!convId || !phone) return;
+
+    // Upsert conversation
+    db.insert(schema.conversations)
+      .values({
+        id: convId,
+        phone,
+        status: status ?? 'active',
+        phoneNumberId,
+        lastMessageText,
+        lastMessageType,
+        messagesCount: messagesCount ?? 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: schema.conversations.id,
+        set: {
+          status: sql`${status ?? 'active'}`,
+          lastMessageText: sql`coalesce(${lastMessageText ?? null}, last_message_text)`,
+          lastMessageType: sql`coalesce(${lastMessageType ?? null}, last_message_type)`,
+          messagesCount: sql`${messagesCount ?? sql`messages_count`}`,
+          updatedAt: new Date(),
+        },
+      })
+      .run();
+
+    // Upsert contact
+    db.insert(schema.contacts)
+      .values({
+        phone,
+        name: contactName ?? null,
+        firstSeen: new Date(),
+        lastSeen: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: schema.contacts.phone,
+        set: {
+          name: contactName ? sql`${contactName}` : sql`name`,
+          lastSeen: new Date(),
+        },
+      })
+      .run();
+  } catch (e) {
+    console.error('[Webhook] Failed to persist conversation:', e);
+  }
+}
+
+// Persist message data from webhook to SQLite
+function persistMessage(msg: Record<string, unknown>, conv: Record<string, unknown> | undefined) {
+  try {
+    const db = getDb();
+    const kapso = msg.kapso as Record<string, unknown> | undefined;
+    const msgId = msg.id as string;
+    if (!msgId || !kapso) return;
+
+    const direction = kapso.direction as string ?? 'inbound';
+    const content = typeof kapso.content === 'string' ? kapso.content :
+      typeof (msg.text as Record<string, unknown>)?.body === 'string' ? (msg.text as Record<string, unknown>).body as string : '';
+    const status = kapso.status as string | undefined;
+    const messageType = msg.type as string ?? 'text';
+    const hasMedia = Boolean(kapso.has_media);
+    const phone = (msg.from ?? msg.to ?? conv?.phone_number) as string;
+    const conversationId = conv?.id as string ?? '';
+    const timestamp = msg.timestamp as string;
+    const createdAt = timestamp ? new Date(Number(timestamp) * 1000) : new Date();
+
+    if (!phone) return;
+    // Skip reactions
+    if (messageType === 'reaction') return;
+
+    db.insert(schema.messages)
+      .values({
+        id: msgId,
+        conversationId,
+        phone,
+        direction,
+        content,
+        messageType,
+        status,
+        hasMedia,
+        caption: null,
+        createdAt,
+      })
+      .onConflictDoUpdate({
+        target: schema.messages.id,
+        set: {
+          status: sql`${status ?? sql`status`}`,
+        },
+      })
+      .run();
+  } catch (e) {
+    console.error('[Webhook] Failed to persist message:', e);
+  }
+}
+
 /**
  * Kapso webhook receiver (v2).
  * Headers from Kapso:
@@ -143,11 +253,17 @@ export async function POST(request: Request) {
         invalidateConversationCache();
         publish(webhookEvent);
         published++;
+
+        // Persist to SQLite for offline cache
+        const conv = item.conversation as Record<string, unknown> | undefined;
+        const msg = item.message as Record<string, unknown> | undefined;
+        if (conv) persistConversation(conv);
+        if (msg) persistMessage(msg, conv);
+
         // Track unread server-side for inbound messages
         if (webhookEvent.type === 'message_received' && webhookEvent.phoneNumber) {
           incrementUnread(webhookEvent.phoneNumber);
           // Web Push notification
-          const msg = item.message as Record<string, unknown> | undefined;
           const textBody = ((msg?.text as Record<string, unknown>)?.body as string) || (msg?.type as string) || 'New message';
           console.log('[Webhook] Sending push for', webhookEvent.phoneNumber, ':', textBody);
           sendPushNotification({

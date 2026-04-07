@@ -6,6 +6,8 @@ import {
   type MetaMessage
 } from '@kapso/whatsapp-cloud-api';
 import { whatsappClient, PHONE_NUMBER_ID } from '@/lib/whatsapp-client';
+import { getDb, schema } from '@/lib/db';
+import { inArray, sql } from 'drizzle-orm';
 
 /* ---------- types ---------- */
 
@@ -197,6 +199,72 @@ const KAPSO_FIELDS = buildKapsoFields([
   'flow_response', 'flow_token', 'flow_name', 'order_text'
 ]);
 
+/* ---------- SQLite message cache ---------- */
+
+function persistMessagesToDb(messages: TransformedMessage[]) {
+  try {
+    const db = getDb();
+    for (const msg of messages) {
+      if (msg.messageType === 'reaction') continue;
+      db.insert(schema.messages)
+        .values({
+          id: msg.id,
+          conversationId: msg.conversationId,
+          phone: msg.phoneNumber ?? '',
+          direction: msg.direction,
+          content: msg.content,
+          messageType: msg.messageType,
+          status: msg.status ?? null,
+          hasMedia: msg.hasMedia,
+          mediaDataJson: msg.mediaData ? JSON.stringify(msg.mediaData) : null,
+          caption: msg.caption ?? null,
+          errorJson: msg.errorDetails ? JSON.stringify(msg.errorDetails) : null,
+          metadataJson: msg.metadata ? JSON.stringify(msg.metadata) : null,
+          createdAt: new Date(msg.createdAt),
+        })
+        .onConflictDoUpdate({
+          target: schema.messages.id,
+          set: { status: sql`excluded.status` },
+        })
+        .run();
+    }
+  } catch (e) {
+    console.error('[Messages] Failed to persist to SQLite:', e);
+  }
+}
+
+function loadMessagesFromDb(conversationIds: string[]): TransformedMessage[] {
+  try {
+    if (conversationIds.length === 0) return [];
+    const db = getDb();
+    const rows = db.select().from(schema.messages)
+      .where(inArray(schema.messages.conversationId, conversationIds))
+      .all();
+    return rows.map(row => ({
+      id: row.id,
+      conversationId: row.conversationId,
+      direction: row.direction,
+      content: row.content ?? '',
+      createdAt: row.createdAt ? new Date(row.createdAt).toISOString() : new Date().toISOString(),
+      status: row.status ?? undefined,
+      phoneNumber: row.phone,
+      hasMedia: Boolean(row.hasMedia),
+      mediaData: row.mediaDataJson ? JSON.parse(row.mediaDataJson) : undefined,
+      reactionEmoji: undefined,
+      reactedToMessageId: undefined,
+      filename: undefined,
+      mimeType: undefined,
+      messageType: row.messageType,
+      caption: row.caption ?? undefined,
+      errorDetails: row.errorJson ? JSON.parse(row.errorJson) : undefined,
+      metadata: row.metadataJson ? JSON.parse(row.metadataJson) : { mediaId: undefined },
+    }));
+  } catch (e) {
+    console.error('[Messages] Failed to load from SQLite:', e);
+    return [];
+  }
+}
+
 /* ---------- fetch helpers ---------- */
 
 async function fetchConversationMessages(
@@ -204,7 +272,7 @@ async function fetchConversationMessages(
   limit: number,
   retries: number
 ): Promise<TransformedMessage[]> {
-  // Check cache first
+  // Check in-memory cache first
   const cached = getCached(conversationId);
   if (cached !== null) return cached;
 
@@ -218,6 +286,8 @@ async function fetchConversationMessages(
       });
       const transformed = response.data.map((msg: MetaMessage) => transformMessage(msg, conversationId));
       setCache(conversationId, transformed);
+      // Persist to SQLite for cache-first loading
+      persistMessagesToDb(transformed);
       return transformed;
     } catch {
       if (attempt < retries) {
@@ -248,21 +318,34 @@ export async function GET(request: Request) {
       return NextResponse.json({ data: [] });
     }
 
-    // On force refresh, clear cache for these IDs
+    // On force refresh, clear in-memory cache for these IDs
     if (refresh) {
       for (const id of conversationIds) messageCache.delete(id);
     }
 
     const isInitial = mode === 'initial';
-    const limit = isInitial ? 50 : 50;
-    const retries = isInitial ? 2 : 0; // retry on initial load, skip on poll
 
-    // Fetch all conversations in parallel
+    // Try SQLite first for instant response (no API call)
+    // Only on initial load when in-memory cache is empty
+    if (isInitial && !refresh) {
+      const dbMessages = loadMessagesFromDb(conversationIds);
+      if (dbMessages.length > 0) {
+        // Return SQLite data instantly, trigger background API sync
+        Promise.all(
+          conversationIds.map(id => fetchConversationMessages(id, 50, 0))
+        ).catch(() => {});
+        return NextResponse.json({ data: dbMessages });
+      }
+    }
+
+    const limit = 50;
+    const retries = isInitial ? 2 : 0;
+
+    // Fetch from Kapso API (with in-memory cache)
     const results = await Promise.all(
       conversationIds.map(id => fetchConversationMessages(id, limit, retries))
     );
 
-    // Combine all messages
     const allMessages = results.flat();
 
     return NextResponse.json({ data: allMessages });
