@@ -206,6 +206,8 @@ function persistMessagesToDb(messages: TransformedMessage[]) {
     const db = getDb();
     for (const msg of messages) {
       if (msg.messageType === 'reaction') continue;
+      const mediaJson = msg.mediaData ? JSON.stringify(msg.mediaData) : null;
+      const metaJson = msg.metadata && Object.keys(msg.metadata).length > 0 ? JSON.stringify(msg.metadata) : null;
       db.insert(schema.messages)
         .values({
           id: msg.id,
@@ -216,15 +218,22 @@ function persistMessagesToDb(messages: TransformedMessage[]) {
           messageType: msg.messageType,
           status: msg.status ?? null,
           hasMedia: msg.hasMedia,
-          mediaDataJson: msg.mediaData ? JSON.stringify(msg.mediaData) : null,
+          mediaDataJson: mediaJson,
           caption: msg.caption ?? null,
           errorJson: msg.errorDetails ? JSON.stringify(msg.errorDetails) : null,
-          metadataJson: msg.metadata ? JSON.stringify(msg.metadata) : null,
+          metadataJson: metaJson,
+          source: 'api',
           createdAt: new Date(msg.createdAt),
         })
         .onConflictDoUpdate({
           target: schema.messages.id,
-          set: { status: sql`excluded.status` },
+          set: {
+            status: sql`excluded.status`,
+            hasMedia: sql`max(has_media, excluded.has_media)`,
+            mediaDataJson: mediaJson ? sql`coalesce(${mediaJson}, media_data_json)` : sql`media_data_json`,
+            metadataJson: metaJson ? sql`coalesce(${metaJson}, metadata_json)` : sql`metadata_json`,
+            caption: sql`coalesce(excluded.caption, caption)`,
+          },
         })
         .run();
     }
