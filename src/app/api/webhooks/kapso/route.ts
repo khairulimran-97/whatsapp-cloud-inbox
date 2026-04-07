@@ -44,6 +44,7 @@ function persistConversation(conv: Record<string, unknown>) {
         lastMessageText,
         lastMessageType,
         messagesCount: messagesCount ?? 0,
+        source: 'webhook',
         createdAt: new Date(),
         updatedAt: new Date(),
       })
@@ -114,6 +115,7 @@ function persistMessage(msg: Record<string, unknown>, conv: Record<string, unkno
         status,
         hasMedia,
         caption: null,
+        source: 'webhook',
         createdAt,
       })
       .onConflictDoUpdate({

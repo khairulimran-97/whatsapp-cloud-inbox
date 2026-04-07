@@ -57,6 +57,7 @@ function createDb() {
       last_message_type TEXT,
       last_message_direction TEXT,
       messages_count INTEGER DEFAULT 0,
+      source TEXT DEFAULT 'api',
       created_at INTEGER,
       updated_at INTEGER
     );
@@ -73,6 +74,7 @@ function createDb() {
       caption TEXT,
       error_json TEXT,
       metadata_json TEXT,
+      source TEXT DEFAULT 'api',
       created_at INTEGER
     );
     CREATE INDEX IF NOT EXISTS idx_conversations_phone ON conversations(phone);
@@ -81,6 +83,14 @@ function createDb() {
     CREATE INDEX IF NOT EXISTS idx_messages_phone ON messages(phone);
     CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(created_at);
   `);
+
+  // Migration: add source column to existing tables
+  try {
+    sqlite.exec(`ALTER TABLE conversations ADD COLUMN source TEXT DEFAULT 'api'`);
+  } catch { /* column already exists */ }
+  try {
+    sqlite.exec(`ALTER TABLE messages ADD COLUMN source TEXT DEFAULT 'api'`);
+  } catch { /* column already exists */ }
 
   // Run cleanup on startup
   cleanupOldData(sqlite);
