@@ -890,7 +890,11 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                   </h2>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <p className="text-[12px] text-[var(--wa-text-secondary)] truncate leading-tight">
-                      {contactName && phoneNumber ? phoneNumber : (phoneNumber || '')}
+                      {messageInput.trim() ? (
+                        <span className="text-[var(--wa-accent)] italic">typing...</span>
+                      ) : (
+                        contactName && phoneNumber ? phoneNumber : (phoneNumber || '')
+                      )}
                     </p>
                     {conversationStatus === 'ended' ? (
                       <span className="text-[10px] font-medium text-[var(--wa-notice-ended-text)] bg-[var(--wa-notice-ended-bg)] px-1.5 py-0.5 rounded-full leading-none border border-[var(--wa-notice-ended-border)] flex-shrink-0">
