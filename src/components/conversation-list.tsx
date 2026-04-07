@@ -408,50 +408,41 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
   // Sync prompt — shown when SQLite is empty (first time or after reset)
   if (needsSync || syncing) {
     return (
-      <div className={cn(
-        "w-full md:w-96 md:border-r border-[var(--wa-border-strong)] bg-[var(--wa-panel-bg)] flex flex-col panel-slide",
-        isHidden ? "panel-slide-left" : "panel-slide-center"
-      )}>
-        <div className="px-4 pt-5 pb-3 border-b border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)]">
-          <div className="safe-area-top" />
-          <h1 className="text-[14px] font-bold text-[var(--wa-text-primary)]">Inbox</h1>
-        </div>
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="text-center space-y-4 max-w-xs">
-            {syncing ? (
-              <>
-                <div className="mx-auto h-12 w-12 rounded-full bg-[var(--wa-green)]/10 flex items-center justify-center">
-                  <Loader2 className="h-6 w-6 text-[var(--wa-green)] animate-spin" />
-                </div>
-                <div>
-                  <p className="text-[15px] font-semibold text-[var(--wa-text-primary)]">Syncing conversations...</p>
-                  <p className="text-[13px] text-[var(--wa-text-secondary)] mt-1">{syncCount} contacts loaded</p>
-                </div>
-                <div className="w-full bg-[var(--wa-border)] rounded-full h-1.5 overflow-hidden">
-                  <div className="bg-[var(--wa-green)] h-full rounded-full animate-pulse" style={{ width: '60%' }} />
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="mx-auto h-12 w-12 rounded-full bg-[var(--wa-green)]/10 flex items-center justify-center">
-                  <CloudDownload className="h-6 w-6 text-[var(--wa-green)]" />
-                </div>
-                <div>
-                  <p className="text-[15px] font-semibold text-[var(--wa-text-primary)]">Sync your conversations</p>
-                  <p className="text-[13px] text-[var(--wa-text-secondary)] mt-1">
-                    Load your conversation history from WhatsApp Cloud API. This only needs to happen once.
-                  </p>
-                </div>
-                <button
-                  onClick={startSync}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[var(--wa-green)] text-white text-[14px] font-medium hover:bg-[var(--wa-green)]/90 transition-colors"
-                >
-                  <CloudDownload className="h-4 w-4" />
-                  Sync Now
-                </button>
-              </>
-            )}
-          </div>
+      <div className="fixed inset-0 z-50 bg-[var(--wa-panel-bg)] flex items-center justify-center">
+        <div className="text-center space-y-5 max-w-sm px-8">
+          {syncing ? (
+            <>
+              <div className="mx-auto h-16 w-16 rounded-full bg-[var(--wa-green)]/10 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 text-[var(--wa-green)] animate-spin" />
+              </div>
+              <div>
+                <p className="text-[17px] font-semibold text-[var(--wa-text-primary)]">Syncing conversations...</p>
+                <p className="text-[14px] text-[var(--wa-text-secondary)] mt-2">{syncCount} contacts loaded</p>
+              </div>
+              <div className="w-full bg-[var(--wa-border)] rounded-full h-1.5 overflow-hidden">
+                <div className="bg-[var(--wa-green)] h-full rounded-full animate-pulse" style={{ width: '60%' }} />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="mx-auto h-16 w-16 rounded-full bg-[var(--wa-green)]/10 flex items-center justify-center">
+                <CloudDownload className="h-8 w-8 text-[var(--wa-green)]" />
+              </div>
+              <div>
+                <p className="text-[17px] font-semibold text-[var(--wa-text-primary)]">Sync your conversations</p>
+                <p className="text-[14px] text-[var(--wa-text-secondary)] mt-2">
+                  Load your conversation history from WhatsApp Cloud API. This only needs to happen once.
+                </p>
+              </div>
+              <button
+                onClick={startSync}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[var(--wa-green)] text-white text-[15px] font-medium hover:bg-[var(--wa-green)]/90 transition-colors"
+              >
+                <CloudDownload className="h-5 w-5" />
+                Sync Now
+              </button>
+            </>
+          )}
         </div>
       </div>
     );
