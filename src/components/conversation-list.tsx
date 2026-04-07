@@ -134,6 +134,7 @@ function getMessageTypeIcon(type?: string): string {
 type Props = {
   onSelectConversation: (conversation: Conversation) => void;
   onConversationsUpdated?: (conversations: Conversation[]) => void;
+  onSeedingChange?: (seeding: boolean, count: number) => void;
   selectedConversationId?: string;
   isHidden?: boolean;
   unreadCounts?: Map<string, number>;
@@ -157,9 +158,10 @@ export type ConversationListRef = {
 };
 
 export const ConversationList = forwardRef<ConversationListRef, Props>(
-  ({ onSelectConversation, onConversationsUpdated, selectedConversationId, isHidden = false, unreadCounts = new Map(), pollInterval = 10000, notificationEnabled = false, notificationPermission = 'default', onToggleNotification }, ref) => {
+  ({ onSelectConversation, onConversationsUpdated, onSeedingChange, selectedConversationId, isHidden = false, unreadCounts = new Map(), pollInterval = 10000, notificationEnabled = false, notificationPermission = 'default', onToggleNotification }, ref) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'unread'>('all');
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -181,18 +183,60 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       .catch(() => {});
   }, []);
 
+  const seedingRef = useRef(false);
+  const onSeedingChangeRef = useRef(onSeedingChange);
+  onSeedingChangeRef.current = onSeedingChange;
+
   const fetchConversations = useCallback(async () => {
     try {
       const response = await fetch('/api/conversations');
       const data = await response.json();
       const newConversations = data.data || [];
       setHasMore(!!data.hasMore);
+
+      // Detect seeding mode (first-time sync from Kapso API)
+      if (data.seeding && !seedingRef.current) {
+        seedingRef.current = true;
+        setSeeding(true);
+        onSeedingChangeRef.current?.(true, newConversations.length);
+      }
+
       // Only update state if data actually changed to avoid scroll reset
       const fingerprint = JSON.stringify(newConversations.map((c: Conversation) => c.id + c.status + c.lastActiveAt + (c.lastMessage?.content || '')));
       if (fingerprint !== prevDataRef.current) {
         prevDataRef.current = fingerprint;
         setConversations(newConversations);
         onConversationsUpdatedRef.current?.(newConversations);
+      }
+
+      // Auto-fetch remaining pages during seed
+      if (data.seeding) {
+        const fetchRemainingPages = async () => {
+          let hasMorePages = true;
+          while (hasMorePages) {
+            try {
+              const res = await fetch('/api/conversations?cursor=next');
+              const pageData = await res.json();
+              const allConvs: Conversation[] = pageData.data || [];
+              hasMorePages = !!pageData.hasMore;
+
+              if (allConvs.length > 0) {
+                prevDataRef.current = JSON.stringify(allConvs.map((c: Conversation) => c.id + c.status + c.lastActiveAt + (c.lastMessage?.content || '')));
+                setConversations(allConvs);
+                onConversationsUpdatedRef.current?.(allConvs);
+                onSeedingChangeRef.current?.(true, allConvs.length);
+              }
+            } catch {
+              break;
+            }
+          }
+          // Seed complete
+          seedingRef.current = false;
+          setSeeding(false);
+          setHasMore(false);
+          onSeedingChangeRef.current?.(false, 0);
+        };
+        fetchRemainingPages();
       }
     } catch (error) {
       console.error('Error fetching conversations:', error);

@@ -444,15 +444,15 @@ export async function GET(request: Request) {
         cachedData = dbConversations;
         cacheTimestamp = Date.now();
         allPagesFetched = true;
-        return NextResponse.json({ data: dbConversations, hasMore: false });
+        return NextResponse.json({ data: dbConversations, hasMore: false, seeding: false });
       }
     }
 
-    // SQLite empty OR seed incomplete — fetch from Kapso API
-    const page = await fetchNextPage(status ?? undefined, 100);
-    cachedData = page;
+    // SQLite empty OR seed incomplete — fetch first page, client will auto-fetch rest
+    const firstPage = await fetchNextPage(status ?? undefined, 100);
+    cachedData = firstPage;
     cacheTimestamp = Date.now();
-    return NextResponse.json({ data: page, hasMore: !allPagesFetched });
+    return NextResponse.json({ data: firstPage, hasMore: !allPagesFetched, seeding: !allPagesFetched });
   } catch (error) {
     console.error('Error fetching conversations:', error);
     if (cachedData) {
