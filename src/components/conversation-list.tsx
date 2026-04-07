@@ -225,15 +225,26 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       setConversations(allConvs);
       onConversationsUpdatedRef.current?.(allConvs);
 
-      // Fetch remaining pages
+      // Fetch remaining pages with delay and retry
+      let retries = 0;
       while (hasMorePages) {
-        const nextRes = await fetch('/api/conversations?cursor=next');
-        const nextData = await nextRes.json();
-        allConvs = nextData.data || [];
-        hasMorePages = !!nextData.hasMore;
-        setSyncCount(allConvs.length);
-        setConversations(allConvs);
-        onConversationsUpdatedRef.current?.(allConvs);
+        await new Promise(r => setTimeout(r, 500)); // 500ms delay between pages
+        try {
+          const nextRes = await fetch('/api/conversations?cursor=next');
+          if (!nextRes.ok) throw new Error(`HTTP ${nextRes.status}`);
+          const nextData = await nextRes.json();
+          allConvs = nextData.data || [];
+          hasMorePages = !!nextData.hasMore;
+          setSyncCount(allConvs.length);
+          setConversations(allConvs);
+          onConversationsUpdatedRef.current?.(allConvs);
+          retries = 0;
+        } catch (pageError) {
+          retries++;
+          if (retries >= 5) throw pageError; // Give up after 5 consecutive failures
+          console.warn(`[Sync] Page fetch failed (retry ${retries}/5), waiting...`);
+          await new Promise(r => setTimeout(r, 3000 * retries)); // Exponential backoff
+        }
       }
 
       prevDataRef.current = JSON.stringify(allConvs.map((c: Conversation) => c.id + c.status + c.lastActiveAt + (c.lastMessage?.content || '')));
