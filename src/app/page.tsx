@@ -187,21 +187,34 @@ export default function Home() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Real-time updates via webhook SSE — triggers instant refresh on events
+  // Debounced refresh timers to coalesce rapid webhook events into a single refresh
+  const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const REFRESH_DEBOUNCE_MS = 800;
+
+  const scheduleRefresh = useCallback((includeMessages: boolean) => {
+    // Cancel any pending refresh
+    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+
+    refreshTimerRef.current = setTimeout(async () => {
+      refreshTimerRef.current = null;
+      // Refresh conversation list first — may discover new conversation IDs
+      await conversationListRef.current?.refresh();
+      // Then refresh messages with potentially updated conversation IDs
+      if (includeMessages) {
+        messageViewRef.current?.refresh();
+      }
+    }, REFRESH_DEBOUNCE_MS);
+  }, []);
+
+  // Real-time updates via webhook SSE — triggers debounced refresh on events
   const handleRealtimeEvent = useCallback((event: RealtimeEvent) => {
     if (event.type === 'connected') return;
 
-    // Message events → refresh conversation list first (to get new IDs), then messages
-    // Small delay to let Kapso API index the message before fetching
+    // Message events → refresh conversations + messages (debounced)
     if (event.type === 'message_received' || event.type === 'message_sent') {
-      setTimeout(async () => {
-        // Refresh conversation list first — may discover new conversation IDs
-        await conversationListRef.current?.refresh();
-        // Then refresh messages with potentially updated conversation IDs
-        messageViewRef.current?.refresh();
-      }, 500);
+      scheduleRefresh(true);
 
-      // Inbound message → play sound + increment unread
+      // Inbound message → play sound + increment unread (immediate, not debounced)
       if (event.type === 'message_received' && event.phoneNumber) {
         notificationSoundRef.current?.play().catch(() => {});
 
@@ -220,14 +233,14 @@ export default function Home() {
       }
     }
 
-    // Status events → refresh messages
+    // Status events → refresh messages (debounced)
     if (event.type === 'message_delivered' || event.type === 'message_read' || event.type === 'message_failed') {
-      setTimeout(() => messageViewRef.current?.refresh(), 500);
+      scheduleRefresh(true);
     }
 
-    // Conversation events → refresh list
+    // Conversation events → refresh list only (debounced)
     if (event.type === 'conversation_started' || event.type === 'conversation_ended' || event.type === 'conversation_inactive') {
-      setTimeout(() => conversationListRef.current?.refresh(), 500);
+      scheduleRefresh(true);
     }
 
     // Unread sync from another browser/tab
@@ -235,7 +248,7 @@ export default function Home() {
       const serverUnread = event.data as Record<string, number>;
       setUnreadCounts(new Map(Object.entries(serverUnread)));
     }
-  }, []);
+  }, [scheduleRefresh]);
 
   const { connected: sseConnected } = useRealtime({ onEvent: handleRealtimeEvent });
 
