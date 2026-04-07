@@ -208,6 +208,7 @@ function persistMessagesToDb(messages: TransformedMessage[]) {
       if (msg.messageType === 'reaction') continue;
       const mediaJson = msg.mediaData ? JSON.stringify(msg.mediaData) : null;
       const metaJson = msg.metadata && Object.keys(msg.metadata).length > 0 ? JSON.stringify(msg.metadata) : null;
+      const metaJsonHasContent = metaJson && metaJson !== '{}';
       db.insert(schema.messages)
         .values({
           id: msg.id,
@@ -231,7 +232,7 @@ function persistMessagesToDb(messages: TransformedMessage[]) {
             status: sql`excluded.status`,
             hasMedia: sql`max(has_media, excluded.has_media)`,
             mediaDataJson: mediaJson ? sql`coalesce(${mediaJson}, media_data_json)` : sql`media_data_json`,
-            metadataJson: metaJson ? sql`coalesce(${metaJson}, metadata_json)` : sql`metadata_json`,
+            metadataJson: metaJsonHasContent ? sql`${metaJson}` : sql`metadata_json`,
             caption: sql`coalesce(excluded.caption, caption)`,
           },
         })
