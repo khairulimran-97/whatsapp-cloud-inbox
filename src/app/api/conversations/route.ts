@@ -205,12 +205,12 @@ function loadConversationsFromDb(): GroupedConversation[] {
     // Sort IDs and limit
     for (const group of phoneGroupMap.values()) {
       group.totalConversations = group.conversationIds.length;
+      allIdsPerPhone.set(group.phoneNumber, [...group.conversationIds]);
       group.conversationIds = group.conversationIds.slice(0, 3);
       const idSet = new Set(group.conversationIds);
       for (const key of Object.keys(group.conversationStatuses)) {
         if (!idSet.has(key)) delete group.conversationStatuses[key];
       }
-      allIdsPerPhone.set(group.phoneNumber, [...group.conversationIds]);
     }
 
     return Array.from(phoneGroupMap.values()).sort((a, b) => {
