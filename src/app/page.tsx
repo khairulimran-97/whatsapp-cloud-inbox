@@ -50,7 +50,6 @@ export default function Home() {
   const selectedConversationRef = useRef<Conversation | undefined>(undefined);
   const statusCooldownRef = useRef<number>(0);
   selectedConversationRef.current = selectedConversation;
-  const [seedingInfo, setSeedingInfo] = useState<{ active: boolean; count: number }>({ active: false, count: 0 });
   const { enabled: notifEnabled, permission: notifPermission, toggle: toggleNotif } = useNotification();
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
   const audioUnlockedRef = useRef(false);
@@ -315,20 +314,10 @@ export default function Home() {
   return (
     <div className="h-dvh flex relative overflow-hidden">
       <PwaInstallBanner />
-      {seedingInfo.active && (
-        <div className="absolute top-0 left-0 right-0 z-50 bg-[var(--wa-header)] border-b border-[var(--wa-border)] px-4 py-2.5 flex items-center gap-3 shadow-sm">
-          <div className="h-4 w-4 border-2 border-[var(--wa-primary)] border-t-transparent rounded-full animate-spin flex-shrink-0" />
-          <div className="text-sm text-[var(--wa-text-primary)]">
-            <span className="font-medium">Syncing conversations...</span>
-            <span className="text-[var(--wa-text-secondary)] ml-2">{seedingInfo.count} contacts loaded</span>
-          </div>
-        </div>
-      )}
       <ConversationList
         ref={conversationListRef}
         onSelectConversation={handleSelectConversation}
         onConversationsUpdated={handleConversationsUpdated}
-        onSeedingChange={(active, count) => setSeedingInfo({ active, count })}
         selectedConversationId={selectedConversation?.phoneNumber}
         isHidden={!!selectedConversation}
         unreadCounts={unreadCounts}

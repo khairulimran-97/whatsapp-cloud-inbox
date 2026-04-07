@@ -379,7 +379,8 @@ export async function GET(request: Request) {
     const forceRefresh = searchParams.get('refresh') === 'true';
     const cursorParam = searchParams.get('cursor');
     const limitParam = Number(searchParams.get('limit')) || DEFAULT_PAGE_SIZE;
-    const olderIdsPhone = searchParams.get('olderIds'); // phone number to get ALL IDs for
+    const olderIdsPhone = searchParams.get('olderIds');
+    const syncMode = searchParams.get('sync') === 'true';
 
     // ── Older IDs mode: return all conversation IDs for a phone (from cache, no API call) ──
     if (olderIdsPhone) {
@@ -387,7 +388,17 @@ export async function GET(request: Request) {
       return NextResponse.json({ conversationIds: ids });
     }
 
-    // ── Paginated mode: ?cursor=next  (load more) ──
+    // ── Sync mode: user-triggered full fetch from Kapso API ──
+    if (syncMode) {
+      nextApiCursor = undefined;
+      allPagesFetched = false;
+      const page = await fetchNextPage(status ?? undefined, 100);
+      cachedData = page;
+      cacheTimestamp = Date.now();
+      return NextResponse.json({ data: page, hasMore: !allPagesFetched, syncing: true });
+    }
+
+    // ── Paginated mode: ?cursor=next  (load more / continue sync) ──
     if (cursorParam === 'next') {
       if (allPagesFetched) {
         return NextResponse.json({ data: cachedData ?? [], hasMore: false });
@@ -444,15 +455,12 @@ export async function GET(request: Request) {
         cachedData = dbConversations;
         cacheTimestamp = Date.now();
         allPagesFetched = true;
-        return NextResponse.json({ data: dbConversations, hasMore: false, seeding: false });
+        return NextResponse.json({ data: dbConversations, hasMore: false });
       }
     }
 
-    // SQLite empty OR seed incomplete — fetch first page, client will auto-fetch rest
-    const firstPage = await fetchNextPage(status ?? undefined, 100);
-    cachedData = firstPage;
-    cacheTimestamp = Date.now();
-    return NextResponse.json({ data: firstPage, hasMore: !allPagesFetched, seeding: !allPagesFetched });
+    // SQLite empty OR seed incomplete — tell client to trigger sync manually
+    return NextResponse.json({ data: [], hasMore: false, needsSync: true });
   } catch (error) {
     console.error('Error fetching conversations:', error);
     if (cachedData) {

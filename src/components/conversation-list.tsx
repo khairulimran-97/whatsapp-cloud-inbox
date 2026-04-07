@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { format, isValid, isToday, isYesterday } from 'date-fns';
-import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save, Plus, Pencil, Trash2, MessageSquareText } from 'lucide-react';
+import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save, Plus, Pencil, Trash2, MessageSquareText, CloudDownload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAutoPolling } from '@/hooks/use-auto-polling';
 import { useTheme } from '@/hooks/use-theme';
@@ -134,7 +134,6 @@ function getMessageTypeIcon(type?: string): string {
 type Props = {
   onSelectConversation: (conversation: Conversation) => void;
   onConversationsUpdated?: (conversations: Conversation[]) => void;
-  onSeedingChange?: (seeding: boolean, count: number) => void;
   selectedConversationId?: string;
   isHidden?: boolean;
   unreadCounts?: Map<string, number>;
@@ -158,10 +157,12 @@ export type ConversationListRef = {
 };
 
 export const ConversationList = forwardRef<ConversationListRef, Props>(
-  ({ onSelectConversation, onConversationsUpdated, onSeedingChange, selectedConversationId, isHidden = false, unreadCounts = new Map(), pollInterval = 10000, notificationEnabled = false, notificationPermission = 'default', onToggleNotification }, ref) => {
+  ({ onSelectConversation, onConversationsUpdated, selectedConversationId, isHidden = false, unreadCounts = new Map(), pollInterval = 10000, notificationEnabled = false, notificationPermission = 'default', onToggleNotification }, ref) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [seeding, setSeeding] = useState(false);
+  const [needsSync, setNeedsSync] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncCount, setSyncCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'unread'>('all');
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -183,65 +184,65 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       .catch(() => {});
   }, []);
 
-  const seedingRef = useRef(false);
-  const onSeedingChangeRef = useRef(onSeedingChange);
-  onSeedingChangeRef.current = onSeedingChange;
-
   const fetchConversations = useCallback(async () => {
     try {
       const response = await fetch('/api/conversations');
       const data = await response.json();
-      const newConversations = data.data || [];
-      setHasMore(!!data.hasMore);
 
-      // Detect seeding mode (first-time sync from Kapso API)
-      if (data.seeding && !seedingRef.current) {
-        seedingRef.current = true;
-        setSeeding(true);
-        onSeedingChangeRef.current?.(true, newConversations.length);
+      // API says SQLite is empty — show sync prompt
+      if (data.needsSync) {
+        setNeedsSync(true);
+        setLoading(false);
+        return;
       }
 
-      // Only update state if data actually changed to avoid scroll reset
+      const newConversations = data.data || [];
+      setHasMore(!!data.hasMore);
       const fingerprint = JSON.stringify(newConversations.map((c: Conversation) => c.id + c.status + c.lastActiveAt + (c.lastMessage?.content || '')));
       if (fingerprint !== prevDataRef.current) {
         prevDataRef.current = fingerprint;
         setConversations(newConversations);
         onConversationsUpdatedRef.current?.(newConversations);
       }
-
-      // Auto-fetch remaining pages during seed
-      if (data.seeding) {
-        const fetchRemainingPages = async () => {
-          let hasMorePages = true;
-          while (hasMorePages) {
-            try {
-              const res = await fetch('/api/conversations?cursor=next');
-              const pageData = await res.json();
-              const allConvs: Conversation[] = pageData.data || [];
-              hasMorePages = !!pageData.hasMore;
-
-              if (allConvs.length > 0) {
-                prevDataRef.current = JSON.stringify(allConvs.map((c: Conversation) => c.id + c.status + c.lastActiveAt + (c.lastMessage?.content || '')));
-                setConversations(allConvs);
-                onConversationsUpdatedRef.current?.(allConvs);
-                onSeedingChangeRef.current?.(true, allConvs.length);
-              }
-            } catch {
-              break;
-            }
-          }
-          // Seed complete
-          seedingRef.current = false;
-          setSeeding(false);
-          setHasMore(false);
-          onSeedingChangeRef.current?.(false, 0);
-        };
-        fetchRemainingPages();
-      }
     } catch (error) {
       console.error('Error fetching conversations:', error);
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  // User-triggered sync: fetch all pages from Kapso API
+  const startSync = useCallback(async () => {
+    setSyncing(true);
+    setSyncCount(0);
+    try {
+      // First page
+      const res = await fetch('/api/conversations?sync=true');
+      const data = await res.json();
+      let allConvs: Conversation[] = data.data || [];
+      let hasMorePages = !!data.hasMore;
+      setSyncCount(allConvs.length);
+      setConversations(allConvs);
+      onConversationsUpdatedRef.current?.(allConvs);
+
+      // Fetch remaining pages
+      while (hasMorePages) {
+        const nextRes = await fetch('/api/conversations?cursor=next');
+        const nextData = await nextRes.json();
+        allConvs = nextData.data || [];
+        hasMorePages = !!nextData.hasMore;
+        setSyncCount(allConvs.length);
+        setConversations(allConvs);
+        onConversationsUpdatedRef.current?.(allConvs);
+      }
+
+      prevDataRef.current = JSON.stringify(allConvs.map((c: Conversation) => c.id + c.status + c.lastActiveAt + (c.lastMessage?.content || '')));
+      setHasMore(false);
+      setNeedsSync(false);
+    } catch (error) {
+      console.error('Error syncing conversations:', error);
+    } finally {
+      setSyncing(false);
     }
   }, []);
 
@@ -399,6 +400,58 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
               </div>
             </div>
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Sync prompt — shown when SQLite is empty (first time or after reset)
+  if (needsSync || syncing) {
+    return (
+      <div className={cn(
+        "w-full md:w-96 md:border-r border-[var(--wa-border-strong)] bg-[var(--wa-panel-bg)] flex flex-col panel-slide",
+        isHidden ? "panel-slide-left" : "panel-slide-center"
+      )}>
+        <div className="px-4 pt-5 pb-3 border-b border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)]">
+          <div className="safe-area-top" />
+          <h1 className="text-[14px] font-bold text-[var(--wa-text-primary)]">Inbox</h1>
+        </div>
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="text-center space-y-4 max-w-xs">
+            {syncing ? (
+              <>
+                <div className="mx-auto h-12 w-12 rounded-full bg-[var(--wa-green)]/10 flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 text-[var(--wa-green)] animate-spin" />
+                </div>
+                <div>
+                  <p className="text-[15px] font-semibold text-[var(--wa-text-primary)]">Syncing conversations...</p>
+                  <p className="text-[13px] text-[var(--wa-text-secondary)] mt-1">{syncCount} contacts loaded</p>
+                </div>
+                <div className="w-full bg-[var(--wa-border)] rounded-full h-1.5 overflow-hidden">
+                  <div className="bg-[var(--wa-green)] h-full rounded-full animate-pulse" style={{ width: '60%' }} />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="mx-auto h-12 w-12 rounded-full bg-[var(--wa-green)]/10 flex items-center justify-center">
+                  <CloudDownload className="h-6 w-6 text-[var(--wa-green)]" />
+                </div>
+                <div>
+                  <p className="text-[15px] font-semibold text-[var(--wa-text-primary)]">Sync your conversations</p>
+                  <p className="text-[13px] text-[var(--wa-text-secondary)] mt-1">
+                    Load your conversation history from WhatsApp Cloud API. This only needs to happen once.
+                  </p>
+                </div>
+                <button
+                  onClick={startSync}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[var(--wa-green)] text-white text-[14px] font-medium hover:bg-[var(--wa-green)]/90 transition-colors"
+                >
+                  <CloudDownload className="h-4 w-4" />
+                  Sync Now
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     );
