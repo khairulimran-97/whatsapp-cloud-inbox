@@ -68,81 +68,36 @@ function getAvatarInitials(contactName?: string, phoneNumber?: string): string {
   return '??';
 }
 
-// Lazy image with placeholder — prevents empty bubbles while image loads
+// Image with CSS-only placeholder — no loading state, no flicker
 function LazyImage({ src, alt, className, onClick }: { src: string; alt: string; className?: string; onClick?: () => void }) {
-  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
-  const [showLoader, setShowLoader] = useState(false);
-  const imgRef = useRef<HTMLImageElement>(null);
 
-  // Only show loader after 150ms delay — cached images load before this
-  useEffect(() => {
-    if (loaded || error) return;
-    const timer = setTimeout(() => setShowLoader(true), 150);
-    return () => clearTimeout(timer);
-  }, [loaded, error]);
-
-  // Check if image is already cached (complete before onLoad fires)
-  useEffect(() => {
-    if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
-      setLoaded(true);
-    }
-  }, [src]);
+  if (error) {
+    return (
+      <div className={cn("flex items-center justify-center bg-[var(--wa-hover)] rounded-[5px] min-h-[60px] min-w-[180px]", className)}>
+        <span className="text-xs text-[var(--wa-text-secondary)]">Failed to load image</span>
+      </div>
+    );
+  }
 
   return (
-    <div className="relative">
-      {!loaded && !error && showLoader && (
-        <div className={cn("flex items-center justify-center bg-[var(--wa-hover)] rounded-[5px] min-h-[120px] min-w-[180px]", className)}>
-          <div className="flex items-center gap-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--wa-text-secondary)]/30 animate-bounce [animation-delay:-0.3s]" />
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--wa-text-secondary)]/30 animate-bounce [animation-delay:-0.15s]" />
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--wa-text-secondary)]/30 animate-bounce" />
-          </div>
-        </div>
-      )}
-      {error ? (
-        <div className={cn("flex items-center justify-center bg-[var(--wa-hover)] rounded-[5px] min-h-[60px] min-w-[180px]", className)}>
-          <span className="text-xs text-[var(--wa-text-secondary)]">Failed to load image</span>
-        </div>
-      ) : (
-        <img
-          ref={imgRef}
-          src={src}
-          alt={alt}
-          className={cn(className, !loaded && 'h-0 overflow-hidden')}
-          onClick={onClick}
-          onLoad={() => setLoaded(true)}
-          onError={() => setError(true)}
-          loading="lazy"
-        />
-      )}
+    <div className="bg-[var(--wa-hover)] rounded-[5px] min-h-[80px] min-w-[120px]">
+      <img
+        src={src}
+        alt={alt}
+        className={cn(className)}
+        onClick={onClick}
+        onError={() => setError(true)}
+      />
     </div>
   );
 }
 
-// Lightbox — image is usually browser-cached from chat bubble
+// Lightbox — show image immediately, no loading dance
 function Lightbox({ url, onClose }: { url: string; onClose: () => void }) {
-  const [loaded, setLoaded] = useState(false);
-  const [showLoader, setShowLoader] = useState(false);
-  const imgRef = useRef<HTMLImageElement>(null);
-
-  // Only show loader after 200ms — cached images appear instantly
-  useEffect(() => {
-    if (loaded) return;
-    const timer = setTimeout(() => setShowLoader(true), 200);
-    return () => clearTimeout(timer);
-  }, [loaded]);
-
-  // Check if already cached
-  useEffect(() => {
-    if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
-      setLoaded(true);
-    }
-  }, [url]);
-
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center animate-in fade-in duration-150"
+      className="fixed inset-0 z-[100] flex items-center justify-center animate-in fade-in duration-100"
       onClick={onClose}
     >
       <div className="absolute inset-0 bg-black/90" />
@@ -152,24 +107,12 @@ function Lightbox({ url, onClose }: { url: string; onClose: () => void }) {
       >
         <X className="h-6 w-6" />
       </button>
-      {!loaded && showLoader && (
-        <div className="relative z-10 flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-white/40 animate-bounce [animation-delay:-0.3s]" />
-          <span className="h-2.5 w-2.5 rounded-full bg-white/40 animate-bounce [animation-delay:-0.15s]" />
-          <span className="h-2.5 w-2.5 rounded-full bg-white/40 animate-bounce" />
-        </div>
-      )}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        ref={imgRef}
         src={url}
         alt="Full size"
-        className={cn(
-          "relative z-10 max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl transition-opacity duration-200",
-          loaded ? "opacity-100" : "opacity-0 absolute"
-        )}
+        className="relative z-10 max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
         onClick={(e) => e.stopPropagation()}
-        onLoad={() => setLoaded(true)}
       />
     </div>
   );
@@ -285,7 +228,6 @@ export type MessageViewRef = {
 export const MessageView = forwardRef<MessageViewRef, Props>(function MessageView({ conversationIds, conversationStatuses, conversationStatus, phoneNumber, contactName, totalConversations, onTemplateSent, onStatusChanged, onConversationStatusUpdate, onMarkUnread, onBack, onInteraction, isVisible = false, pollInterval = 5000, initialUnreadCount = 0 }: Props, ref) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showLoadingIndicator, setShowLoadingIndicator] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [messageInput, setMessageInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -341,13 +283,6 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
       .then(data => setReplyTemplates(data.templates || []))
       .catch(() => {});
   }, []);
-
-  // Delay loading indicator to avoid flicker on fast SQLite loads
-  useEffect(() => {
-    if (!loading) { setShowLoadingIndicator(false); return; }
-    const timer = setTimeout(() => setShowLoadingIndicator(true), 150);
-    return () => clearTimeout(timer);
-  }, [loading]);
 
   // Close lightbox on Escape key
   useEffect(() => {
@@ -940,7 +875,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
   }
 
   // Full skeleton only for very first render (no contact info yet)
-  if (showLoadingIndicator && !contactName && !phoneNumber) {
+  if (loading && !contactName && !phoneNumber) {
     return (
       <div className={cn(
         "flex-1 flex flex-col chat-bg panel-slide",
@@ -1219,16 +1154,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
             </Button>
           </div>
         )}
-        {showLoadingIndicator && messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <div className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-[var(--wa-text-secondary)]/40 animate-bounce [animation-delay:-0.3s]" />
-              <span className="h-2 w-2 rounded-full bg-[var(--wa-text-secondary)]/40 animate-bounce [animation-delay:-0.15s]" />
-              <span className="h-2 w-2 rounded-full bg-[var(--wa-text-secondary)]/40 animate-bounce" />
-            </div>
-            <p className="text-xs text-[var(--wa-text-secondary)]/60 mt-3">Loading messages...</p>
-          </div>
-        ) : messages.length === 0 ? (
+        {messages.length === 0 && !loading ? (
           <div className="flex flex-col items-center justify-center py-16 text-center px-4">
             <div className="h-16 w-16 rounded-full bg-[var(--wa-hover)] flex items-center justify-center mb-4">
               <MessageSquare className="h-7 w-7 text-[var(--wa-text-secondary)]" />
