@@ -676,10 +676,10 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
       const res = await fetch(`/api/workflow-executions?id=${workflowExecution.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'ended' }),
+        body: JSON.stringify({ status: 'handoff' }),
       });
       if (res.ok) {
-        setWorkflowExecution(null);
+        setWorkflowExecution(prev => prev ? { ...prev, status: 'handoff' } : null);
       }
     } catch {
       // ignore
@@ -1557,11 +1557,13 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
           })()
         )}
         {/* Workflow execution waiting indicator in chat */}
-        {workflowExecution && workflowExecution.status === 'waiting' && messages.length > 0 && (
+        {workflowExecution && (workflowExecution.status === 'waiting' || workflowExecution.status === 'handoff') && messages.length > 0 && (
           <div className="flex justify-center py-2 px-4">
             <div className="flex items-center gap-2 px-4 py-2 bg-[var(--wa-system-bubble)] rounded-lg shadow-sm">
               <Info className="h-3.5 w-3.5 text-[var(--wa-text-secondary)]" />
-              <span className="text-[12px] text-[var(--wa-text-secondary)]">Workflow execution is waiting</span>
+              <span className="text-[12px] text-[var(--wa-text-secondary)]">
+                {workflowExecution.status === 'handoff' ? 'Workflow handed off to human' : 'Workflow execution is waiting'}
+              </span>
             </div>
           </div>
         )}
@@ -1578,11 +1580,11 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                   <p className="text-[12px] text-[var(--wa-text-primary)] leading-relaxed flex-1">
                     <span className="font-medium text-amber-400">{workflowExecution.workflowName}</span>
                     <span className="text-[var(--wa-text-secondary)] ml-1.5">
-                      {workflowExecution.status === 'waiting' ? '· Waiting for input' : workflowExecution.status === 'paused' ? '· Paused' : '· Running'}
+                      {workflowExecution.status === 'waiting' ? '· Waiting for input' : workflowExecution.status === 'handoff' ? '· Human control' : workflowExecution.status === 'paused' ? '· Paused' : '· Running'}
                     </span>
                   </p>
                   <div className="flex items-center gap-1.5">
-                    {workflowExecution.status === 'waiting' && (
+                    {(workflowExecution.status === 'waiting' || workflowExecution.status === 'handoff') && (
                       <button
                         onClick={handleWorkflowResume}
                         disabled={workflowActionLoading}
@@ -1592,14 +1594,16 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                         Resume
                       </button>
                     )}
-                    <button
-                      onClick={handleWorkflowTakeControl}
-                      disabled={workflowActionLoading}
-                      className="text-[11px] font-semibold text-amber-400 bg-amber-400/10 hover:bg-amber-400/20 px-3 py-1 rounded-full flex-shrink-0 transition-colors whitespace-nowrap flex items-center gap-1 disabled:opacity-50"
-                    >
-                      <HandMetal className="h-3 w-3" />
-                      Take Control
-                    </button>
+                    {workflowExecution.status !== 'handoff' && (
+                      <button
+                        onClick={handleWorkflowTakeControl}
+                        disabled={workflowActionLoading}
+                        className="text-[11px] font-semibold text-amber-400 bg-amber-400/10 hover:bg-amber-400/20 px-3 py-1 rounded-full flex-shrink-0 transition-colors whitespace-nowrap flex items-center gap-1 disabled:opacity-50"
+                      >
+                        <HandMetal className="h-3 w-3" />
+                        Take Control
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

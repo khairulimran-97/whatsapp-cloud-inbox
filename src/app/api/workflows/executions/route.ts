@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 
       for (const exec of executions) {
         if (targetIds.has(exec.whatsapp_conversation_id) &&
-            (exec.status === 'waiting' || exec.status === 'running' || exec.status === 'paused')) {
+            (exec.status === 'waiting' || exec.status === 'running' || exec.status === 'paused' || exec.status === 'handoff')) {
           results.push({
             id: exec.id,
             status: exec.status,
