@@ -103,6 +103,44 @@ function LazyImage({ src, alt, className, onClick }: { src: string; alt: string;
   );
 }
 
+// Lightbox with loading state — image is usually browser-cached from chat bubble
+function Lightbox({ url, onClose }: { url: string; onClose: () => void }) {
+  const [loaded, setLoaded] = useState(false);
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center animate-in fade-in duration-150"
+      onClick={onClose}
+    >
+      <div className="absolute inset-0 bg-black/90" />
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 text-white/70 hover:text-white z-10 h-10 w-10 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
+      >
+        <X className="h-6 w-6" />
+      </button>
+      {!loaded && (
+        <div className="relative z-10 flex items-center gap-2">
+          <span className="h-2.5 w-2.5 rounded-full bg-white/40 animate-bounce [animation-delay:-0.3s]" />
+          <span className="h-2.5 w-2.5 rounded-full bg-white/40 animate-bounce [animation-delay:-0.15s]" />
+          <span className="h-2.5 w-2.5 rounded-full bg-white/40 animate-bounce" />
+        </div>
+      )}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={url}
+        alt="Full size"
+        className={cn(
+          "relative z-10 max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl transition-opacity duration-200",
+          loaded ? "opacity-100" : "opacity-0 absolute"
+        )}
+        onClick={(e) => e.stopPropagation()}
+        onLoad={() => setLoaded(true)}
+      />
+    </div>
+  );
+}
+
 type Message = {
   id: string;
   direction: 'inbound' | 'outbound';
@@ -1756,25 +1794,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
 
       {/* Image Lightbox */}
       {lightboxUrl && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center animate-in fade-in duration-150"
-          onClick={() => setLightboxUrl(null)}
-        >
-          <div className="absolute inset-0 bg-black/90" />
-          <button
-            onClick={() => setLightboxUrl(null)}
-            className="absolute top-4 right-4 text-white/70 hover:text-white z-10 h-10 w-10 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
-          >
-            <X className="h-6 w-6" />
-          </button>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={lightboxUrl}
-            alt="Full size"
-            className="relative z-10 max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
+        <Lightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />
       )}
 
       {phoneNumber && (

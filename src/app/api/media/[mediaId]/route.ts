@@ -19,15 +19,22 @@ export async function GET(
       auth: 'never' // Force no auth headers for CDN
     });
 
-    // If buffer is a Response, return it directly
+    // If buffer is a Response, clone and add cache headers
     if (buffer instanceof Response) {
-      return buffer;
+      const cloned = new NextResponse(buffer.body, {
+        status: buffer.status,
+        headers: {
+          ...Object.fromEntries(buffer.headers.entries()),
+          'Cache-Control': 'public, max-age=604800, immutable',
+        },
+      });
+      return cloned;
     }
 
     return new NextResponse(buffer, {
       headers: {
         'Content-Type': metadata.mimeType || 'application/octet-stream',
-        'Cache-Control': 'public, max-age=86400'
+        'Cache-Control': 'public, max-age=604800, immutable',
       }
     });
   } catch (error) {

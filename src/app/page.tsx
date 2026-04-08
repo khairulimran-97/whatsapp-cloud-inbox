@@ -87,7 +87,7 @@ export default function Home() {
     setInitialUnreadCount(count);
     setSelectedConversation(conversation);
     // Push history state so PWA back button returns to list instead of closing app
-    window.history.pushState({ view: 'chat' }, '');
+    window.history.pushState({ view: 'chat' }, '', `#${conversation.phoneNumber}`);
     // Clear unread badge from sidebar
     if (count > 0) {
       setUnreadCounts(prev => {
@@ -113,8 +113,23 @@ export default function Home() {
   }, []);
 
   // Sync selected conversation when conversation list updates
+  const deepLinkHandledRef = useRef(false);
   const handleConversationsUpdated = useCallback((conversations: Conversation[]) => {
     const selected = selectedConversationRef.current;
+
+    // Deep link: auto-select conversation from URL hash on first load
+    if (!deepLinkHandledRef.current && !selected && conversations.length > 0) {
+      deepLinkHandledRef.current = true;
+      const hash = window.location.hash.slice(1);
+      if (hash) {
+        const match = conversations.find(c => c.phoneNumber === hash);
+        if (match) {
+          setSelectedConversation(match);
+          window.history.replaceState({ view: 'chat' }, '', `#${hash}`);
+          return;
+        }
+      }
+    }
 
     // Sync selected conversation if IDs or status changed
     // Skip during status cooldown to preserve optimistic update
@@ -196,6 +211,10 @@ export default function Home() {
       if (selectedConversationRef.current) {
         setSelectedConversation(undefined);
         setInitialUnreadCount(0);
+        // Clear hash without triggering another popstate
+        if (window.location.hash) {
+          window.history.replaceState({}, '', window.location.pathname);
+        }
       }
     };
     window.addEventListener('popstate', handlePopState);
