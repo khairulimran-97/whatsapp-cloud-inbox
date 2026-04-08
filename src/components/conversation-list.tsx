@@ -167,6 +167,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
   const [syncing, setSyncing] = useState(false);
   const [syncCount, setSyncCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const [, setTick] = useState(0);
   const [activeTab, setActiveTab] = useState<'all' | 'unread'>('all');
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [showProfile, setShowProfile] = useState(false);
@@ -186,6 +187,12 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       .then(r => r.json())
       .then((data: ProfileData) => setProfile(data))
       .catch(() => {});
+  }, []);
+
+  // Tick every 30s to refresh relative timestamps (e.g. "10m" → "11m")
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 30_000);
+    return () => clearInterval(id);
   }, []);
 
   const fetchConversations = useCallback(async () => {
