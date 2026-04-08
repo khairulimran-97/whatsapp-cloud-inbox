@@ -694,6 +694,8 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
     try {
       const res = await fetch(`/api/workflow-executions?id=${workflowExecution.id}`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentStatus: workflowExecution.status }),
       });
       if (res.ok) {
         // Refresh execution status after resume

@@ -31,7 +31,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await resumeWorkflowExecution(executionId);
+    const body = await req.json().catch(() => ({}));
+    const currentStatus = body.currentStatus as string | undefined;
+    const result = await resumeWorkflowExecution(executionId, currentStatus);
     return NextResponse.json(result);
   } catch (error) {
     console.error('[Workflow] Error resuming execution:', error);

@@ -41,9 +41,15 @@ export async function updateWorkflowExecution(executionId: string, status: strin
   });
 }
 
-export async function resumeWorkflowExecution(executionId: string) {
+export async function resumeWorkflowExecution(executionId: string, currentStatus?: string) {
+  // Must be in 'waiting' state to resume — set it first if in handoff
+  if (currentStatus && currentStatus !== 'waiting') {
+    await updateWorkflowExecution(executionId, 'waiting');
+  }
   return platformFetch(`/workflow_executions/${executionId}/resume`, {
     method: 'POST',
-    body: JSON.stringify({}),
+    body: JSON.stringify({
+      message: { data: '', kind: 'payload' },
+    }),
   });
 }
