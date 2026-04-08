@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { format, isValid, isToday, isYesterday } from 'date-fns';
-import { Paperclip, Send, X, MessageSquare, ListTree, ArrowLeft, CircleCheck, RotateCcw, MailOpen, MoreVertical, Info, List, Link, Search, ChevronUp, ChevronDown, Zap, RefreshCw } from 'lucide-react';
+import { Paperclip, Send, X, MessageSquare, ListTree, ArrowLeft, CircleCheck, RotateCcw, MailOpen, MoreVertical, Info, List, Link, Search, ChevronUp, ChevronDown, Zap, RefreshCw, HandMetal, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MediaMessage } from '@/components/media-message';
 import { InteractiveMessageDialog } from '@/components/interactive-message-dialog';
@@ -669,17 +669,21 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
     return () => clearInterval(interval);
   }, [conversationIds]);
 
-  const handleWorkflowEnd = useCallback(async () => {
+  const handleWorkflowAction = useCallback(async (targetStatus: string) => {
     if (!workflowExecution) return;
     setWorkflowActionLoading(true);
     try {
       const res = await fetch(`/api/workflow-executions?id=${workflowExecution.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'ended' }),
+        body: JSON.stringify({ status: targetStatus }),
       });
       if (res.ok) {
-        setWorkflowExecution(null);
+        if (targetStatus === 'ended') {
+          setWorkflowExecution(null);
+        } else {
+          setWorkflowExecution(prev => prev ? { ...prev, status: targetStatus } : null);
+        }
       }
     } catch {
       // ignore
@@ -1551,17 +1555,28 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                   <p className="text-[12px] text-[var(--wa-text-primary)] leading-relaxed flex-1">
                     <span className="font-medium text-amber-400">{workflowExecution.workflowName}</span>
                     <span className="text-[var(--wa-text-secondary)] ml-1.5">
-                      {workflowExecution.status === 'waiting' ? '· Waiting for input' : workflowExecution.status === 'paused' ? '· Paused' : '· Running'}
+                      {workflowExecution.status === 'handoff' ? '· You have control' : workflowExecution.status === 'waiting' ? '· Waiting for input' : workflowExecution.status === 'paused' ? '· Paused' : '· Running'}
                     </span>
                   </p>
-                  <button
-                    onClick={handleWorkflowEnd}
-                    disabled={workflowActionLoading}
-                    className="text-[11px] font-semibold text-red-400 bg-red-400/10 hover:bg-red-400/20 px-3 py-1 rounded-full flex-shrink-0 transition-colors whitespace-nowrap flex items-center gap-1 disabled:opacity-50"
-                  >
-                    <X className="h-3 w-3" />
-                    End Workflow
-                  </button>
+                  {workflowExecution.status === 'handoff' ? (
+                    <button
+                      onClick={() => handleWorkflowAction('ended')}
+                      disabled={workflowActionLoading}
+                      className="text-[11px] font-semibold text-emerald-400 bg-emerald-400/10 hover:bg-emerald-400/20 px-3 py-1 rounded-full flex-shrink-0 transition-colors whitespace-nowrap flex items-center gap-1 disabled:opacity-50"
+                    >
+                      <Play className="h-3 w-3" />
+                      Resume Workflow
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleWorkflowAction('handoff')}
+                      disabled={workflowActionLoading}
+                      className="text-[11px] font-semibold text-amber-400 bg-amber-400/10 hover:bg-amber-400/20 px-3 py-1 rounded-full flex-shrink-0 transition-colors whitespace-nowrap flex items-center gap-1 disabled:opacity-50"
+                    >
+                      <HandMetal className="h-3 w-3" />
+                      Take Control
+                    </button>
+                  )}
                 </div>
               </div>
             )}
