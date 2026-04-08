@@ -102,6 +102,9 @@ export default function Home() {
   const clearUnreadForSelected = useCallback(() => {
     const selected = selectedConversationRef.current;
     if (!selected) return;
+    // Skip if already at 0 — no network call needed
+    const current = unreadCounts.get(selected.phoneNumber);
+    if (!current || current === 0) return;
     setInitialUnreadCount(0);
     setUnreadCounts(prev => {
       if (!prev.has(selected.phoneNumber)) return prev;
@@ -109,8 +112,8 @@ export default function Home() {
       next.delete(selected.phoneNumber);
       return next;
     });
-    if (selected) clearUnreadOnServer(selected.phoneNumber);
-  }, []);
+    clearUnreadOnServer(selected.phoneNumber);
+  }, [unreadCounts]);
 
   // Sync selected conversation when conversation list updates
   const deepLinkHandledRef = useRef(false);

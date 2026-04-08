@@ -4,7 +4,7 @@ import { getDb, schema } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ conversationId: string }> }
 ) {
   try {
@@ -15,6 +15,23 @@ export async function GET(
         { error: 'Missing required parameter: conversationId' },
         { status: 400 }
       );
+    }
+
+    // Lightweight SQLite-only lookup (for polling, no API call)
+    const url = new URL(request.url);
+    if (url.searchParams.get('source') === 'db') {
+      try {
+        const db = getDb();
+        const row = db.select({ status: schema.conversations.status })
+          .from(schema.conversations)
+          .where(eq(schema.conversations.id, conversationId))
+          .get();
+        if (row) {
+          return NextResponse.json({ status: row.status });
+        }
+      } catch {
+        // Fall through to API
+      }
     }
 
     const result = await whatsappClient.conversations.get({

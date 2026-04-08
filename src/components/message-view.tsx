@@ -616,6 +616,24 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationIds, fetchMessages, phoneNumber]);
 
+  // Poll conversation status every 10s while chat is open
+  useEffect(() => {
+    if (!conversationIds || conversationIds.length === 0) return;
+    const latestId = conversationIds[0];
+    const interval = setInterval(() => {
+      // Use lightweight SQLite-first endpoint (no Kapso API call)
+      fetch(`/api/conversations/${latestId}?source=db`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (!data?.status) return;
+          onConversationStatusUpdate?.(latestId, data.status);
+        })
+        .catch(() => {});
+    }, 10000);
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationIds]);
+
   useEffect(() => {
     if (isNearBottom) {
       // Use rAF to ensure refs are set after render
