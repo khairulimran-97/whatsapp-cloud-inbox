@@ -238,6 +238,7 @@ type Props = {
   onMarkUnread?: (phoneNumber: string) => void;
   onBack?: () => void;
   onInteraction?: () => void;
+  onTypingChange?: (isTyping: boolean) => void;
   isVisible?: boolean;
   pollInterval?: number;
   initialUnreadCount?: number;
@@ -249,7 +250,7 @@ export type MessageViewRef = {
   updateMessageStatus: (messageId: string, status: string) => void;
 };
 
-export const MessageView = forwardRef<MessageViewRef, Props>(function MessageView({ conversationIds, conversationStatuses, conversationStatus, phoneNumber, contactName, totalConversations, onTemplateSent, onStatusChanged, onConversationStatusUpdate, onMarkUnread, onBack, onInteraction, isVisible = false, pollInterval = 5000, initialUnreadCount = 0 }: Props, ref) {
+export const MessageView = forwardRef<MessageViewRef, Props>(function MessageView({ conversationIds, conversationStatuses, conversationStatus, phoneNumber, contactName, totalConversations, onTemplateSent, onStatusChanged, onConversationStatusUpdate, onMarkUnread, onBack, onInteraction, onTypingChange, isVisible = false, pollInterval = 5000, initialUnreadCount = 0 }: Props, ref) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -307,6 +308,11 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
       .then(data => setReplyTemplates(data.templates || []))
       .catch(() => {});
   }, []);
+
+  // Notify parent of typing state changes
+  useEffect(() => {
+    onTypingChange?.(messageInput.trim().length > 0);
+  }, [messageInput, onTypingChange]);
 
   // Close lightbox on Escape key
   useEffect(() => {

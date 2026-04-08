@@ -45,6 +45,7 @@ export default function Home() {
   const [selectedConversation, setSelectedConversation] = useState<Conversation>();
   const [unreadCounts, setUnreadCounts] = useState<Map<string, number>>(new Map());
   const [initialUnreadCount, setInitialUnreadCount] = useState(0);
+  const [typingPhone, setTypingPhone] = useState<string | null>(null);
   const conversationListRef = useRef<ConversationListRef>(null);
   const messageViewRef = useRef<MessageViewRef>(null);
   const selectedConversationRef = useRef<Conversation | undefined>(undefined);
@@ -366,6 +367,7 @@ export default function Home() {
         notificationEnabled={notifEnabled}
         notificationPermission={notifPermission}
         onToggleNotification={toggleNotif}
+        typingPhone={typingPhone}
       />
       <MessageView
         ref={messageViewRef}
@@ -381,6 +383,7 @@ export default function Home() {
         onMarkUnread={handleMarkUnread}
         onBack={handleBackToList}
         onInteraction={clearUnreadForSelected}
+        onTypingChange={(isTyping) => setTypingPhone(isTyping ? selectedConversation?.phoneNumber ?? null : null)}
         isVisible={!!selectedConversation}
         pollInterval={messagePollInterval}
         initialUnreadCount={initialUnreadCount}

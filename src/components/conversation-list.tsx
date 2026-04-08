@@ -141,6 +141,7 @@ type Props = {
   notificationEnabled?: boolean;
   notificationPermission?: string;
   onToggleNotification?: () => Promise<void> | void;
+  typingPhone?: string | null;
 };
 
 export type ConversationListRef = {
@@ -159,7 +160,7 @@ export type ConversationListRef = {
 const PAGE_SIZE = 50;
 
 export const ConversationList = forwardRef<ConversationListRef, Props>(
-  ({ onSelectConversation, onConversationsUpdated, selectedConversationId, isHidden = false, unreadCounts = new Map(), pollInterval = 10000, notificationEnabled = false, notificationPermission = 'default', onToggleNotification }, ref) => {
+  ({ onSelectConversation, onConversationsUpdated, selectedConversationId, isHidden = false, unreadCounts = new Map(), pollInterval = 10000, notificationEnabled = false, notificationPermission = 'default', onToggleNotification, typingPhone }, ref) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [needsSync, setNeedsSync] = useState(false);
@@ -720,7 +721,9 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
                   </div>
                   <div className="flex justify-between items-center gap-2 mt-0.5">
                     <p className={cn("text-[13px] truncate flex-1", isUnread ? "text-[var(--wa-text-primary)] font-medium" : "text-[var(--wa-text-secondary)]")}>
-                      {conversation.lastMessage ? (
+                      {typingPhone === conversation.phoneNumber ? (
+                        <span className="text-[var(--wa-accent)] italic">typing...</span>
+                      ) : conversation.lastMessage ? (
                         <>
                           {conversation.lastMessage.direction === 'outbound' && (
                             <CheckCheck className="inline h-[15px] w-[15px] text-[var(--wa-read-check)] align-text-bottom mr-0.5" />
