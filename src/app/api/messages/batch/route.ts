@@ -335,7 +335,7 @@ export async function GET(request: Request) {
 
     const isInitial = mode === 'initial';
 
-    const limit = 50;
+    const limit = isInitial ? 20 : 50;
     const retries = isInitial ? 2 : 0;
 
     // Try SQLite first for instant response (no API call)

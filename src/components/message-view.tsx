@@ -440,12 +440,13 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
     return { status: 'active' as const, hoursLeft };
   })();
 
-  const scrollToBottom = () => {
+  const scrollToBottom = (instant = false) => {
+    const behavior = instant ? 'instant' as ScrollBehavior : 'smooth';
     // If there's an unread divider, scroll to it; otherwise scroll to bottom
     if (unreadDividerRef.current) {
-      unreadDividerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      unreadDividerRef.current.scrollIntoView({ behavior, block: 'start' });
     } else {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current?.scrollIntoView({ behavior });
     }
   };
 
@@ -611,6 +612,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
         setIsNearBottom(true);
         unreadDividerRef.current = null;
         prevMessageFingerprintRef.current = '';
+        initialScrollDoneRef.current = false;
         fetchMessages();
 
         // Refresh all conversation statuses from Kapso API (non-blocking)
@@ -692,10 +694,13 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
     }
   }, [workflowExecution]);
 
+  const initialScrollDoneRef = useRef(false);
+
   useEffect(() => {
     if (isNearBottom) {
-      // Use rAF to ensure refs are set after render
-      requestAnimationFrame(() => scrollToBottom());
+      const isInitial = !initialScrollDoneRef.current && messages.length > 0;
+      if (isInitial) initialScrollDoneRef.current = true;
+      requestAnimationFrame(() => scrollToBottom(isInitial));
     }
   }, [messages, isNearBottom]);
 
