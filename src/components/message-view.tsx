@@ -72,10 +72,26 @@ function getAvatarInitials(contactName?: string, phoneNumber?: string): string {
 function LazyImage({ src, alt, className, onClick }: { src: string; alt: string; className?: string; onClick?: () => void }) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
+  const [showLoader, setShowLoader] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  // Only show loader after 150ms delay — cached images load before this
+  useEffect(() => {
+    if (loaded || error) return;
+    const timer = setTimeout(() => setShowLoader(true), 150);
+    return () => clearTimeout(timer);
+  }, [loaded, error]);
+
+  // Check if image is already cached (complete before onLoad fires)
+  useEffect(() => {
+    if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
+      setLoaded(true);
+    }
+  }, [src]);
 
   return (
     <div className="relative">
-      {!loaded && !error && (
+      {!loaded && !error && showLoader && (
         <div className={cn("flex items-center justify-center bg-[var(--wa-hover)] rounded-[5px] min-h-[120px] min-w-[180px]", className)}>
           <div className="flex items-center gap-1">
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--wa-text-secondary)]/30 animate-bounce [animation-delay:-0.3s]" />
@@ -90,6 +106,7 @@ function LazyImage({ src, alt, className, onClick }: { src: string; alt: string;
         </div>
       ) : (
         <img
+          ref={imgRef}
           src={src}
           alt={alt}
           className={cn(className, !loaded && 'h-0 overflow-hidden')}
@@ -103,9 +120,25 @@ function LazyImage({ src, alt, className, onClick }: { src: string; alt: string;
   );
 }
 
-// Lightbox with loading state — image is usually browser-cached from chat bubble
+// Lightbox — image is usually browser-cached from chat bubble
 function Lightbox({ url, onClose }: { url: string; onClose: () => void }) {
   const [loaded, setLoaded] = useState(false);
+  const [showLoader, setShowLoader] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  // Only show loader after 200ms — cached images appear instantly
+  useEffect(() => {
+    if (loaded) return;
+    const timer = setTimeout(() => setShowLoader(true), 200);
+    return () => clearTimeout(timer);
+  }, [loaded]);
+
+  // Check if already cached
+  useEffect(() => {
+    if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
+      setLoaded(true);
+    }
+  }, [url]);
 
   return (
     <div
@@ -119,7 +152,7 @@ function Lightbox({ url, onClose }: { url: string; onClose: () => void }) {
       >
         <X className="h-6 w-6" />
       </button>
-      {!loaded && (
+      {!loaded && showLoader && (
         <div className="relative z-10 flex items-center gap-2">
           <span className="h-2.5 w-2.5 rounded-full bg-white/40 animate-bounce [animation-delay:-0.3s]" />
           <span className="h-2.5 w-2.5 rounded-full bg-white/40 animate-bounce [animation-delay:-0.15s]" />
@@ -128,6 +161,7 @@ function Lightbox({ url, onClose }: { url: string; onClose: () => void }) {
       )}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
+        ref={imgRef}
         src={url}
         alt="Full size"
         className={cn(
@@ -251,6 +285,7 @@ export type MessageViewRef = {
 export const MessageView = forwardRef<MessageViewRef, Props>(function MessageView({ conversationIds, conversationStatuses, conversationStatus, phoneNumber, contactName, totalConversations, onTemplateSent, onStatusChanged, onConversationStatusUpdate, onMarkUnread, onBack, onInteraction, isVisible = false, pollInterval = 5000, initialUnreadCount = 0 }: Props, ref) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showLoadingIndicator, setShowLoadingIndicator] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [messageInput, setMessageInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -306,6 +341,13 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
       .then(data => setReplyTemplates(data.templates || []))
       .catch(() => {});
   }, []);
+
+  // Delay loading indicator to avoid flicker on fast SQLite loads
+  useEffect(() => {
+    if (!loading) { setShowLoadingIndicator(false); return; }
+    const timer = setTimeout(() => setShowLoadingIndicator(true), 150);
+    return () => clearTimeout(timer);
+  }, [loading]);
 
   // Close lightbox on Escape key
   useEffect(() => {
@@ -898,7 +940,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
   }
 
   // Full skeleton only for very first render (no contact info yet)
-  if (loading && !contactName && !phoneNumber) {
+  if (showLoadingIndicator && !contactName && !phoneNumber) {
     return (
       <div className={cn(
         "flex-1 flex flex-col chat-bg panel-slide",
@@ -1177,7 +1219,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
             </Button>
           </div>
         )}
-        {loading && messages.length === 0 ? (
+        {showLoadingIndicator && messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16">
             <div className="flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-[var(--wa-text-secondary)]/40 animate-bounce [animation-delay:-0.3s]" />
