@@ -68,6 +68,41 @@ function getAvatarInitials(contactName?: string, phoneNumber?: string): string {
   return '??';
 }
 
+// Lazy image with placeholder — prevents empty bubbles while image loads
+function LazyImage({ src, alt, className, onClick }: { src: string; alt: string; className?: string; onClick?: () => void }) {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+
+  return (
+    <div className="relative">
+      {!loaded && !error && (
+        <div className={cn("flex items-center justify-center bg-[var(--wa-hover)] rounded-[5px] min-h-[120px] min-w-[180px]", className)}>
+          <div className="flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--wa-text-secondary)]/30 animate-bounce [animation-delay:-0.3s]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--wa-text-secondary)]/30 animate-bounce [animation-delay:-0.15s]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--wa-text-secondary)]/30 animate-bounce" />
+          </div>
+        </div>
+      )}
+      {error ? (
+        <div className={cn("flex items-center justify-center bg-[var(--wa-hover)] rounded-[5px] min-h-[60px] min-w-[180px]", className)}>
+          <span className="text-xs text-[var(--wa-text-secondary)]">Failed to load image</span>
+        </div>
+      ) : (
+        <img
+          src={src}
+          alt={alt}
+          className={cn(className, !loaded && 'h-0 overflow-hidden')}
+          onClick={onClick}
+          onLoad={() => setLoaded(true)}
+          onError={() => setError(true)}
+          loading="lazy"
+        />
+      )}
+    </div>
+  );
+}
+
 type Message = {
   id: string;
   direction: 'inbound' | 'outbound';
@@ -516,7 +551,10 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
       prevPhoneRef.current = phoneNumber;
 
       if (isNewChat) {
-        // User switched to a different conversation — full reset + fetch
+        // User switched to a different conversation — clear + fetch
+        setMessages([]);
+        messagesRef.current = [];
+        previousMessageCountRef.current = 0;
         setLoading(true);
         setIsNearBottom(true);
         unreadDividerRef.current = null;
@@ -803,7 +841,8 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
     );
   }
 
-  if (loading) {
+  // Full skeleton only for very first render (no contact info yet)
+  if (loading && !contactName && !phoneNumber) {
     return (
       <div className={cn(
         "flex-1 flex flex-col chat-bg panel-slide",
@@ -1082,7 +1121,16 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
             </Button>
           </div>
         )}
-        {messages.length === 0 ? (
+        {loading && messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <div className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-[var(--wa-text-secondary)]/40 animate-bounce [animation-delay:-0.3s]" />
+              <span className="h-2 w-2 rounded-full bg-[var(--wa-text-secondary)]/40 animate-bounce [animation-delay:-0.15s]" />
+              <span className="h-2 w-2 rounded-full bg-[var(--wa-text-secondary)]/40 animate-bounce" />
+            </div>
+            <p className="text-xs text-[var(--wa-text-secondary)]/60 mt-3">Loading messages...</p>
+          </div>
+        ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center px-4">
             <div className="h-16 w-16 rounded-full bg-[var(--wa-hover)] flex items-center justify-center mb-4">
               <MessageSquare className="h-7 w-7 text-[var(--wa-text-secondary)]" />
@@ -1211,13 +1259,13 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                       return (
                       <div className={cn('overflow-hidden rounded-[5px]', message.content && message.content !== '[Image attached]' || message.caption ? 'mb-[3px]' : '')}>
                         {message.messageType === 'sticker' ? (
-                          <img
+                          <LazyImage
                             src={mediaUrl}
                             alt="Sticker"
                             className="max-w-[150px] max-h-[150px] h-auto"
                           />
                         ) : (md?.contentType as string)?.startsWith('image/') || message.messageType === 'image' ? (
-                          <img
+                          <LazyImage
                             src={mediaUrl}
                             alt="Media"
                             className="rounded-[5px] max-w-full h-auto max-h-[330px] object-cover cursor-pointer"
