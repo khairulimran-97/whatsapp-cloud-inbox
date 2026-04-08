@@ -163,6 +163,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [needsSync, setNeedsSync] = useState(false);
+  const [autoSync, setAutoSync] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncCount, setSyncCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
@@ -192,9 +193,14 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       const response = await fetch('/api/conversations');
       const data = await response.json();
 
-      // API says SQLite is empty — trigger sync
+      // API says SQLite needs sync
       if (data.needsSync) {
+        // Auto-sync if triggered by force resync, migration, or API indicates resync
+        const isForceResync = sessionStorage.getItem('force_resync') === '1';
+        sessionStorage.removeItem('force_resync');
+        const shouldAutoSync = isForceResync || data.isResync;
         setNeedsSync(true);
+        if (shouldAutoSync) setAutoSync(true);
         setLoading(false);
         return;
       }
@@ -266,12 +272,12 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
     }
   }, []);
 
-  // Auto-start sync when needsSync is detected (e.g. after force resync or migration)
+  // Auto-start sync when triggered by force resync (not first setup)
   useEffect(() => {
-    if (needsSync && !syncing) {
+    if (autoSync && needsSync && !syncing) {
       startSync();
     }
-  }, [needsSync, syncing, startSync]);
+  }, [autoSync, needsSync, syncing, startSync]);
 
   const loadMoreConversations = useCallback(async () => {
     if (loadingMore || !hasMore) return;
@@ -469,20 +475,43 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
     return (
       <div className="fixed inset-0 z-50 bg-[var(--wa-panel-bg)] flex items-center justify-center">
         <div className="text-center space-y-5 max-w-sm px-8">
-          <div className="mx-auto h-16 w-16 rounded-full bg-[var(--wa-green)]/10 flex items-center justify-center">
-            <Loader2 className="h-8 w-8 text-[var(--wa-green)] animate-spin" />
-          </div>
-          <div>
-            <p className="text-[17px] font-semibold text-[var(--wa-text-primary)]">Syncing conversations...</p>
-            <p className="text-[14px] text-[var(--wa-text-secondary)] mt-2">{syncCount > 0 ? `${syncCount} contacts loaded` : 'Starting sync...'}</p>
-          </div>
-          <div className="w-full bg-[var(--wa-border)] rounded-full h-1.5 overflow-hidden">
-            <div className="bg-[var(--wa-green)] h-full rounded-full animate-pulse" style={{ width: '60%' }} />
-          </div>
-          <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-red-500/10 border border-red-500/20">
-            <TriangleAlert className="h-4 w-4 text-red-400 flex-shrink-0" />
-            <p className="text-[13px] text-red-400 text-left">Do not close this window until sync is complete.</p>
-          </div>
+          {syncing || autoSync ? (
+            <>
+              <div className="mx-auto h-16 w-16 rounded-full bg-[var(--wa-green)]/10 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 text-[var(--wa-green)] animate-spin" />
+              </div>
+              <div>
+                <p className="text-[17px] font-semibold text-[var(--wa-text-primary)]">Syncing conversations...</p>
+                <p className="text-[14px] text-[var(--wa-text-secondary)] mt-2">{syncCount > 0 ? `${syncCount} contacts loaded` : 'Starting sync...'}</p>
+              </div>
+              <div className="w-full bg-[var(--wa-border)] rounded-full h-1.5 overflow-hidden">
+                <div className="bg-[var(--wa-green)] h-full rounded-full animate-pulse" style={{ width: '60%' }} />
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-red-500/10 border border-red-500/20">
+                <TriangleAlert className="h-4 w-4 text-red-400 flex-shrink-0" />
+                <p className="text-[13px] text-red-400 text-left">Do not close this window until sync is complete.</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="mx-auto h-16 w-16 rounded-full bg-[var(--wa-green)]/10 flex items-center justify-center">
+                <CloudDownload className="h-8 w-8 text-[var(--wa-green)]" />
+              </div>
+              <div>
+                <p className="text-[17px] font-semibold text-[var(--wa-text-primary)]">Sync your conversations</p>
+                <p className="text-[14px] text-[var(--wa-text-secondary)] mt-2">
+                  Load your conversation history from WhatsApp Cloud API. This only needs to happen once.
+                </p>
+              </div>
+              <button
+                onClick={startSync}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[var(--wa-green)] text-white text-[15px] font-medium hover:bg-[var(--wa-green)]/90 transition-colors"
+              >
+                <CloudDownload className="h-5 w-5" />
+                Sync Now
+              </button>
+            </>
+          )}
         </div>
       </div>
     );
@@ -1347,6 +1376,7 @@ function DataTab() {
       const data = await res.json();
       if (res.ok) {
         setMessage({ text: data.message || 'Resync triggered successfully' });
+        sessionStorage.setItem('force_resync', '1');
         setTimeout(() => window.location.reload(), 1500);
       } else {
         setMessage({ text: data.error || 'Failed to resync', error: true });

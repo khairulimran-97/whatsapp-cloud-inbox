@@ -464,8 +464,11 @@ export async function GET(request: Request) {
     // ── Check if seed is complete (must be before cache paths) ──
     const seedComplete = isSeedComplete();
     if (!seedComplete) {
-      // Seed not done — tell client to sync (ignore partial in-memory cache)
-      return NextResponse.json({ data: [], hasMore: false, needsSync: true });
+      // Check if conversations exist (resync) vs empty DB (first setup)
+      const db = getDb();
+      const count = db.select({ count: sql<number>`count(*)` }).from(schema.conversations).get();
+      const isResync = (count?.count ?? 0) > 0;
+      return NextResponse.json({ data: [], hasMore: false, needsSync: true, isResync });
     }
 
     // ── Polling: return cache if fresh and not invalidated by webhook ──
