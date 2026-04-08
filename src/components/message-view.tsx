@@ -68,8 +68,9 @@ function getAvatarInitials(contactName?: string, phoneNumber?: string): string {
   return '??';
 }
 
-// Image with CSS background placeholder — no JS loading state needed
+// Image with loading placeholder
 function LazyImage({ src, alt, className, onClick }: { src: string; alt: string; className?: string; onClick?: () => void }) {
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
 
   if (error) {
@@ -81,13 +82,25 @@ function LazyImage({ src, alt, className, onClick }: { src: string; alt: string;
   }
 
   return (
-    <img
-      src={src}
-      alt={alt}
-      className={cn("bg-[var(--wa-hover)]", className)}
-      onClick={onClick}
-      onError={() => setError(true)}
-    />
+    <>
+      {!loaded && (
+        <div className="flex items-center justify-center bg-[var(--wa-hover)] rounded-[5px] min-h-[120px] min-w-[180px]">
+          <div className="flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--wa-text-secondary)]/30 animate-bounce [animation-delay:-0.3s]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--wa-text-secondary)]/30 animate-bounce [animation-delay:-0.15s]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--wa-text-secondary)]/30 animate-bounce" />
+          </div>
+        </div>
+      )}
+      <img
+        src={src}
+        alt={alt}
+        className={cn(className, !loaded && 'hidden')}
+        onClick={onClick}
+        onLoad={() => setLoaded(true)}
+        onError={() => setError(true)}
+      />
+    </>
   );
 }
 
