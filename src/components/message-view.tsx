@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { format, isValid, isToday, isYesterday } from 'date-fns';
-import { Paperclip, Send, X, MessageSquare, ListTree, ArrowLeft, CircleCheck, RotateCcw, MailOpen, MoreVertical, Info, List, Link, Search, ChevronUp, ChevronDown, Zap, RefreshCw } from 'lucide-react';
+import { Paperclip, Send, X, MessageSquare, ListTree, ArrowLeft, CircleCheck, RotateCcw, MailOpen, MoreVertical, Info, List, Link, Search, ChevronUp, ChevronDown, Zap, RefreshCw, Play, HandMetal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MediaMessage } from '@/components/media-message';
 import { InteractiveMessageDialog } from '@/components/interactive-message-dialog';
@@ -274,6 +274,13 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [confirmAction, setConfirmAction] = useState<'close' | 'reopen' | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [workflowExecution, setWorkflowExecution] = useState<{
+    id: string;
+    status: string;
+    workflowName: string;
+    conversationId: string;
+  } | null>(null);
+  const [workflowActionLoading, setWorkflowActionLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const unreadDividerRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -639,6 +646,76 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationIds]);
+
+  // Fetch workflow execution status for this conversation
+  useEffect(() => {
+    if (!conversationIds || conversationIds.length === 0) return;
+    setWorkflowExecution(null);
+    const fetchExecution = () => {
+      fetch(`/api/workflows/executions?conversationIds=${conversationIds.join(',')}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data?.data?.length > 0) {
+            setWorkflowExecution(data.data[0]);
+          } else {
+            setWorkflowExecution(null);
+          }
+        })
+        .catch(() => {});
+    };
+    fetchExecution();
+    // Poll every 30s to detect workflow state changes
+    const interval = setInterval(fetchExecution, 30000);
+    return () => clearInterval(interval);
+  }, [conversationIds]);
+
+  const handleWorkflowTakeControl = useCallback(async () => {
+    if (!workflowExecution) return;
+    setWorkflowActionLoading(true);
+    try {
+      const res = await fetch(`/api/workflow-executions?id=${workflowExecution.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'ended' }),
+      });
+      if (res.ok) {
+        setWorkflowExecution(null);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setWorkflowActionLoading(false);
+    }
+  }, [workflowExecution]);
+
+  const handleWorkflowResume = useCallback(async () => {
+    if (!workflowExecution) return;
+    setWorkflowActionLoading(true);
+    try {
+      const res = await fetch(`/api/workflow-executions?id=${workflowExecution.id}`, {
+        method: 'POST',
+      });
+      if (res.ok) {
+        // Refresh execution status after resume
+        setTimeout(() => {
+          fetch(`/api/workflows/executions?conversationIds=${conversationIds?.join(',')}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+              if (data?.data?.length > 0) {
+                setWorkflowExecution(data.data[0]);
+              } else {
+                setWorkflowExecution(null);
+              }
+            })
+            .catch(() => {});
+        }, 1000);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setWorkflowActionLoading(false);
+    }
+  }, [workflowExecution, conversationIds]);
 
   useEffect(() => {
     if (isNearBottom) {
@@ -1479,11 +1556,55 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
           });
           })()
         )}
+        {/* Workflow execution waiting indicator in chat */}
+        {workflowExecution && workflowExecution.status === 'waiting' && messages.length > 0 && (
+          <div className="flex justify-center py-2 px-4">
+            <div className="flex items-center gap-2 px-4 py-2 bg-[var(--wa-system-bubble)] rounded-lg shadow-sm">
+              <Info className="h-3.5 w-3.5 text-[var(--wa-text-secondary)]" />
+              <span className="text-[12px] text-[var(--wa-text-secondary)]">Workflow execution is waiting</span>
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
 
       <div className="border-t border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)] safe-area-bottom px-3 sm:px-4 md:px-[30px]">
+            {/* Workflow execution banner */}
+            {workflowExecution && (
+              <div className="pt-2">
+                <div className="flex items-center gap-2 px-3 py-2 bg-[#1a1a2e] rounded-lg border border-[#2a2a4a]">
+                  <Zap className="h-4 w-4 text-amber-400 flex-shrink-0" />
+                  <p className="text-[12px] text-[var(--wa-text-primary)] leading-relaxed flex-1">
+                    <span className="font-medium text-amber-400">{workflowExecution.workflowName}</span>
+                    <span className="text-[var(--wa-text-secondary)] ml-1.5">
+                      {workflowExecution.status === 'waiting' ? '· Waiting for input' : workflowExecution.status === 'paused' ? '· Paused' : '· Running'}
+                    </span>
+                  </p>
+                  <div className="flex items-center gap-1.5">
+                    {workflowExecution.status === 'waiting' && (
+                      <button
+                        onClick={handleWorkflowResume}
+                        disabled={workflowActionLoading}
+                        className="text-[11px] font-semibold text-emerald-400 bg-emerald-400/10 hover:bg-emerald-400/20 px-3 py-1 rounded-full flex-shrink-0 transition-colors whitespace-nowrap flex items-center gap-1 disabled:opacity-50"
+                      >
+                        <Play className="h-3 w-3" />
+                        Resume
+                      </button>
+                    )}
+                    <button
+                      onClick={handleWorkflowTakeControl}
+                      disabled={workflowActionLoading}
+                      className="text-[11px] font-semibold text-amber-400 bg-amber-400/10 hover:bg-amber-400/20 px-3 py-1 rounded-full flex-shrink-0 transition-colors whitespace-nowrap flex items-center gap-1 disabled:opacity-50"
+                    >
+                      <HandMetal className="h-3 w-3" />
+                      Take Control
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* 24-hour messaging window notice */}
             {conversationStatus !== 'ended' && messages.length > 0 && (
               <div className="pt-2">
