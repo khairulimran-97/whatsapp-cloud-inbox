@@ -104,8 +104,10 @@ function LazyImage({ src, alt, className, onClick }: { src: string; alt: string;
   );
 }
 
-// Lightbox — show image immediately, no loading dance
+// Lightbox with loading indicator
 function Lightbox({ url, onClose }: { url: string; onClose: () => void }) {
+  const [loaded, setLoaded] = useState(false);
+
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center animate-in fade-in duration-100"
@@ -118,12 +120,23 @@ function Lightbox({ url, onClose }: { url: string; onClose: () => void }) {
       >
         <X className="h-6 w-6" />
       </button>
+      {!loaded && (
+        <div className="relative z-10 flex items-center gap-2">
+          <span className="h-2.5 w-2.5 rounded-full bg-white/40 animate-bounce [animation-delay:-0.3s]" />
+          <span className="h-2.5 w-2.5 rounded-full bg-white/40 animate-bounce [animation-delay:-0.15s]" />
+          <span className="h-2.5 w-2.5 rounded-full bg-white/40 animate-bounce" />
+        </div>
+      )}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={url}
         alt="Full size"
-        className="relative z-10 max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
+        className={cn(
+          "relative z-10 max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl",
+          !loaded && 'hidden'
+        )}
         onClick={(e) => e.stopPropagation()}
+        onLoad={() => setLoaded(true)}
       />
     </div>
   );
@@ -1311,14 +1324,14 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                           <LazyImage
                             src={mediaUrl}
                             alt="Media"
-                            className="rounded-[5px] max-w-full h-auto max-h-[330px] object-cover cursor-pointer"
+                            className="rounded-[5px] max-w-full h-auto max-h-[250px] object-cover cursor-pointer"
                             onClick={() => setLightboxUrl(mediaUrl)}
                           />
                         ) : (md?.contentType as string)?.startsWith('video/') || message.messageType === 'video' ? (
                           <video
                             src={mediaUrl}
                             controls
-                            className="rounded-[5px] max-w-full h-auto max-h-[330px]"
+                            className="rounded-[5px] max-w-full h-auto max-h-[250px]"
                           />
                         ) : (md?.contentType as string)?.startsWith('audio/') || message.messageType === 'audio' ? (
                           <div className="px-2 pt-2">
