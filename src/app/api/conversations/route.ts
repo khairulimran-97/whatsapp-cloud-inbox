@@ -222,6 +222,8 @@ function loadConversationsFromDb(): GroupedConversation[] {
       for (const key of Object.keys(group.conversationStatuses)) {
         if (!idSet.has(key)) delete group.conversationStatuses[key];
       }
+      // Overall status: active if ANY included session is active
+      group.status = Object.values(group.conversationStatuses).some(s => s === 'active') ? 'active' : 'ended';
     }
 
     return Array.from(phoneGroupMap.values()).sort((a, b) => {
@@ -311,6 +313,8 @@ function groupConversations(records: ConversationRecord[], maxIdsPerGroup = 3): 
     for (const key of Object.keys(group.conversationStatuses)) {
       if (!idSet.has(key)) delete group.conversationStatuses[key];
     }
+    // Overall status: active if ANY included session is active
+    group.status = Object.values(group.conversationStatuses).some(s => s === 'active') ? 'active' : 'ended';
   }
 
   return Array.from(phoneGroupMap.values()).sort((a, b) => {
