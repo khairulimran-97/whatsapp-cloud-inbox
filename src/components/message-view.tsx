@@ -68,7 +68,7 @@ function getAvatarInitials(contactName?: string, phoneNumber?: string): string {
   return '??';
 }
 
-// Image with CSS-only placeholder — no loading state, no flicker
+// Image with CSS background placeholder — no JS loading state needed
 function LazyImage({ src, alt, className, onClick }: { src: string; alt: string; className?: string; onClick?: () => void }) {
   const [error, setError] = useState(false);
 
@@ -81,15 +81,13 @@ function LazyImage({ src, alt, className, onClick }: { src: string; alt: string;
   }
 
   return (
-    <div className="bg-[var(--wa-hover)] rounded-[5px] min-h-[80px] min-w-[120px]">
-      <img
-        src={src}
-        alt={alt}
-        className={cn(className)}
-        onClick={onClick}
-        onError={() => setError(true)}
-      />
-    </div>
+    <img
+      src={src}
+      alt={alt}
+      className={cn("bg-[var(--wa-hover)]", className)}
+      onClick={onClick}
+      onError={() => setError(true)}
+    />
   );
 }
 
@@ -1154,7 +1152,15 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
             </Button>
           </div>
         )}
-        {messages.length === 0 && !loading ? (
+        {messages.length === 0 && loading ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <div className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-[var(--wa-text-secondary)]/40 animate-bounce [animation-delay:-0.3s]" />
+              <span className="h-2 w-2 rounded-full bg-[var(--wa-text-secondary)]/40 animate-bounce [animation-delay:-0.15s]" />
+              <span className="h-2 w-2 rounded-full bg-[var(--wa-text-secondary)]/40 animate-bounce" />
+            </div>
+          </div>
+        ) : messages.length === 0 && !loading ? (
           <div className="flex flex-col items-center justify-center py-16 text-center px-4">
             <div className="h-16 w-16 rounded-full bg-[var(--wa-hover)] flex items-center justify-center mb-4">
               <MessageSquare className="h-7 w-7 text-[var(--wa-text-secondary)]" />
