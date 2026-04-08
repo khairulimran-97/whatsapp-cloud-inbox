@@ -234,7 +234,7 @@ type Props = {
   totalConversations?: number;
   onTemplateSent?: (phoneNumber: string) => Promise<void>;
   onStatusChanged?: () => Promise<void>;
-  onConversationStatusUpdate?: (conversationId: string, status: string) => void;
+  onConversationStatusUpdate?: (statuses: Record<string, string>, newConversationIds?: string[]) => void;
   onMarkUnread?: (phoneNumber: string) => void;
   onBack?: () => void;
   onInteraction?: () => void;
@@ -613,13 +613,13 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
         prevMessageFingerprintRef.current = '';
         fetchMessages();
 
-        // Refresh conversation status from Kapso API (non-blocking fallback)
-        if (conversationIds.length > 0) {
-          fetch(`/api/conversations/${conversationIds[0]}`)
+        // Refresh all conversation statuses from Kapso API (non-blocking)
+        if (phoneNumber) {
+          fetch(`/api/conversations/status-by-phone?phone=${phoneNumber}`)
             .then(r => r.ok ? r.json() : null)
             .then(data => {
-              if (!data?.status) return;
-              onConversationStatusUpdate?.(conversationIds[0], data.status);
+              if (!data?.sessions) return;
+              onConversationStatusUpdate?.(data.sessions, data.conversationIds);
             })
             .catch(() => {});
         }
@@ -630,22 +630,22 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationIds, fetchMessages, phoneNumber]);
 
-  // Poll conversation status every 10s via Kapso API (catches reopens with no webhook)
+  // Poll all conversation statuses every 30s via Kapso API
   useEffect(() => {
-    if (!conversationIds || conversationIds.length === 0) return;
-    const latestId = conversationIds[0];
-    const interval = setInterval(() => {
-      fetch(`/api/conversations/${latestId}`)
+    if (!phoneNumber) return;
+    const poll = () => {
+      fetch(`/api/conversations/status-by-phone?phone=${phoneNumber}`)
         .then(r => r.ok ? r.json() : null)
         .then(data => {
-          if (!data?.status) return;
-          onConversationStatusUpdate?.(latestId, data.status);
+          if (!data?.sessions) return;
+          onConversationStatusUpdate?.(data.sessions, data.conversationIds);
         })
         .catch(() => {});
-    }, 30000);
+    };
+    const interval = setInterval(poll, 30000);
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationIds]);
+  }, [phoneNumber]);
 
   // Fetch workflow execution status for this conversation
   useEffect(() => {

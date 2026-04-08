@@ -196,14 +196,24 @@ export default function Home() {
   };
 
   // Update conversation status from API (called on chat open as fallback)
-  const handleConversationStatusUpdate = useCallback((conversationId: string, apiStatus: string) => {
+  const handleConversationStatusUpdate = useCallback((statuses: Record<string, string>, newConversationIds?: string[]) => {
     setSelectedConversation(prev => {
       if (!prev) return prev;
-      const currentStatus = prev.conversationStatuses[conversationId];
-      if (currentStatus === apiStatus) return prev; // no change
-      const updatedStatuses = { ...prev.conversationStatuses, [conversationId]: apiStatus };
+      const updatedStatuses = { ...prev.conversationStatuses, ...statuses };
       const overallStatus = Object.values(updatedStatuses).some(s => s === 'active') ? 'active' : 'ended';
-      const updated = { ...prev, conversationStatuses: updatedStatuses, status: overallStatus };
+      // Add any new conversation IDs from API
+      let updatedIds = prev.conversationIds;
+      if (newConversationIds) {
+        const existingSet = new Set(prev.conversationIds);
+        const newIds = newConversationIds.filter(id => !existingSet.has(id));
+        if (newIds.length > 0) {
+          updatedIds = [...newIds, ...prev.conversationIds];
+        }
+      }
+      // Skip if nothing changed
+      const statusChanged = Object.entries(statuses).some(([id, s]) => prev.conversationStatuses[id] !== s);
+      if (!statusChanged && updatedIds === prev.conversationIds) return prev;
+      const updated = { ...prev, conversationIds: updatedIds, conversationStatuses: updatedStatuses, status: overallStatus };
       conversationListRef.current?.updateConversation?.(updated);
       return updated;
     });
