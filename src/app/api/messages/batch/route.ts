@@ -335,18 +335,31 @@ export async function GET(request: Request) {
 
     const isInitial = mode === 'initial';
 
+    const limit = 50;
+    const retries = isInitial ? 2 : 0;
+
     // Try SQLite first for instant response (no API call)
     // Only on initial load when in-memory cache is empty
     if (isInitial && !refresh) {
       const dbMessages = loadMessagesFromDb(conversationIds);
       if (dbMessages.length > 0) {
-        // Return SQLite data instantly — webhooks keep it fresh, no background sync
-        return NextResponse.json({ data: dbMessages });
+        // Check which conversation IDs are covered by SQLite
+        const coveredIds = new Set(dbMessages.map(m => m.conversationId));
+        const missingIds = conversationIds.filter(id => !coveredIds.has(id));
+
+        if (missingIds.length === 0) {
+          // All sessions covered — return SQLite data instantly
+          return NextResponse.json({ data: dbMessages });
+        }
+
+        // Some sessions missing — fetch only the missing ones from API
+        const apiResults = await Promise.all(
+          missingIds.map(id => fetchConversationMessages(id, limit, retries))
+        );
+        const allMessages = [...dbMessages, ...apiResults.flat()];
+        return NextResponse.json({ data: allMessages });
       }
     }
-
-    const limit = 50;
-    const retries = isInitial ? 2 : 0;
 
     // Fetch from Kapso API (with in-memory cache)
     const results = await Promise.all(
