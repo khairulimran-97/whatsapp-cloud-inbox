@@ -44,12 +44,22 @@ export async function updateWorkflowExecution(executionId: string, status: strin
 export async function resumeWorkflowExecution(executionId: string, currentStatus?: string) {
   // Must be in 'waiting' state to resume — set it first if in handoff
   if (currentStatus && currentStatus !== 'waiting') {
-    await updateWorkflowExecution(executionId, 'waiting');
+    try {
+      await updateWorkflowExecution(executionId, 'waiting');
+    } catch {
+      // If can't set to waiting, end the execution instead
+      return updateWorkflowExecution(executionId, 'ended');
+    }
   }
-  return platformFetch(`/workflow_executions/${executionId}/resume`, {
-    method: 'POST',
-    body: JSON.stringify({
-      message: { data: '', kind: 'payload' },
-    }),
-  });
+  try {
+    return await platformFetch(`/workflow_executions/${executionId}/resume`, {
+      method: 'POST',
+      body: JSON.stringify({
+        message: { data: '', kind: 'payload' },
+      }),
+    });
+  } catch {
+    // If resume fails, end the execution as fallback
+    return updateWorkflowExecution(executionId, 'ended');
+  }
 }
