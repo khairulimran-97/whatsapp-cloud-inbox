@@ -239,10 +239,15 @@ export default function Home() {
       || (webhookConv.last_active_at as string | undefined)
       || (webhookConv.updated_at as string | undefined);
 
+    // Determine direction from kapso timestamps
+    const lastInbound = kapso?.last_inbound_at as string | undefined;
+    const lastOutbound = kapso?.last_outbound_at as string | undefined;
+    const direction = lastOutbound && (!lastInbound || lastOutbound >= lastInbound) ? 'outbound' : 'inbound';
+
     conversationListRef.current?.updateConversationFromWebhook?.(phoneNumber, {
       conversationId: convId,
       status: convStatus,
-      lastMessage: lastMessageText ? { content: lastMessageText, direction: 'inbound', type: lastMessageType } : undefined,
+      lastMessage: lastMessageText ? { content: lastMessageText, direction, type: lastMessageType } : undefined,
       contactName,
       lastActiveAt,
     });

@@ -722,7 +722,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
                   <div className="flex justify-between items-center gap-2 mt-0.5">
                     <p className={cn("text-[13px] truncate flex-1", isUnread ? "text-[var(--wa-text-primary)] font-medium" : "text-[var(--wa-text-secondary)]")}>
                       {typingPhone === conversation.phoneNumber ? (
-                        <span className="text-[var(--wa-green)] italic">typing...</span>
+                        <span className="text-[var(--wa-green)] italic font-bold">typing...</span>
                       ) : conversation.lastMessage ? (
                         <>
                           {conversation.lastMessage.direction === 'outbound' && (
