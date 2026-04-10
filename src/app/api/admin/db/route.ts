@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
   // Discover all user tables dynamically
   const allTables = (rawDb.prepare(
-    `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '__%' ORDER BY name`
+    `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name`
   ).all() as { name: string }[]).map(r => r.name);
 
   // List tables with row counts
