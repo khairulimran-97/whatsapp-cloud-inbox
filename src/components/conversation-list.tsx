@@ -881,7 +881,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       </ScrollArea>
 
       {/* Bottom action bar */}
-      <div className="flex items-center border-t border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)] flex-shrink-0 safe-area-bottom">
+      <div className="flex items-center border-t border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)] flex-shrink-0 safe-area-bottom divide-x divide-[var(--wa-border-strong)]">
         <button
           onClick={() => setShowQuickReply(true)}
           className="flex-1 flex flex-col items-center gap-0.5 py-2 text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-blue-500/10 transition-colors"
