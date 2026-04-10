@@ -38,7 +38,7 @@ export function getBclMerchant(id: string): BclMerchant | undefined {
   return db.select().from(schema.bclMerchants).where(eq(schema.bclMerchants.id, id)).get();
 }
 
-const BCL_BASE_URL = 'https://bcl.my/api';
+const BCL_BASE_URL = 'https://bcl.my';
 
 /** Get API key for a merchant. Falls back to legacy single-key settings. */
 export function getBclCredentials(merchantId?: string | null): { apiKey: string; baseUrl: string; merchantName?: string } | null {
