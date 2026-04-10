@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, forwardRef, useImperativeHandle, type ReactNode } from 'react';
 import { format, isValid, isToday, isYesterday } from 'date-fns';
-import { Paperclip, Send, X, MessageSquare, ListTree, ArrowLeft, CircleCheck, RotateCcw, MailOpen, MoreVertical, Info, List, Link, Search, ChevronUp, ChevronDown, Zap, RefreshCw, HandMetal, Play } from 'lucide-react';
+import { Paperclip, Send, X, MessageSquare, ListTree, ArrowLeft, CircleCheck, RotateCcw, MailOpen, MoreVertical, Info, List, Link, Search, ChevronUp, ChevronDown, Zap, RefreshCw, HandMetal, Play, ImagePlus, LayoutList, MessageSquareQuote } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MediaMessage } from '@/components/media-message';
 import { InteractiveMessageDialog } from '@/components/interactive-message-dialog';
@@ -300,6 +300,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
   const unreadDividerRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previousMessageCountRef = useRef(0);
   const prevMessageFingerprintRef = useRef<string>('');
   const messagesRef = useRef<Message[]>([]);
@@ -831,6 +832,9 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
 
     // Clear input immediately for snappy feel
     setMessageInput('');
+    if (textareaRef.current) {
+      textareaRef.current.style.height = '44px';
+    }
     if (file) handleRemoveFile();
 
     setSending(true);
@@ -1738,7 +1742,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                     className="text-[var(--wa-icon)] hover:text-[var(--wa-text-primary)] h-[44px] w-11 flex items-center justify-center flex-shrink-0 transition-colors duration-200 disabled:opacity-40 rounded-l-[21px]"
                     title="Upload file"
                   >
-                    <Paperclip className="h-[22px] w-[22px]" />
+                    <ImagePlus className="h-[20px] w-[20px]" />
                   </button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -1748,7 +1752,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                         className="text-[var(--wa-icon)] hover:text-[var(--wa-text-primary)] h-[44px] w-10 items-center justify-center flex-shrink-0 transition-colors duration-200 disabled:opacity-40 hidden sm:flex"
                         title="Send interactive message"
                       >
-                        <ListTree className="h-[22px] w-[22px]" />
+                        <LayoutList className="h-[20px] w-[20px]" />
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" className="w-52 rounded-xl shadow-lg">
@@ -1772,10 +1776,10 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                         <button
                           type="button"
                           disabled={sending}
-                          className="text-amber-500 hover:text-amber-400 h-[44px] w-10 items-center justify-center flex-shrink-0 transition-colors duration-200 disabled:opacity-40 flex"
+                          className="text-[var(--wa-green)] hover:text-[var(--wa-green-dark)] h-[44px] w-10 items-center justify-center flex-shrink-0 transition-colors duration-200 disabled:opacity-40 flex"
                           title="Quick reply templates"
                         >
-                          <Zap className="h-[20px] w-[20px]" />
+                          <MessageSquareQuote className="h-[20px] w-[20px]" />
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="start" className="w-72 rounded-xl shadow-lg max-h-[50vh] overflow-y-auto">
@@ -1793,7 +1797,16 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                               {items.map((t) => (
                                 <DropdownMenuItem
                                   key={t.id}
-                                  onClick={() => setMessageInput(prev => prev ? prev + '\n' + t.body : t.body)}
+                                  onClick={() => {
+                                    setMessageInput(prev => prev ? prev + '\n' + t.body : t.body);
+                                    // Auto-resize textarea after template insert
+                                    requestAnimationFrame(() => {
+                                      if (textareaRef.current) {
+                                        textareaRef.current.style.height = 'auto';
+                                        textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
+                                      }
+                                    });
+                                  }}
                                   className="py-2 flex flex-col items-start gap-0.5 cursor-pointer"
                                 >
                                   <span className="text-xs font-medium text-[var(--wa-text-primary)]">{t.title}</span>
@@ -1807,6 +1820,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                     </DropdownMenu>
                   )}
                   <textarea
+                    ref={textareaRef}
                     value={messageInput}
                     onChange={(e) => {
                       setMessageInput(e.target.value);
