@@ -132,7 +132,7 @@ export function InteractiveMessageDialog({
       onOpenChange(open);
       if (!open) handleReset();
     }}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[540px]">
         <DialogHeader>
           <DialogTitle>Send interactive message</DialogTitle>
           <DialogDescription>

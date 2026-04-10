@@ -90,7 +90,7 @@ export function CtaUrlDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) handleReset(); }}>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
           <DialogTitle>Send CTA URL message</DialogTitle>
           <DialogDescription>

@@ -103,7 +103,7 @@ export function TemplateParametersDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[540px]">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <Button

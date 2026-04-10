@@ -161,7 +161,7 @@ export function InteractiveListDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) handleReset(); }}>
-      <DialogContent className="sm:max-w-[540px] max-h-[85vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[580px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Send list message</DialogTitle>
           <DialogDescription>

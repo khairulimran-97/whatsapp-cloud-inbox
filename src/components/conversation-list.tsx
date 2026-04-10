@@ -914,7 +914,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
 
       {/* Quick Reply Dialog */}
       <Dialog open={showQuickReply} onOpenChange={setShowQuickReply}>
-        <DialogContent className="sm:max-w-[550px] max-w-[calc(100%-1rem)] max-h-[85vh] flex flex-col rounded-2xl p-0 gap-0">
+        <DialogContent className="sm:max-w-[600px] max-w-[calc(100%-1rem)] max-h-[90vh] flex flex-col rounded-2xl p-0 gap-0">
           <DialogHeader className="px-4 sm:px-5 pt-4 sm:pt-5 pb-3 flex-shrink-0 border-b border-[var(--wa-border)] pr-12">
             <div className="flex items-start sm:items-center justify-between gap-2 sm:gap-3 flex-col sm:flex-row">
               <div>
@@ -943,7 +943,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
 
       {/* Business Profile Modal */}
       <Dialog open={showProfile} onOpenChange={setShowProfile}>
-        <DialogContent className="sm:max-w-[400px] rounded-2xl p-0 overflow-hidden gap-0">
+        <DialogContent className="sm:max-w-[450px] rounded-2xl p-0 overflow-hidden gap-0">
           {/* Header */}
           <div className="relative bg-gradient-to-b from-[var(--wa-green)] to-emerald-600 px-5 pt-5 pb-4 flex items-center gap-3.5">
             <Avatar className="h-14 w-14 ring-2 ring-white/25 shadow-md flex-shrink-0">
@@ -1059,7 +1059,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
 
       {/* Push Notification Dialog */}
       <Dialog open={showPushDialog} onOpenChange={setShowPushDialog}>
-        <DialogContent className="sm:max-w-[400px] rounded-2xl">
+        <DialogContent className="sm:max-w-[450px] rounded-2xl">
           <DialogHeader>
             <div className="mx-auto h-12 w-12 rounded-full bg-[var(--wa-green)]/10 flex items-center justify-center mb-2">
               {notificationEnabled
@@ -1102,7 +1102,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
         </DialogContent>
       </Dialog>
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
-        <DialogContent className="sm:max-w-[520px] rounded-2xl max-h-[85vh] flex flex-col">
+        <DialogContent className="sm:max-w-[580px] rounded-2xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="text-lg">Settings</DialogTitle>
             <DialogDescription className="sr-only">App settings and configuration</DialogDescription>

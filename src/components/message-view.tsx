@@ -1878,7 +1878,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
 
       {/* Close / Reopen confirmation dialog */}
       <Dialog open={confirmAction !== null} onOpenChange={(open) => { if (!open) setConfirmAction(null); }}>
-        <DialogContent className="sm:max-w-[400px] rounded-2xl">
+        <DialogContent className="sm:max-w-[450px] rounded-2xl">
           {confirmAction === 'close' ? (
             <>
               <DialogHeader>
@@ -1943,7 +1943,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
 
       {/* Quick Reply Dialog */}
       <Dialog open={showQuickReplyDialog} onOpenChange={setShowQuickReplyDialog}>
-        <DialogContent className="sm:max-w-[480px] rounded-2xl p-0 gap-0 max-h-[70vh] flex flex-col">
+        <DialogContent className="sm:max-w-[540px] rounded-2xl p-0 gap-0 max-h-[80vh] flex flex-col">
           <DialogHeader className="px-5 pt-5 pb-3 flex-shrink-0 border-b border-[var(--wa-border)]">
             <DialogTitle className="text-[15px] flex items-center gap-2">
               <MessageSquareQuote className="h-4.5 w-4.5 text-emerald-500" />
