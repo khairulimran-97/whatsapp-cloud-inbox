@@ -322,14 +322,15 @@ export default function PPVSchedulePage() {
               const dateTotal = pics.reduce((sum, p) => sum + p.items.length, 0);
               return (
               <section key={date}>
-                {/* Date section header */}
+                {/* Date centered separator */}
                 <div className="flex items-center gap-3 mb-3">
-                  <span className="inline-flex items-center gap-2 text-[13px] font-semibold text-indigo-600 dark:text-indigo-400">
-                    <CalendarDays className="h-4 w-4" />
+                  <div className="flex-1 h-px bg-indigo-500/20" />
+                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[12px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-500/8 dark:bg-indigo-500/10 whitespace-nowrap">
+                    <CalendarDays className="h-3.5 w-3.5" />
                     {date}
+                    <span className="opacity-50">({dateTotal})</span>
                   </span>
-                  <div className="flex-1 h-px bg-indigo-500/15" />
-                  <span className="text-[11px] font-medium text-indigo-500/60 dark:text-indigo-400/60">{dateTotal}</span>
+                  <div className="flex-1 h-px bg-indigo-500/20" />
                 </div>
 
                 {/* PIC groups with left accent border */}
