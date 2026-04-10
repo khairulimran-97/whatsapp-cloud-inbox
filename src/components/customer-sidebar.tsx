@@ -270,12 +270,12 @@ function ContentAccessItem({ content, onInsertText }: { content: ProtectedConten
         <ShieldCheck className="h-3.5 w-3.5 text-green-400 flex-shrink-0" />
         <div className="flex-1 min-w-0">
           <Tooltip text={content.title}>
-            <p className="text-xs font-medium text-[var(--wa-text-primary)] leading-snug truncate">
+            <p className="text-[13px] font-medium text-[var(--wa-text-primary)] leading-snug truncate">
               {content.title}
             </p>
           </Tooltip>
           {content.granted_at && (
-            <p className="text-[10px] text-[var(--wa-text-secondary)]">
+            <p className="text-[11px] text-[var(--wa-text-secondary)]">
               {formatDateTime(content.granted_at)}
             </p>
           )}
@@ -364,7 +364,7 @@ function TransactionCard({ tx, onInsertText }: { tx: Transaction; onInsertText?:
         {/* Content access */}
         {relatedContent.length > 0 && (
           <div className="pt-1.5 mt-1 border-t border-black/10 dark:border-white/15 space-y-0.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-1">Protected Content</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-1">Protected Content</p>
             {relatedContent.map((content, i) => (
               <ContentAccessItem key={i} content={content} onInsertText={onInsertText} />
             ))}
@@ -446,7 +446,7 @@ function LookupResultCard({ tx, onInsertText }: { tx: Transaction; onInsertText?
 
         {relatedContent.length > 0 && (
           <div className="pt-1.5 mt-1 border-t border-black/10 dark:border-white/15 space-y-0.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-1">Protected Content</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-1">Protected Content</p>
             {relatedContent.map((content, i) => (
               <ContentAccessItem key={i} content={content} onInsertText={onInsertText} />
             ))}
@@ -873,7 +873,7 @@ function InfoContent({ data, loading, phoneNumber, onInsertText }: { data: Custo
           {/* Recent transactions */}
           {data.recentTransactions && data.recentTransactions.length > 0 && (
               <div className="border-t border-black/10 dark:border-white/15 pt-4">
-                <h5 className="text-[11px] font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-2">
+                <h5 className="text-xs font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-2">
                   Recent Transactions
                 </h5>
                 <div className="space-y-2.5">
