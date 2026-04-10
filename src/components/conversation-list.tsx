@@ -630,7 +630,8 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
             title="View business profile"
           >
             <div className="relative flex-shrink-0">
-              <Avatar className="h-10 w-10 ring-2 ring-[var(--wa-green)]/20 group-hover:ring-[var(--wa-green)]/50 transition-all">
+              <div className="absolute inset-0 rounded-full border-2 border-[var(--wa-green)]/40 animate-ping" style={{ animationDuration: '2.5s' }} />
+              <Avatar className="h-10 w-10 ring-2 ring-[var(--wa-green)]/30 group-hover:ring-[var(--wa-green)]/50 transition-all">
                 {profile?.profilePictureUrl && <AvatarImage src={profile.profilePictureUrl} alt="Business" />}
                 <AvatarFallback className="bg-[var(--wa-green)] text-white text-xs font-semibold">
                   {profile?.verifiedName ? profile.verifiedName.slice(0, 2).toUpperCase() : 'WA'}
