@@ -1235,6 +1235,79 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
         </div>
       )}
 
+      {/* 24-hour messaging window sticky notice */}
+      {conversationStatus !== 'ended' && messages.length > 0 && (
+        <div className="sticky top-0 z-10 px-3 sm:px-4 md:px-[30px] py-1.5 bg-[var(--wa-panel-bg)] border-b border-[var(--wa-border)]">
+          {windowInfo.status === 'no-inbound' ? (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--wa-notice-warn-bg)] rounded-lg border border-[var(--wa-notice-warn-border)] group relative">
+              <Info className="h-3.5 w-3.5 text-[var(--wa-notice-warn-text)] flex-shrink-0" />
+              <p className="text-[11px] text-[var(--wa-notice-warn-text)] leading-snug flex-1 cursor-default">
+                <span className="font-medium">No reply from customer yet.</span> Send a template to start.
+              </p>
+              <button
+                onClick={() => setShowTemplateDialog(true)}
+                className="text-[10px] font-semibold text-[var(--wa-notice-warn-text)] bg-[var(--wa-notice-warn-btn-bg)] hover:bg-[var(--wa-notice-warn-btn-hover)] px-2.5 py-0.5 rounded-full flex-shrink-0 transition-colors whitespace-nowrap"
+              >
+                Send Template
+              </button>
+              <div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute top-full left-3 right-3 mt-2 p-3 bg-[var(--wa-tooltip-bg)] text-[var(--wa-tooltip-text)] text-[11px] leading-relaxed rounded-lg shadow-lg z-50 pointer-events-none">
+                <p className="font-medium mb-1">WhatsApp 24-Hour Messaging Window</p>
+                <p className="text-[var(--wa-tooltip-text)]/80">This customer hasn&apos;t replied yet, so the 24-hour messaging window hasn&apos;t started. You can only send pre-approved template messages until they reply.</p>
+                <div className="absolute top-0 left-6 -translate-y-full w-0 h-0 border-l-[6px] border-r-[6px] border-b-[6px] border-transparent border-b-[var(--wa-tooltip-bg)]" />
+              </div>
+            </div>
+          ) : windowInfo.status === 'expired' ? (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--wa-notice-warn-bg)] rounded-lg border border-[var(--wa-notice-warn-border)] group relative">
+              <Info className="h-3.5 w-3.5 text-[var(--wa-notice-warn-text)] flex-shrink-0" />
+              <p className="text-[11px] text-[var(--wa-notice-warn-text)] leading-snug flex-1 cursor-default">
+                <span className="font-medium">24-hour window expired.</span> Only template messages allowed.
+              </p>
+              <button
+                onClick={() => setShowTemplateDialog(true)}
+                className="text-[10px] font-semibold text-[var(--wa-notice-warn-text)] bg-[var(--wa-notice-warn-btn-bg)] hover:bg-[var(--wa-notice-warn-btn-hover)] px-2.5 py-0.5 rounded-full flex-shrink-0 transition-colors whitespace-nowrap"
+              >
+                Send Template
+              </button>
+              <div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute top-full left-3 right-3 mt-2 p-3 bg-[var(--wa-tooltip-bg)] text-[var(--wa-tooltip-text)] text-[11px] leading-relaxed rounded-lg shadow-lg z-50 pointer-events-none">
+                <p className="font-medium mb-1">WhatsApp 24-Hour Messaging Window</p>
+                <p className="text-[var(--wa-tooltip-text)]/80">More than 24 hours have passed since this customer&apos;s last reply. Use a template message to re-engage — the window resets when they reply.</p>
+                <div className="absolute top-0 left-6 -translate-y-full w-0 h-0 border-l-[6px] border-r-[6px] border-b-[6px] border-transparent border-b-[var(--wa-tooltip-bg)]" />
+              </div>
+            </div>
+          ) : windowInfo.status === 'expiring-soon' ? (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--wa-notice-urgent-bg)] rounded-lg border border-[var(--wa-notice-urgent-border)] group relative">
+              <Info className="h-3.5 w-3.5 text-[var(--wa-notice-urgent-text)] flex-shrink-0" />
+              <p className="text-[11px] text-[var(--wa-notice-urgent-text)] leading-snug flex-1 cursor-default">
+                <span className="font-medium">Window closing soon.</span> ~{Math.ceil(windowInfo.hoursLeft)}h left.
+              </p>
+              <button
+                onClick={() => setShowTemplateDialog(true)}
+                className="text-[10px] font-semibold text-[var(--wa-notice-urgent-text)] bg-[var(--wa-notice-urgent-btn-bg)] hover:bg-[var(--wa-notice-urgent-btn-hover)] px-2.5 py-0.5 rounded-full flex-shrink-0 transition-colors whitespace-nowrap"
+              >
+                Send Template
+              </button>
+              <div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute top-full left-3 right-3 mt-2 p-3 bg-[var(--wa-tooltip-bg)] text-[var(--wa-tooltip-text)] text-[11px] leading-relaxed rounded-lg shadow-lg z-50 pointer-events-none">
+                <p className="font-medium mb-1">WhatsApp 24-Hour Messaging Window</p>
+                <p className="text-[var(--wa-tooltip-text)]/80">You have ~{Math.ceil(windowInfo.hoursLeft)} hours left to send free-form messages. After this window closes, only pre-approved template messages can be delivered.</p>
+                <div className="absolute top-0 left-6 -translate-y-full w-0 h-0 border-l-[6px] border-r-[6px] border-b-[6px] border-transparent border-b-[var(--wa-tooltip-bg)]" />
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--wa-notice-ok-bg)] rounded-lg border border-[var(--wa-notice-ok-border)] group relative">
+              <Info className="h-3.5 w-3.5 text-[var(--wa-notice-ok-text)] flex-shrink-0" />
+              <p className="text-[11px] text-[var(--wa-notice-ok-text)] leading-snug flex-1 cursor-default">
+                <span className="font-medium">24-hour window active.</span> ~{Math.floor(windowInfo.hoursLeft)}h remaining.
+              </p>
+              <div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute top-full left-3 right-3 mt-2 p-3 bg-[var(--wa-tooltip-bg)] text-[var(--wa-tooltip-text)] text-[11px] leading-relaxed rounded-lg shadow-lg z-50 pointer-events-none">
+                <p className="font-medium mb-1">WhatsApp 24-Hour Messaging Window</p>
+                <p className="text-[var(--wa-tooltip-text)]/80">The messaging window is open — you can send any message type freely. The window resets each time the customer sends a message.</p>
+                <div className="absolute top-0 left-6 -translate-y-full w-0 h-0 border-l-[6px] border-r-[6px] border-b-[6px] border-transparent border-b-[var(--wa-tooltip-bg)]" />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <ScrollArea ref={messagesContainerRef} className="flex-1 h-0 px-3 py-3 sm:px-4 md:px-[30px]" onClick={onInteraction}>
         <div>
         {/* Load older messages button — shown at top when more sessions exist */}
@@ -1607,78 +1680,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
               </div>
             )}
 
-            {/* 24-hour messaging window notice */}
-            {conversationStatus !== 'ended' && messages.length > 0 && (
-              <div className="pt-2">
-                {windowInfo.status === 'no-inbound' ? (
-                  <div className="flex items-center gap-2 px-3 py-2 bg-[var(--wa-notice-warn-bg)] rounded-lg border border-[var(--wa-notice-warn-border)] group relative">
-                    <Info className="h-4 w-4 text-[var(--wa-notice-warn-text)] flex-shrink-0" />
-                    <p className="text-[12px] text-[var(--wa-notice-warn-text)] leading-relaxed flex-1 cursor-default">
-                      <span className="font-medium">No reply from customer yet.</span> Send a template to start the conversation.
-                    </p>
-                    <button
-                      onClick={() => setShowTemplateDialog(true)}
-                      className="text-[11px] font-semibold text-[var(--wa-notice-warn-text)] bg-[var(--wa-notice-warn-btn-bg)] hover:bg-[var(--wa-notice-warn-btn-hover)] px-3 py-1 rounded-full flex-shrink-0 transition-colors whitespace-nowrap"
-                    >
-                      Send Template
-                    </button>
-                    <div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute bottom-full left-3 right-3 mb-2 p-3 bg-[var(--wa-tooltip-bg)] text-[var(--wa-tooltip-text)] text-[11px] leading-relaxed rounded-lg shadow-lg z-50 pointer-events-none">
-                      <p className="font-medium mb-1">WhatsApp 24-Hour Messaging Window</p>
-                      <p className="text-[var(--wa-tooltip-text)]/80">This customer hasn&apos;t replied yet, so the 24-hour messaging window hasn&apos;t started. You can only send pre-approved template messages until they reply. Once they respond, you&apos;ll have 24 hours to send free-form messages.</p>
-                      <div className="absolute bottom-0 left-6 translate-y-full w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-[var(--wa-tooltip-bg)]" />
-                    </div>
-                  </div>
-                ) : windowInfo.status === 'expired' ? (
-                  <div className="flex items-center gap-2 px-3 py-2 bg-[var(--wa-notice-warn-bg)] rounded-lg border border-[var(--wa-notice-warn-border)] group relative">
-                    <Info className="h-4 w-4 text-[var(--wa-notice-warn-text)] flex-shrink-0" />
-                    <p className="text-[12px] text-[var(--wa-notice-warn-text)] leading-relaxed flex-1 cursor-default">
-                      <span className="font-medium">24-hour window expired.</span> Only template messages can be sent until customer replies.
-                    </p>
-                    <button
-                      onClick={() => setShowTemplateDialog(true)}
-                      className="text-[11px] font-semibold text-[var(--wa-notice-warn-text)] bg-[var(--wa-notice-warn-btn-bg)] hover:bg-[var(--wa-notice-warn-btn-hover)] px-3 py-1 rounded-full flex-shrink-0 transition-colors whitespace-nowrap"
-                    >
-                      Send Template
-                    </button>
-                    <div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute bottom-full left-3 right-3 mb-2 p-3 bg-[var(--wa-tooltip-bg)] text-[var(--wa-tooltip-text)] text-[11px] leading-relaxed rounded-lg shadow-lg z-50 pointer-events-none">
-                      <p className="font-medium mb-1">WhatsApp 24-Hour Messaging Window</p>
-                      <p className="text-[var(--wa-tooltip-text)]/80">More than 24 hours have passed since this customer&apos;s last reply. WhatsApp only allows free-form messages within 24 hours of the customer&apos;s last message. Use a template message to re-engage — the window resets when they reply.</p>
-                      <div className="absolute bottom-0 left-6 translate-y-full w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-[var(--wa-tooltip-bg)]" />
-                    </div>
-                  </div>
-                ) : windowInfo.status === 'expiring-soon' ? (
-                  <div className="flex items-center gap-2 px-3 py-2 bg-[var(--wa-notice-urgent-bg)] rounded-lg border border-[var(--wa-notice-urgent-border)] group relative">
-                    <Info className="h-4 w-4 text-[var(--wa-notice-urgent-text)] flex-shrink-0" />
-                    <p className="text-[12px] text-[var(--wa-notice-urgent-text)] leading-relaxed flex-1 cursor-default">
-                      <span className="font-medium">Window closing soon.</span> ~{Math.ceil(windowInfo.hoursLeft)}h left.
-                    </p>
-                    <button
-                      onClick={() => setShowTemplateDialog(true)}
-                      className="text-[11px] font-semibold text-[var(--wa-notice-urgent-text)] bg-[var(--wa-notice-urgent-btn-bg)] hover:bg-[var(--wa-notice-urgent-btn-hover)] px-3 py-1 rounded-full flex-shrink-0 transition-colors whitespace-nowrap"
-                    >
-                      Send Template
-                    </button>
-                    <div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute bottom-full left-3 right-3 mb-2 p-3 bg-[var(--wa-tooltip-bg)] text-[var(--wa-tooltip-text)] text-[11px] leading-relaxed rounded-lg shadow-lg z-50 pointer-events-none">
-                      <p className="font-medium mb-1">WhatsApp 24-Hour Messaging Window</p>
-                      <p className="text-[var(--wa-tooltip-text)]/80">You have ~{Math.ceil(windowInfo.hoursLeft)} hours left to send free-form messages. After this window closes, only pre-approved template messages can be delivered. The window resets each time the customer replies.</p>
-                      <div className="absolute bottom-0 left-6 translate-y-full w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-[var(--wa-tooltip-bg)]" />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 px-3 py-2 bg-[var(--wa-notice-ok-bg)] rounded-lg border border-[var(--wa-notice-ok-border)] group relative">
-                    <Info className="h-4 w-4 text-[var(--wa-notice-ok-text)] flex-shrink-0" />
-                    <p className="text-[12px] text-[var(--wa-notice-ok-text)] leading-relaxed flex-1 cursor-default">
-                      <span className="font-medium">24-hour window active.</span> ~{Math.floor(windowInfo.hoursLeft)}h remaining.
-                    </p>
-                    <div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute bottom-full left-3 right-3 mb-2 p-3 bg-[var(--wa-tooltip-bg)] text-[var(--wa-tooltip-text)] text-[11px] leading-relaxed rounded-lg shadow-lg z-50 pointer-events-none">
-                      <p className="font-medium mb-1">WhatsApp 24-Hour Messaging Window</p>
-                      <p className="text-[var(--wa-tooltip-text)]/80">The messaging window is open — you can send any message type freely. The window resets each time the customer sends you a message.</p>
-                      <div className="absolute bottom-0 left-6 translate-y-full w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-[var(--wa-tooltip-bg)]" />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+
 
             {selectedFile && (
               <div className="pt-3 pb-0">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, type MouseEvent as ReactMouseEvent } from 'react';
 import { ConversationList, type ConversationListRef } from '@/components/conversation-list';
 import { MessageView, type MessageViewRef } from '@/components/message-view';
 import { useRealtime, type RealtimeEvent } from '@/hooks/use-realtime';
@@ -55,6 +55,40 @@ export default function Home() {
   const { enabled: notifEnabled, permission: notifPermission, toggle: toggleNotif } = useNotification();
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
   const audioUnlockedRef = useRef(false);
+
+  // Resizable panel widths (reset to defaults on refresh)
+  const [listWidth, setListWidth] = useState(384);
+  const resizingRef = useRef<'list' | null>(null);
+  const startXRef = useRef(0);
+  const startWidthRef = useRef(0);
+
+  const LIST_MIN = 280;
+  const LIST_MAX = 520;
+
+  const handleResizeStart = useCallback((panel: 'list', e: ReactMouseEvent) => {
+    e.preventDefault();
+    resizingRef.current = panel;
+    startXRef.current = e.clientX;
+    startWidthRef.current = listWidth;
+    let currentWidth = listWidth;
+
+    const handleMouseMove = (ev: globalThis.MouseEvent) => {
+      const delta = ev.clientX - startXRef.current;
+      currentWidth = Math.max(LIST_MIN, Math.min(LIST_MAX, startWidthRef.current + delta));
+      setListWidth(currentWidth);
+    };
+    const handleMouseUp = () => {
+      resizingRef.current = null;
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [listWidth]);
 
   useEffect(() => {
     // Load unread counts from server (SQLite is the single source of truth)
@@ -388,7 +422,15 @@ export default function Home() {
         notificationPermission={notifPermission}
         onToggleNotification={toggleNotif}
         typingPhone={typingPhone}
+        panelWidth={listWidth}
       />
+      {/* Resize handle for conversation list */}
+      <div
+        className="hidden md:flex w-1 flex-shrink-0 cursor-col-resize items-center justify-center hover:bg-[var(--wa-green)]/20 active:bg-[var(--wa-green)]/30 transition-colors group z-10 -ml-1"
+        onMouseDown={(e) => handleResizeStart('list', e)}
+      >
+        <div className="w-[2px] h-8 rounded-full bg-[var(--wa-border)] group-hover:bg-[var(--wa-green)]/60 group-active:bg-[var(--wa-green)] transition-colors" />
+      </div>
       <MessageView
         ref={messageViewRef}
         conversationIds={selectedConversation?.conversationIds}

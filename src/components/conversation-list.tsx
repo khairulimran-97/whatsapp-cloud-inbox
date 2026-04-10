@@ -161,6 +161,7 @@ type Props = {
   notificationPermission?: string;
   onToggleNotification?: () => Promise<void> | void;
   typingPhone?: string | null;
+  panelWidth?: number;
 };
 
 export type ConversationListRef = {
@@ -179,7 +180,7 @@ export type ConversationListRef = {
 const PAGE_SIZE = 50;
 
 export const ConversationList = forwardRef<ConversationListRef, Props>(
-  ({ onSelectConversation, onConversationsUpdated, selectedConversationId, isHidden = false, unreadCounts = new Map(), pollInterval = 10000, notificationEnabled = false, notificationPermission = 'default', onToggleNotification, typingPhone }, ref) => {
+  ({ onSelectConversation, onConversationsUpdated, selectedConversationId, isHidden = false, unreadCounts = new Map(), pollInterval = 10000, notificationEnabled = false, notificationPermission = 'default', onToggleNotification, typingPhone, panelWidth }, ref) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [needsSync, setNeedsSync] = useState(false);
@@ -530,10 +531,14 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
 
   if (loading) {
     return (
-      <div className={cn(
-        "w-full md:w-96 md:border-r border-[var(--wa-border-strong)] bg-[var(--wa-panel-bg)] flex flex-col panel-slide",
-        isHidden ? "panel-slide-left" : "panel-slide-center"
-      )}>
+      <div
+        className={cn(
+          "w-full md:flex-shrink-0 md:border-r border-[var(--wa-border-strong)] bg-[var(--wa-panel-bg)] flex flex-col panel-slide",
+          isHidden ? "panel-slide-left" : "panel-slide-center",
+          !panelWidth && "md:w-96"
+        )}
+        style={panelWidth ? { width: panelWidth, maxWidth: '100vw' } : undefined}
+      >
         <div className="px-4 pt-5 pb-3 border-b border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)]">
           <div className="safe-area-top" />
           <div className="flex items-center justify-between mb-3">
@@ -608,10 +613,14 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
   }
 
   return (
-    <div className={cn(
-      "w-full md:w-96 md:border-r border-[var(--wa-border-strong)] bg-[var(--wa-panel-bg)] flex flex-col panel-slide",
-      isHidden ? "panel-slide-left" : "panel-slide-center"
-    )}>
+    <div
+      className={cn(
+        "w-full md:flex-shrink-0 md:border-r border-[var(--wa-border-strong)] bg-[var(--wa-panel-bg)] flex flex-col panel-slide",
+        isHidden ? "panel-slide-left" : "panel-slide-center",
+        !panelWidth && "md:w-96"
+      )}
+      style={panelWidth ? { width: panelWidth, maxWidth: '100vw' } : undefined}
+    >
       <div className="px-4 pt-5 pb-3 border-b border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)]">
         <div className="safe-area-top" />
         <div className="flex items-center gap-3 mb-3">
