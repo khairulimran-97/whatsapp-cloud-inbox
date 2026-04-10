@@ -1674,7 +1674,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
       <div className="border-t border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)] safe-area-bottom">
             {/* Workflow execution banner */}
             {workflowExecution && (
-              <div className="px-3 sm:px-4 md:px-[30px] py-2 border-b border-[var(--wa-border)]">
+              <div className="px-[5px] py-2 border-b border-[var(--wa-border)]">
                 <div className="flex flex-col gap-2 px-3 py-2 bg-[#1a1a2e] rounded-lg border border-[#2a2a4a]">
                   <div className="flex items-center gap-2">
                     <Zap className="h-4 w-4 text-amber-400 flex-shrink-0" />
@@ -1706,7 +1706,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
               </div>
             )}
 
-            <div className="px-3 sm:px-4 md:px-[30px]">
+            <div className="px-[5px]">
             {selectedFile && (
               <div className="pt-3 pb-0">
                 <div className="flex items-center gap-3 p-2.5 bg-[var(--wa-panel-bg)] rounded-lg border border-[var(--wa-border)]">
@@ -1733,7 +1733,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
             )}
 
             {conversationStatus === 'ended' ? (
-              <div className="flex items-center min-h-[50px] bg-red-500/10 border-t border-red-500/20 -mx-3 sm:-mx-4 md:-mx-[30px] px-3 sm:px-4 md:px-[30px]">
+              <div className="flex items-center min-h-[50px] bg-red-500/10 border-t border-red-500/20 -mx-[5px] px-[5px]">
                 <div className="flex-1 flex items-center justify-between gap-3 px-1">
                   <div className="flex items-center gap-2">
                     <div className="h-6 w-6 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
