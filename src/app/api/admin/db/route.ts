@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { validateDbToken } from '@/lib/db-token';
 
-const ALLOWED_TABLES = ['settings', 'conversations', 'contacts', 'messages', 'unread_counts', 'reply_templates', 'push_subscriptions', 'webhook_logs'];
+const ALLOWED_TABLES = ['settings', 'conversations', 'contacts', 'messages', 'unread_counts', 'reply_templates', 'push_subscriptions', 'webhook_logs', 'ppv_schedules'];
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
