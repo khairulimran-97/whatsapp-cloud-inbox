@@ -32,6 +32,7 @@ export default function PPVSchedulePage() {
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
   const [isDark, setIsDark] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(20);
 
   const [matchDatetime, setMatchDatetime] = useState('');
   const [matchDetails, setMatchDetails] = useState('');
@@ -157,8 +158,10 @@ export default function PPVSchedulePage() {
     : filterTime === 'schedule' ? scheduleMatches : completedMatches;
 
   const filtered = filterCategory === 'all' ? timeFiltered : timeFiltered.filter(s => s.category === filterCategory);
+  const totalFiltered = filtered.length;
+  const hasMore = visibleCount < totalFiltered;
 
-  // Group by date, then by PIC within each date
+  // Group by date, then by PIC within each date (limited to visibleCount)
   const grouped = useMemo(() => {
     const sorted = [...filtered].sort((a, b) => {
       const ta = new Date(a.matchDatetime).getTime();
@@ -166,9 +169,11 @@ export default function PPVSchedulePage() {
       return filterTime === 'completed' ? tb - ta : ta - tb;
     });
 
+    const visible = sorted.slice(0, visibleCount);
+
     // Group by date first
     const dateMap = new Map<string, PPVSchedule[]>();
-    for (const s of sorted) {
+    for (const s of visible) {
       const d = new Date(s.matchDatetime);
       const key = d.toLocaleDateString('en-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
       if (!dateMap.has(key)) dateMap.set(key, []);
@@ -195,7 +200,7 @@ export default function PPVSchedulePage() {
       result.push({ date, pics });
     }
     return result;
-  }, [filtered, filterTime]);
+  }, [filtered, filterTime, visibleCount]);
 
   const statusBadge = (s: string) => {
     switch (s) {
@@ -254,7 +259,7 @@ export default function PPVSchedulePage() {
               { key: 'schedule' as const, label: 'Schedule', count: scheduleMatches.length, color: 'bg-amber-500/15 text-amber-600 dark:text-amber-400', activeColor: 'bg-amber-500/20 text-amber-600 dark:text-amber-400' },
               { key: 'completed' as const, label: 'Completed', count: completedMatches.length, color: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400', activeColor: 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' },
             ]).map(f => (
-              <button key={f.key} onClick={() => setFilterTime(f.key)}
+              <button key={f.key} onClick={() => { setFilterTime(f.key); setVisibleCount(20); }}
                 className={cn(
                   "flex-1 py-3 text-[12px] sm:text-[13px] font-medium transition-all border-b-2 text-center relative",
                   filterTime === f.key
@@ -276,7 +281,7 @@ export default function PPVSchedulePage() {
         {/* Category pills */}
         {allCategories.length > 1 && (
           <div className="flex items-center gap-2 pb-4 mb-2 overflow-x-auto scrollbar-none -mx-4 px-4 sm:-mx-6 sm:px-6">
-            <button onClick={() => setFilterCategory('all')}
+            <button onClick={() => { setFilterCategory('all'); setVisibleCount(20); }}
               className={cn(
                 "px-3.5 py-1.5 text-[12px] font-medium rounded-full transition-all whitespace-nowrap flex-shrink-0 border",
                 filterCategory === 'all'
@@ -286,7 +291,7 @@ export default function PPVSchedulePage() {
               All
             </button>
             {allCategories.map(c => (
-              <button key={c} onClick={() => setFilterCategory(filterCategory === c ? 'all' : c)}
+              <button key={c} onClick={() => { setFilterCategory(filterCategory === c ? 'all' : c); setVisibleCount(20); }}
                 className={cn(
                   "px-3.5 py-1.5 text-[12px] font-medium rounded-full transition-all whitespace-nowrap flex-shrink-0 border",
                   filterCategory === c
@@ -422,6 +427,18 @@ export default function PPVSchedulePage() {
               </section>
               );
             })}
+          </div>
+        )}
+
+        {/* Load more button */}
+        {hasMore && !loading && (
+          <div className="flex justify-center py-4">
+            <button
+              onClick={() => setVisibleCount(v => v + 20)}
+              className="px-6 py-2.5 text-[13px] font-medium rounded-full border border-[var(--wa-border)] bg-[var(--wa-panel-bg)] text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:border-[var(--wa-text-secondary)] transition-all"
+            >
+              Show more ({totalFiltered - visibleCount} remaining)
+            </button>
           </div>
         )}
       </main>
