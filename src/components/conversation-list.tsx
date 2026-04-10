@@ -1592,18 +1592,6 @@ function ReplyTemplatesTab({ onClose }: { onClose: () => void }) {
           <div className="space-y-3">
             {Object.entries(grouped).map(([cat, items]) => (
               <div key={cat}>
-                {(() => {
-                  const catLower = cat.toLowerCase();
-                  const colors: Record<string, string> = {
-                    'bola sepak': 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-                    'general': 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
-                    'marketing': 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
-                    'utility': 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-                    'authentication': 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
-                  };
-                  const colorClass = colors[catLower] || 'bg-teal-500/10 text-teal-600 dark:text-teal-400';
-                  return <span className={cn("text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded inline-block mb-1.5", colorClass)}>{cat}</span>;
-                })()}
                 <div className="space-y-2">
                   {items.map((t) => (
                     <div key={t.id} className="group rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-white/[0.04] hover:border-emerald-500/30 hover:bg-emerald-50 dark:hover:bg-emerald-500/[0.06] transition-all duration-200 overflow-hidden">
@@ -1614,6 +1602,18 @@ function ReplyTemplatesTab({ onClose }: { onClose: () => void }) {
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-[13px] font-semibold text-[var(--wa-text-primary)] truncate">{t.title}</p>
+                          {(() => {
+                            const catLower = (t.category || 'General').toLowerCase();
+                            const colors: Record<string, string> = {
+                              'bola sepak': 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+                              'general': 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
+                              'marketing': 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+                              'utility': 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+                              'authentication': 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+                            };
+                            const colorClass = colors[catLower] || 'bg-teal-500/10 text-teal-600 dark:text-teal-400';
+                            return <span className={cn("text-[9px] uppercase tracking-wider font-medium px-1.5 py-0.5 rounded", colorClass)}>{t.category || 'General'}</span>;
+                          })()}
                         </div>
                         <div className="flex items-center gap-0.5 flex-shrink-0">
                           <button
