@@ -730,28 +730,22 @@ function InfoContent({ data, loading, phoneNumber, onInsertText }: { data: Custo
           )}
 
           {/* Recent transactions */}
-          {data.recentTransactions && data.recentTransactions.length > 0 && (() => {
-            const successTxns = data.recentTransactions
-              .filter(tx => tx.status === 'success' || tx.is_paid)
-              .slice(0, 5);
-            if (successTxns.length === 0) return null;
-            return (
+          {data.recentTransactions && data.recentTransactions.length > 0 && (
               <div className="border-t border-[var(--wa-border)] pt-4">
                 <h5 className="text-xs font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-1">
                   Recent Transactions
                 </h5>
                 <div className="space-y-2.5">
-                  {successTxns.map((tx, i) => (
+                  {data.recentTransactions.map((tx, i) => (
                     <TransactionCard key={tx.id || i} tx={tx} onInsertText={onInsertText} />
                   ))}
                 </div>
               </div>
-            );
-          })()}
+          )}
 
           {/* Standalone content access */}
           {data.protectedContent && data.protectedContent.length > 0 && (
-            (!data.recentTransactions || data.recentTransactions.filter(tx => tx.status === 'success' || tx.is_paid).length === 0) && (
+            (!data.recentTransactions || data.recentTransactions.length === 0) && (
               <div className="border-t border-[var(--wa-border)] pt-4">
                 <h5 className="text-xs font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-3 flex items-center gap-1.5">
                   <ShieldCheck className="h-3.5 w-3.5" />

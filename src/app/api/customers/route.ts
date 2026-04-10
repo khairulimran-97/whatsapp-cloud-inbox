@@ -77,12 +77,10 @@ export async function GET(request: NextRequest) {
     const detailData = await detailRes.json();
     const detail = detailData?.data;
 
-    // Filter to successful transactions, take top 5
-    // Add receipt_url from predictable pattern
+    // Show all recent transactions (top 10)
     const allTxns = (detail?.recent_transactions ?? []) as Array<Record<string, unknown>>;
     const recentTxns = allTxns
-      .filter((tx) => tx.status === 'success' || tx.is_paid === true)
-      .slice(0, 5)
+      .slice(0, 10)
       .map((tx) => ({
         ...tx,
         receipt_url: tx.order_number
