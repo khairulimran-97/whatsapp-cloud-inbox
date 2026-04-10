@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
+import { useEffect, useState, useRef, forwardRef, useImperativeHandle, useCallback, type ReactNode } from 'react';
 import { format, isValid, isToday, isYesterday } from 'date-fns';
 import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save, Plus, Pencil, Trash2, MessageSquareText, CloudDownload, TriangleAlert, RefreshCw, Database } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -19,6 +19,25 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+
+// Highlight matching text segments
+function highlightMatch(text: string, query: string): ReactNode {
+  if (!query || !text) return text;
+  // Also match if user typed leading-zero phone (strip leading 0)
+  const stripped = query.replace(/^0+/, '');
+  const escapedParts = [query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')];
+  if (stripped !== query) {
+    escapedParts.push(stripped.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  }
+  const regex = new RegExp(`(${escapedParts.join('|')})`, 'gi');
+  const parts = text.split(regex);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) =>
+    regex.test(part)
+      ? <mark key={i} className="bg-[var(--wa-green)]/30 text-inherit rounded-sm px-0.5">{part}</mark>
+      : part
+  );
+}
 
 type ProfileData = {
   phoneNumberId: string;
@@ -168,6 +187,12 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
   const [syncing, setSyncing] = useState(false);
   const [syncCount, setSyncCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Conversation[] | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [searchHasMore, setSearchHasMore] = useState(false);
+  const [searchPage, setSearchPage] = useState(1);
+  const [loadingMoreSearch, setLoadingMoreSearch] = useState(false);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [, setTick] = useState(0);
   const [activeTab, setActiveTab] = useState<'all' | 'unread'>('all');
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -195,6 +220,61 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
     const id = setInterval(() => setTick(t => t + 1), 30_000);
     return () => clearInterval(id);
   }, []);
+
+  // Server-side search with debounce
+  useEffect(() => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+
+    if (!searchQuery.trim()) {
+      setSearchResults(null);
+      setSearching(false);
+      setSearchPage(1);
+      setSearchHasMore(false);
+      return;
+    }
+
+    setSearching(true);
+    setSearchPage(1);
+    searchTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/conversations?search=${encodeURIComponent(searchQuery.trim())}`);
+        const data = await res.json();
+        setSearchResults(data.data ?? []);
+        setSearchHasMore(!!data.hasMore);
+      } catch {
+        setSearchResults([]);
+        setSearchHasMore(false);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    };
+  }, [searchQuery]);
+
+  const loadMoreSearchResults = useCallback(async () => {
+    if (loadingMoreSearch || !searchHasMore || !searchQuery.trim()) return;
+    setLoadingMoreSearch(true);
+    const nextPage = searchPage + 1;
+    try {
+      const res = await fetch(`/api/conversations?search=${encodeURIComponent(searchQuery.trim())}&page=${nextPage}`);
+      const data = await res.json();
+      const newResults: Conversation[] = data.data ?? [];
+      setSearchResults(prev => {
+        const existing = new Set((prev ?? []).map(c => c.phoneNumber));
+        const unique = newResults.filter((c: Conversation) => !existing.has(c.phoneNumber));
+        return [...(prev ?? []), ...unique];
+      });
+      setSearchHasMore(!!data.hasMore);
+      setSearchPage(nextPage);
+    } catch {
+      // ignore
+    } finally {
+      setLoadingMoreSearch(false);
+    }
+  }, [loadingMoreSearch, searchHasMore, searchQuery, searchPage]);
 
   const fetchConversations = useCallback(async () => {
     try {
@@ -409,9 +489,9 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
     }
   }));
 
-  // Infinite scroll: observe sentinel element at bottom of list (disabled for unread tab)
+  // Infinite scroll: observe sentinel element at bottom of list (disabled for unread tab and during search)
   useEffect(() => {
-    if (activeTab === 'unread') return;
+    if (activeTab === 'unread' || searchQuery) return;
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
 
@@ -426,17 +506,18 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasMore, loadingMore, loadMoreConversations, activeTab]);
+  }, [hasMore, loadingMore, loadMoreConversations, activeTab, searchQuery]);
 
-  const filteredConversations = conversations.filter((conv) => {
-    const query = searchQuery.toLowerCase();
-    const matchesSearch = conv.phoneNumber.toLowerCase().includes(query) ||
-      conv.contactName?.toLowerCase().includes(query) ||
-      // Also search within last message content
-      conv.lastMessage?.content?.toLowerCase().includes(query);
-    const matchesTab = activeTab === 'all' || (activeTab === 'unread' && unreadCounts.has(conv.phoneNumber));
-    return matchesSearch && matchesTab;
-  });
+  // When searching, use server-side results; otherwise filter locally
+  const filteredConversations = searchResults !== null
+    ? searchResults.filter(conv => {
+        const matchesTab = activeTab === 'all' || (activeTab === 'unread' && unreadCounts.has(conv.phoneNumber));
+        return matchesTab;
+      })
+    : conversations.filter((conv) => {
+        const matchesTab = activeTab === 'all' || (activeTab === 'unread' && unreadCounts.has(conv.phoneNumber));
+        return matchesTab;
+      });
 
   const unreadCount = conversations.filter(c => unreadCounts.has(c.phoneNumber)).length;
 
@@ -671,7 +752,11 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       </div>
 
       <ScrollArea className="flex-1 h-0 overflow-hidden">
-        {filteredConversations.length === 0 ? (
+        {searching ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-5 w-5 animate-spin text-[var(--wa-text-secondary)]" />
+          </div>
+        ) : filteredConversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
             <div className="h-16 w-16 rounded-full bg-[var(--wa-hover)] flex items-center justify-center mb-4">
               <Search className="h-7 w-7 text-[var(--wa-text-secondary)]" />
@@ -713,8 +798,16 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
                 <div className="flex-1 min-w-0 overflow-hidden">
                   <div className="flex justify-between items-baseline gap-2">
                     <p className={cn("text-[15px] text-[var(--wa-text-primary)] truncate", isUnread ? "font-bold" : "font-normal")}>
-                      {conversation.contactName || conversation.phoneNumber}
+                      {searchQuery
+                        ? highlightMatch(conversation.contactName || conversation.phoneNumber, searchQuery)
+                        : (conversation.contactName || conversation.phoneNumber)}
                     </p>
+                    {/* Show phone number below name during search if contact has a name */}
+                    {searchQuery && conversation.contactName && (
+                      <span className="text-[11px] text-[var(--wa-text-secondary)] truncate">
+                        {highlightMatch(conversation.phoneNumber, searchQuery)}
+                      </span>
+                    )}
                     <span className={cn("text-[12px] flex-shrink-0", isUnread ? "text-[var(--wa-green)] font-semibold" : "text-[var(--wa-text-secondary)]")}>
                       {formatConversationDate(conversation.lastActiveAt)}
                     </span>
@@ -729,7 +822,9 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
                             <CheckCheck className="inline h-[15px] w-[15px] text-[var(--wa-read-check)] align-text-bottom mr-0.5" />
                           )}
                           {getMessageTypeIcon(conversation.lastMessage.type)}
-                          {conversation.lastMessage.content}
+                          {searchQuery
+                            ? highlightMatch(conversation.lastMessage.content, searchQuery)
+                            : conversation.lastMessage.content}
                         </>
                       ) : (
                         <span className="italic">No messages</span>
@@ -766,10 +861,26 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
         )}
 
         {/* Sentinel for infinite scroll */}
-        {activeTab !== 'unread' && <div ref={sentinelRef} className="h-1" />}
-        {loadingMore && activeTab !== 'unread' && (
+        {activeTab !== 'unread' && !searchQuery && <div ref={sentinelRef} className="h-1" />}
+        {loadingMore && activeTab !== 'unread' && !searchQuery && (
           <div className="flex justify-center py-3">
             <Loader2 className="h-5 w-5 animate-spin text-[var(--wa-text-secondary)]" />
+          </div>
+        )}
+
+        {/* Search pagination */}
+        {searchQuery && searchHasMore && (
+          <div className="flex justify-center py-3">
+            {loadingMoreSearch ? (
+              <Loader2 className="h-5 w-5 animate-spin text-[var(--wa-text-secondary)]" />
+            ) : (
+              <button
+                onClick={loadMoreSearchResults}
+                className="text-[12px] text-[var(--wa-green)] hover:underline"
+              >
+                Load more results
+              </button>
+            )}
           </div>
         )}
       </ScrollArea>

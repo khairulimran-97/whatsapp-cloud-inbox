@@ -160,6 +160,124 @@ function persistConversationsToDb(records: ConversationRecord[]) {
   }
 }
 
+// Search conversations in SQLite by phone number, contact name, or message content
+const SEARCH_LIMIT = 30;
+
+function searchConversationsInDb(query: string, page = 1): { data: GroupedConversation[]; hasMore: boolean } {
+  try {
+    const db = getDb();
+    const rawDb = (db as unknown as { session: { client: import('better-sqlite3').Database } }).session.client;
+    const pattern = `%${query}%`;
+    // Strip leading 0 for local→international phone matching
+    const stripped = query.replace(/^0+/, '');
+    const altPattern = stripped !== query ? `%${stripped}%` : null;
+
+    // Step 1: Find all unique matching phone numbers via raw SQL UNION
+    const stmt = altPattern
+      ? rawDb.prepare(`
+          SELECT DISTINCT phone FROM (
+            SELECT phone FROM conversations WHERE phone LIKE ?1 OR phone LIKE ?2
+            UNION
+            SELECT phone FROM contacts WHERE name LIKE ?1 OR phone LIKE ?1 OR phone LIKE ?2
+            UNION
+            SELECT phone FROM messages WHERE content LIKE ?1 GROUP BY phone
+          ) ORDER BY phone
+        `)
+      : rawDb.prepare(`
+          SELECT DISTINCT phone FROM (
+            SELECT phone FROM conversations WHERE phone LIKE ?1
+            UNION
+            SELECT phone FROM contacts WHERE name LIKE ?1 OR phone LIKE ?1
+            UNION
+            SELECT phone FROM messages WHERE content LIKE ?1 GROUP BY phone
+          ) ORDER BY phone
+        `);
+
+    const matchingPhones = (altPattern ? stmt.all(pattern, altPattern) : stmt.all(pattern)) as { phone: string }[];
+    if (matchingPhones.length === 0) return { data: [], hasMore: false };
+
+    const allPhones = matchingPhones.map(r => r.phone);
+    const totalPhones = allPhones.length;
+    const offset = (page - 1) * SEARCH_LIMIT;
+    const pagedPhones = allPhones.slice(offset, offset + SEARCH_LIMIT);
+    if (pagedPhones.length === 0) return { data: [], hasMore: false };
+
+    // Step 2: Get conversation rows for matched phones
+    const rows = db.select().from(schema.conversations)
+      .where(sql`${schema.conversations.phone} IN (${sql.join(pagedPhones.map(p => sql`${p}`), sql`,`)})`)
+      .orderBy(desc(schema.conversations.updatedAt))
+      .all();
+
+    // Step 3: Load contact names
+    const contacts = db.select().from(schema.contacts)
+      .where(sql`${schema.contacts.phone} IN (${sql.join(pagedPhones.map(p => sql`${p}`), sql`,`)})`)
+      .all();
+    const contactMap = new Map(contacts.map(c => [c.phone, c.name]));
+
+    // Step 5: Group by phone
+    const phoneGroupMap = new Map<string, GroupedConversation>();
+    for (const row of rows) {
+      const phone = row.phone;
+      const lastMessageAt = row.lastMessageAt ? new Date(row.lastMessageAt).toISOString() : undefined;
+      const updatedAt = row.updatedAt ? new Date(row.updatedAt).toISOString() : undefined;
+      const displayTimestamp = lastMessageAt || updatedAt;
+      const existing = phoneGroupMap.get(phone);
+
+      if (!existing) {
+        phoneGroupMap.set(phone, {
+          id: row.id,
+          conversationIds: [row.id],
+          conversationStatuses: { [row.id]: row.status },
+          phoneNumber: phone,
+          status: row.status,
+          lastActiveAt: displayTimestamp,
+          phoneNumberId: row.phoneNumberId ?? PHONE_NUMBER_ID,
+          metadata: {},
+          contactName: contactMap.get(phone) ?? undefined,
+          messagesCount: row.messagesCount ?? 0,
+          lastMessage: row.lastMessageText
+            ? { content: row.lastMessageText, direction: row.lastMessageDirection ?? 'inbound', type: row.lastMessageType ?? undefined }
+            : undefined,
+        });
+      } else {
+        existing.conversationIds.push(row.id);
+        existing.conversationStatuses[row.id] = row.status;
+        existing.messagesCount = (existing.messagesCount ?? 0) + (row.messagesCount ?? 0);
+        const isNewer = displayTimestamp && (!existing.lastActiveAt || displayTimestamp > existing.lastActiveAt);
+        if (isNewer) {
+          existing.id = row.id;
+          existing.status = row.status;
+          existing.lastActiveAt = displayTimestamp;
+          if (row.lastMessageText) {
+            existing.lastMessage = { content: row.lastMessageText, direction: row.lastMessageDirection ?? 'inbound', type: row.lastMessageType ?? undefined };
+          }
+        }
+      }
+    }
+
+    for (const group of phoneGroupMap.values()) {
+      group.totalConversations = group.conversationIds.length;
+      group.conversationIds = group.conversationIds.slice(0, 3);
+      const idSet = new Set(group.conversationIds);
+      for (const key of Object.keys(group.conversationStatuses)) {
+        if (!idSet.has(key)) delete group.conversationStatuses[key];
+      }
+      group.status = Object.values(group.conversationStatuses).some(s => s === 'active') ? 'active' : 'ended';
+    }
+
+    const sorted = Array.from(phoneGroupMap.values()).sort((a, b) => {
+      if (!a.lastActiveAt) return 1;
+      if (!b.lastActiveAt) return -1;
+      return new Date(b.lastActiveAt).getTime() - new Date(a.lastActiveAt).getTime();
+    });
+
+    return { data: sorted, hasMore: offset + SEARCH_LIMIT < totalPhones };
+  } catch (e) {
+    console.error('[Conversations] Search failed:', e);
+    return { data: [], hasMore: false };
+  }
+}
+
 // Load conversations from SQLite (instant, no API call)
 function loadConversationsFromDb(): GroupedConversation[] {
   try {
@@ -411,6 +529,13 @@ export async function GET(request: Request) {
     const limitParam = Number(searchParams.get('limit')) || DEFAULT_PAGE_SIZE;
     const olderIdsPhone = searchParams.get('olderIds');
     const syncMode = searchParams.get('sync') === 'true';
+    const searchQuery = searchParams.get('search');
+
+    // ── Search mode: query SQLite directly, paginated ──
+    if (searchQuery && searchQuery.trim().length > 0) {
+      const results = searchConversationsInDb(searchQuery.trim(), pageParam);
+      return NextResponse.json({ ...results, search: true });
+    }
 
     // ── Older IDs mode: return all conversation IDs for a phone (from cache, no API call) ──
     if (olderIdsPhone) {
