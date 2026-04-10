@@ -112,18 +112,18 @@
   --wa-ended-pill-text: #54656f;
 
   /* Status notice tokens */
-  --wa-notice-warn-bg: #fef3cd;
+  --wa-notice-warn-bg: rgba(255, 193, 7, 0.12);
   --wa-notice-warn-border: rgba(255, 193, 7, 0.3);
   --wa-notice-warn-text: #856404;
   --wa-notice-warn-btn-bg: rgba(255, 193, 7, 0.2);
   --wa-notice-warn-btn-hover: rgba(255, 193, 7, 0.4);
-  --wa-notice-urgent-bg: #fff3e0;
+  --wa-notice-urgent-bg: rgba(255, 152, 0, 0.1);
   --wa-notice-urgent-border: rgba(255, 152, 0, 0.2);
   --wa-notice-urgent-text: #e65100;
   --wa-notice-urgent-btn-bg: rgba(255, 152, 0, 0.15);
   --wa-notice-urgent-btn-hover: rgba(255, 152, 0, 0.3);
-  --wa-notice-ok-bg: #e8f5e9;
-  --wa-notice-ok-border: rgba(76, 175, 80, 0.2);
+  --wa-notice-ok-bg: rgba(76, 175, 80, 0.1);
+  --wa-notice-ok-border: rgba(76, 175, 80, 0.18);
   --wa-notice-ok-text: #2e7d32;
   --wa-notice-ended-bg: rgba(239, 68, 68, 0.08);
   --wa-notice-ended-text: #dc2626;
@@ -198,18 +198,18 @@
   --wa-ended-pill-text: #8696a0;
 
   /* Status notice tokens (dark) */
-  --wa-notice-warn-bg: rgba(255, 193, 7, 0.08);
-  --wa-notice-warn-border: rgba(255, 193, 7, 0.15);
+  --wa-notice-warn-bg: rgba(255, 193, 7, 0.1);
+  --wa-notice-warn-border: rgba(255, 193, 7, 0.18);
   --wa-notice-warn-text: #ffd54f;
   --wa-notice-warn-btn-bg: rgba(255, 193, 7, 0.12);
   --wa-notice-warn-btn-hover: rgba(255, 193, 7, 0.25);
-  --wa-notice-urgent-bg: rgba(255, 152, 0, 0.08);
-  --wa-notice-urgent-border: rgba(255, 152, 0, 0.15);
+  --wa-notice-urgent-bg: rgba(255, 152, 0, 0.1);
+  --wa-notice-urgent-border: rgba(255, 152, 0, 0.18);
   --wa-notice-urgent-text: #ffb74d;
   --wa-notice-urgent-btn-bg: rgba(255, 152, 0, 0.12);
   --wa-notice-urgent-btn-hover: rgba(255, 152, 0, 0.25);
-  --wa-notice-ok-bg: rgba(76, 175, 80, 0.08);
-  --wa-notice-ok-border: rgba(76, 175, 80, 0.15);
+  --wa-notice-ok-bg: rgba(76, 175, 80, 0.12);
+  --wa-notice-ok-border: rgba(76, 175, 80, 0.2);
   --wa-notice-ok-text: #81c784;
   --wa-notice-ended-bg: rgba(239, 68, 68, 0.08);
   --wa-notice-ended-text: #f87171;
