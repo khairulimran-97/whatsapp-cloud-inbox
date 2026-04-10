@@ -27,7 +27,7 @@ export default function PPVSchedulePage() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<PPVSchedule | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>('all');
-  const [filterTime, setFilterTime] = useState<'today' | 'next' | 'all'>('today');
+  const [filterTime, setFilterTime] = useState<'active' | 'schedule' | 'completed'>('active');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
 
@@ -148,22 +148,42 @@ export default function PPVSchedulePage() {
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const todayEnd = new Date(todayStart.getTime() + 86400000);
 
+  // Today's active matches
+  const todayMatches = schedules.filter(s => {
+    const dt = new Date(s.matchDatetime);
+    return dt >= todayStart && dt < todayEnd && s.status !== 'completed' && s.status !== 'cancelled';
+  });
+  const hasTodayMatches = todayMatches.length > 0;
+
+  // Next upcoming date (first future date after today with active matches)
   const nextDate = schedules
     .filter(s => new Date(s.matchDatetime) >= todayEnd && s.status !== 'completed' && s.status !== 'cancelled')
     .map(s => { const d = new Date(s.matchDatetime); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); })
     .sort((a, b) => a - b)[0];
   const nextDayEnd = nextDate ? nextDate + 86400000 : 0;
+  const nextMatches = nextDate ? schedules.filter(s => {
+    const t = new Date(s.matchDatetime).getTime();
+    return t >= nextDate && t < nextDayEnd && s.status !== 'completed' && s.status !== 'cancelled';
+  }) : [];
 
-  const timeFiltered = schedules.filter(s => {
-    const dt = new Date(s.matchDatetime);
-    if (filterTime === 'today') return dt >= todayStart && dt < todayEnd;
-    if (filterTime === 'next') return nextDate ? (dt.getTime() >= nextDate && dt.getTime() < nextDayEnd) : false;
-    return true;
-  });
+  // "Active" tab: show today if available, otherwise upcoming
+  const activeMatches = hasTodayMatches ? todayMatches : nextMatches;
+  const activeLabel = hasTodayMatches ? 'Today' : 'Upcoming';
+  const activeCount = activeMatches.length;
+
+  // "Schedule" tab: all non-completed/non-cancelled
+  const scheduleMatches = schedules.filter(s => s.status !== 'completed' && s.status !== 'cancelled');
+  const scheduleCount = scheduleMatches.length;
+
+  // "Completed" tab
+  const completedMatches = schedules.filter(s => s.status === 'completed' || s.status === 'cancelled');
+  const completedCount = completedMatches.length;
+
+  const timeFiltered = filterTime === 'active' ? activeMatches
+    : filterTime === 'schedule' ? scheduleMatches
+    : completedMatches;
 
   const filtered = filterCategory === 'all' ? timeFiltered : timeFiltered.filter(s => s.category === filterCategory);
-  const todayCount = schedules.filter(s => { const dt = new Date(s.matchDatetime); return dt >= todayStart && dt < todayEnd; }).length;
-  const nextCount = nextDate ? schedules.filter(s => { const t = new Date(s.matchDatetime).getTime(); return t >= nextDate && t < nextDayEnd; }).length : 0;
 
   const statusColor = (s: string) => {
     switch (s) {
@@ -200,9 +220,9 @@ export default function PPVSchedulePage() {
         {/* Tab filter */}
         <div className="max-w-4xl mx-auto flex border-t border-[var(--wa-border,#2a2a2c)]">
           {([
-            { key: 'today' as const, label: 'Today', count: todayCount },
-            { key: 'next' as const, label: 'Upcoming', count: nextCount },
-            { key: 'all' as const, label: 'All', count: schedules.length },
+            { key: 'active' as const, label: activeLabel, count: activeCount },
+            { key: 'schedule' as const, label: 'Schedule', count: scheduleCount },
+            { key: 'completed' as const, label: 'Completed', count: completedCount },
           ]).map(f => (
             <button
               key={f.key}
