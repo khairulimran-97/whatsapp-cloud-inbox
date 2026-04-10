@@ -902,6 +902,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
         <DialogContent className="sm:max-w-[550px] max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="text-lg">Quick Reply</DialogTitle>
+            <DialogDescription className="sr-only">Manage quick reply templates</DialogDescription>
           </DialogHeader>
           <div className="flex-1 min-h-0 overflow-auto">
             <ReplyTemplatesTab onClose={() => setShowQuickReply(false)} />
@@ -914,6 +915,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
         <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="text-lg">PPV Schedule</DialogTitle>
+            <DialogDescription className="sr-only">View and manage PPV match schedules</DialogDescription>
           </DialogHeader>
           <div className="flex-1 min-h-0 overflow-auto">
             <PPVScheduleTab />
@@ -936,6 +938,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
               <DialogTitle className="text-white text-lg font-semibold">
                 {profile?.verifiedName || 'Business Account'}
               </DialogTitle>
+              <DialogDescription className="sr-only">Business profile details</DialogDescription>
             </DialogHeader>
             {profile?.displayPhoneNumber && (
               <p className="text-white/80 text-sm mt-1">{profile.displayPhoneNumber}</p>
@@ -1077,6 +1080,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
         <DialogContent className="sm:max-w-[520px] rounded-2xl max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="text-lg">Settings</DialogTitle>
+            <DialogDescription className="sr-only">App settings and configuration</DialogDescription>
           </DialogHeader>
           <SettingsDialog onClose={() => setShowSettings(false)} />
         </DialogContent>
@@ -1618,7 +1622,6 @@ interface PPVSchedule {
   remark: string;
 }
 
-const PPV_CATEGORIES = ['Liga Super', 'Piala FA', 'Piala Malaysia', 'ACL', 'Friendly', 'Other'];
 const PPV_STATUSES = ['upcoming', 'live', 'completed', 'cancelled'];
 
 function PPVScheduleTab() {
@@ -1634,7 +1637,7 @@ function PPVScheduleTab() {
   // Form fields
   const [matchDatetime, setMatchDatetime] = useState('');
   const [matchDetails, setMatchDetails] = useState('');
-  const [category, setCategory] = useState('Liga Super');
+  const [category, setCategory] = useState('');
   const [status, setStatus] = useState('upcoming');
   const [bclAccount, setBclAccount] = useState('');
   const [pic, setPic] = useState('');
@@ -1654,7 +1657,7 @@ function PPVScheduleTab() {
   const resetForm = () => {
     setMatchDatetime('');
     setMatchDetails('');
-    setCategory('Liga Super');
+    setCategory('');
     setStatus('upcoming');
     setBclAccount('');
     setPic('');
@@ -1809,13 +1812,16 @@ function PPVScheduleTab() {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider">Category</label>
-            <select
+            <input
+              list="ppv-categories"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] focus:outline-none focus:border-[var(--wa-green)]/50"
-            >
-              {PPV_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+              placeholder="Type or select"
+              className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+            />
+            <datalist id="ppv-categories">
+              {allCategories.map(c => <option key={c} value={c} />)}
+            </datalist>
           </div>
           <div>
             <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider">Status</label>
