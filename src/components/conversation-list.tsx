@@ -533,7 +533,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
     return (
       <div
         className={cn(
-          "w-full md:flex-shrink-0 border-0 md:border-r border-[var(--wa-border-strong)] bg-[var(--wa-panel-bg)] flex flex-col panel-slide",
+          "w-full md:flex-shrink-0 md:border-r md:border-[var(--wa-border-strong)] bg-[var(--wa-panel-bg)] flex flex-col panel-slide",
           isHidden ? "panel-slide-left" : "panel-slide-center",
           panelWidth ? "panel-resizable" : "md:w-96"
         )}
@@ -615,7 +615,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
   return (
     <div
       className={cn(
-        "w-full md:flex-shrink-0 border-0 md:border-r border-[var(--wa-border-strong)] bg-[var(--wa-panel-bg)] flex flex-col panel-slide",
+        "w-full md:flex-shrink-0 md:border-r md:border-[var(--wa-border-strong)] bg-[var(--wa-panel-bg)] flex flex-col panel-slide",
         isHidden ? "panel-slide-left" : "panel-slide-center",
         panelWidth ? "panel-resizable" : "md:w-96"
       )}
