@@ -916,23 +916,19 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       <Dialog open={showQuickReply} onOpenChange={setShowQuickReply}>
         <DialogContent className="sm:max-w-[600px] max-w-[calc(100%-1rem)] max-h-[95vh] h-[80vh] flex flex-col rounded-2xl p-0 gap-0" showCloseButton={false}>
           <DialogHeader className="px-4 sm:px-5 pt-4 sm:pt-5 pb-3 flex-shrink-0 border-b border-[var(--wa-border)]">
-            <div className="flex items-start sm:items-center justify-between gap-2 sm:gap-3 flex-col sm:flex-row">
-              <div>
-                <DialogTitle className="text-[15px] flex items-center gap-2">
-                  <MessageSquareText className="h-4.5 w-4.5 text-emerald-500" />
-                  Quick Reply Templates
-                </DialogTitle>
-                <DialogDescription className="text-[12px] mt-1">
-                  Manage {quickReplyCount} template{quickReplyCount !== 1 ? 's' : ''} for quick replies
-                </DialogDescription>
-              </div>
+            <div className="flex items-center justify-between gap-2">
+              <DialogTitle className="text-[15px] flex items-center gap-2">
+                <MessageSquareText className="h-4.5 w-4.5 text-emerald-500" />
+                Quick Reply Templates
+              </DialogTitle>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <Button
                   onClick={() => setQuickReplyAddTrigger(t => t + 1)}
                   className="bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] text-white text-xs h-8 px-3 gap-1.5"
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  Add Template
+                  <span className="hidden sm:inline">Add Template</span>
+                  <span className="sm:hidden">Add</span>
                 </Button>
                 <button
                   onClick={() => setShowQuickReply(false)}
@@ -942,6 +938,9 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
                 </button>
               </div>
             </div>
+            <DialogDescription className="text-[12px] mt-1">
+              Manage {quickReplyCount} template{quickReplyCount !== 1 ? 's' : ''} for quick replies
+            </DialogDescription>
           </DialogHeader>
           <div className="flex-1 min-h-0 overflow-auto p-3 sm:p-4">
             <ReplyTemplatesTab onClose={() => setShowQuickReply(false)} addTrigger={quickReplyAddTrigger} onCountChange={setQuickReplyCount} />
