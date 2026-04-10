@@ -218,7 +218,8 @@ export default function Home() {
       const statusChanged = Object.entries(statuses).some(([id, s]) => prev.conversationStatuses[id] !== s);
       if (!statusChanged && updatedIds === prev.conversationIds) return prev;
       const updated = { ...prev, conversationIds: updatedIds, conversationStatuses: updatedStatuses, status: overallStatus };
-      conversationListRef.current?.updateConversation?.(updated);
+      // Defer child update to avoid setState-during-render warning
+      queueMicrotask(() => conversationListRef.current?.updateConversation?.(updated));
       return updated;
     });
   }, []);
