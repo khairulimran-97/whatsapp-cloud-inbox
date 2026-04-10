@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { X, User, Mail, Phone, MapPin, AlertCircle, Loader2, ExternalLink, ShieldCheck, Copy, Check, Search, KeyRound, Send, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, User, Mail, Phone, MapPin, AlertCircle, Loader2, ExternalLink, ShieldCheck, Copy, Check, Search, KeyRound, Send, ChevronLeft, ChevronRight, Store } from 'lucide-react';
 
 type Address = {
   address_lines?: string[];
@@ -471,16 +471,28 @@ function MerchantSelector({ merchants, selected, onChange }: { merchants: BclMer
   if (merchants.length <= 1) return null;
   return (
     <div className="px-4 py-2 border-b border-[var(--wa-border)] bg-[var(--wa-panel-bg)]">
-      <select
-        value={selected}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full text-[12px] px-2.5 py-1.5 rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] focus:outline-none focus:border-[var(--wa-green)]/50 appearance-none cursor-pointer"
-        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
-      >
-        {merchants.map(m => (
-          <option key={m.id} value={m.id}>{m.name}</option>
-        ))}
-      </select>
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <Store className="h-3 w-3 text-[var(--wa-text-secondary)]" />
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)]">Merchant</span>
+      </div>
+      <div className="flex gap-1.5 flex-wrap">
+        {merchants.map(m => {
+          const isActive = m.id === selected;
+          return (
+            <button
+              key={m.id}
+              onClick={() => onChange(m.id)}
+              className={`text-[11px] font-medium px-3 py-1.5 rounded-full transition-all ${
+                isActive
+                  ? 'bg-[var(--wa-green)] text-white shadow-sm'
+                  : 'bg-[var(--wa-hover)] text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-search-bg)]'
+              }`}
+            >
+              {m.name}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
