@@ -336,33 +336,32 @@ export default function PPVSchedulePage() {
                 {/* PIC groups with left accent border */}
                 <div className="space-y-4">
                   {pics.map(({ pic, items }) => (
-                    <div key={pic} className="flex items-stretch">
-                      {/* Vertical rotated PIC label on left border */}
-                      <div className={cn(
-                        "relative flex items-center justify-center w-6 flex-shrink-0 rounded-l-xl",
-                        pic === 'No PIC yet'
-                          ? "bg-gray-200 dark:bg-gray-700"
-                          : "bg-violet-500"
-                      )}>
-                        <span className={cn(
-                          "text-[10px] font-bold uppercase tracking-wider whitespace-nowrap",
-                          "[writing-mode:vertical-lr] rotate-180",
-                          pic === 'No PIC yet'
-                            ? "text-gray-500 dark:text-gray-400"
-                            : "text-white"
-                        )}>{pic}</span>
-                      </div>
+                    <div key={pic} className="space-y-2">
+                      {items.map((s) => {
+                        const dt = new Date(s.matchDatetime);
+                        const timeStr = dt.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
+                        const badge = statusBadge(s.status);
+                        return (
+                          <div key={s.id} className="group flex items-stretch rounded-xl bg-[var(--wa-panel-bg)] border border-[var(--wa-border)] overflow-hidden transition-all hover:shadow-md hover:border-[var(--wa-border-strong,var(--wa-border))]">
+                            {/* PIC vertical label integrated into card */}
+                            <div className={cn(
+                              "relative flex items-center justify-center w-7 flex-shrink-0",
+                              pic === 'No PIC yet'
+                                ? "bg-gray-200 dark:bg-gray-700"
+                                : "bg-violet-500"
+                            )}>
+                              <span className={cn(
+                                "text-[9px] font-bold uppercase tracking-wider whitespace-nowrap",
+                                "[writing-mode:vertical-lr] rotate-180",
+                                pic === 'No PIC yet'
+                                  ? "text-gray-500 dark:text-gray-400"
+                                  : "text-white"
+                              )}>{pic}</span>
+                            </div>
 
-                      {/* Cards */}
-                      <div className="flex-1 min-w-0 space-y-2 p-2 pl-3">
-                        {items.map((s) => {
-                          const dt = new Date(s.matchDatetime);
-                          const timeStr = dt.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
-                          const badge = statusBadge(s.status);
-                          return (
-                            <div key={s.id} className="group rounded-xl bg-[var(--wa-panel-bg)] border border-[var(--wa-border)] transition-all hover:shadow-md hover:border-[var(--wa-border-strong,var(--wa-border))]">
+                            {/* Card content */}
+                            <div className="flex-1 min-w-0">
                               <div className="px-3.5 py-3">
-                                {/* Title + status on one row */}
                                 <div className="flex items-start justify-between gap-2">
                                   <h3 className="text-[14px] font-semibold text-[var(--wa-text-primary)] leading-snug">{s.matchDetails}</h3>
                                   <div className={cn("flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold", badge.bg, badge.text)}>
@@ -371,7 +370,6 @@ export default function PPVSchedulePage() {
                                   </div>
                                 </div>
 
-                                {/* Details row */}
                                 <div className="flex items-center gap-1.5 mt-1.5 flex-wrap text-[12px] text-[var(--wa-text-secondary)]">
                                   <Clock className="h-3.5 w-3.5 opacity-50" />
                                   <span>{timeStr}</span>
@@ -398,7 +396,7 @@ export default function PPVSchedulePage() {
                                 </div>
                               </div>
 
-                              {/* Compact actions */}
+                              {/* Actions */}
                               <div className="flex items-center border-t border-[var(--wa-border)] divide-x divide-[var(--wa-border)]">
                                 {s.status !== 'completed' && s.status !== 'cancelled' && (
                                   <button onClick={() => handleMarkComplete(s)}
@@ -416,9 +414,9 @@ export default function PPVSchedulePage() {
                                 </button>
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   ))}
                 </div>
