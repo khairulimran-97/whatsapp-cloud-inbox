@@ -1671,7 +1671,6 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
         </div>
       </ScrollArea>
 
-      <div className="border-t border-[var(--wa-border-strong)] safe-area-bottom">
             {/* Workflow execution banner */}
             {workflowExecution && (
               <div className="px-[5px] py-2">
@@ -1705,6 +1704,8 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                 </div>
               </div>
             )}
+
+      <div className="border-t border-[var(--wa-border-strong)] safe-area-bottom">
 
             <div className="px-[5px] bg-[var(--wa-panel-header)]">
             {selectedFile && (
