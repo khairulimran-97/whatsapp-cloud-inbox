@@ -884,21 +884,21 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       <div className="flex items-center border-t border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)] flex-shrink-0 safe-area-bottom divide-x divide-[var(--wa-border-strong)]">
         <button
           onClick={() => setShowQuickReply(true)}
-          className="flex-1 flex flex-col items-center gap-0.5 py-3 text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-blue-500/10 transition-colors"
+          className="flex-1 flex flex-col items-center gap-0.5 py-3 sm:py-4 text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-blue-500/10 transition-colors"
         >
           <MessageSquareText className="h-4 w-4" />
           <span className="text-[10px]">Quick Reply</span>
         </button>
         <button
           onClick={() => window.open('/ppv-schedule', '_blank')}
-          className="flex-1 flex flex-col items-center gap-0.5 py-3 text-emerald-500 dark:text-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors"
+          className="flex-1 flex flex-col items-center gap-0.5 py-3 sm:py-4 text-emerald-500 dark:text-emerald-400 hover:text-emerald-600 dark:hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors"
         >
           <CalendarDays className="h-4 w-4" />
           <span className="text-[10px]">PPV Schedule</span>
         </button>
         <button
           onClick={() => setShowSettings(true)}
-          className="flex-1 flex flex-col items-center gap-0.5 py-3 text-amber-500 dark:text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 hover:bg-amber-500/10 transition-colors"
+          className="flex-1 flex flex-col items-center gap-0.5 py-3 sm:py-4 text-amber-500 dark:text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 hover:bg-amber-500/10 transition-colors"
         >
           <Settings className="h-4 w-4" />
           <span className="text-[10px]">Settings</span>
