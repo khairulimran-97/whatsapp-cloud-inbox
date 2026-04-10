@@ -336,10 +336,10 @@ export default function PPVSchedulePage() {
                 {/* PIC groups with left accent border */}
                 <div className="space-y-4">
                   {pics.map(({ pic, items }) => (
-                    <div key={pic} className="flex">
+                    <div key={pic} className="flex items-stretch">
                       {/* Vertical rotated PIC label on left border */}
                       <div className={cn(
-                        "relative flex items-center justify-center w-6 flex-shrink-0 rounded-l-lg",
+                        "relative flex items-center justify-center w-6 flex-shrink-0 rounded-l-xl",
                         pic === 'No PIC yet'
                           ? "bg-gray-200 dark:bg-gray-700"
                           : "bg-violet-500"
@@ -354,7 +354,7 @@ export default function PPVSchedulePage() {
                       </div>
 
                       {/* Cards */}
-                      <div className="flex-1 min-w-0 space-y-2 py-1.5 pl-3">
+                      <div className="flex-1 min-w-0 space-y-2 p-2 pl-3">
                         {items.map((s) => {
                           const dt = new Date(s.matchDatetime);
                           const timeStr = dt.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
