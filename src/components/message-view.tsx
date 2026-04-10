@@ -1734,7 +1734,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
             )}
 
             {conversationStatus === 'ended' ? (
-              <div className="flex items-center min-h-[50px] bg-red-500/10 border-t border-red-500/20">
+              <div className="flex items-center min-h-[50px] bg-red-500/10 border-t border-red-500/20 -mx-3 sm:-mx-4 md:-mx-[30px] px-3 sm:px-4 md:px-[30px]">
                 <div className="flex-1 flex items-center justify-between gap-3 px-4">
                   <div className="flex items-center gap-2">
                     <div className="h-6 w-6 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
