@@ -367,11 +367,19 @@ function LookupResultCard({ tx, onInsertText }: { tx: Transaction; onInsertText?
         </div>
 
         {(tx.payer_name || tx.payer_email || tx.payer_telephone_number) && (
-          <div className="flex items-center gap-2 min-w-0">
-            <User className="h-3.5 w-3.5 text-[var(--wa-text-secondary)] flex-shrink-0" />
-            <p className="text-xs text-[var(--wa-text-primary)] truncate">
-              {[tx.payer_name, tx.payer_email, tx.payer_telephone_number].filter(Boolean).join(' · ')}
-            </p>
+          <div className="space-y-0.5">
+            {tx.payer_name && (
+              <div className="flex items-center gap-2 min-w-0">
+                <User className="h-3.5 w-3.5 text-[var(--wa-text-secondary)] flex-shrink-0" />
+                <p className="text-xs font-medium text-[var(--wa-text-primary)] truncate">{tx.payer_name}</p>
+              </div>
+            )}
+            {tx.payer_email && (
+              <p className="text-[11px] text-[var(--wa-text-secondary)] truncate pl-[22px]">{tx.payer_email}</p>
+            )}
+            {tx.payer_telephone_number && (
+              <p className="text-[11px] text-[var(--wa-text-secondary)] truncate pl-[22px]">{tx.payer_telephone_number}</p>
+            )}
           </div>
         )}
 
@@ -539,23 +547,23 @@ function OrdersTab({ onInsertText, query, setQuery, results, setResults, page, s
 
           {/* Pagination */}
           {results.meta && results.meta.last_page > 1 && (
-            <div className="flex items-center justify-between pt-1">
+            <div className="flex items-center justify-between pt-2">
               <button
                 onClick={() => handleSearch(query, page - 1)}
                 disabled={loading || page <= 1}
-                className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)] transition-colors disabled:opacity-30"
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-md text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)] transition-colors disabled:opacity-30"
               >
-                <ChevronLeft className="h-3 w-3" /> Prev
+                <ChevronLeft className="h-3.5 w-3.5" /> Prev
               </button>
-              <span className="text-[10px] text-[var(--wa-text-secondary)]">
-                {page} / {results.meta.last_page}
+              <span className="text-xs text-[var(--wa-text-secondary)]">
+                {page} / {results.meta.last_page} <span className="text-[var(--wa-text-secondary)]/60">({results.meta.total})</span>
               </span>
               <button
                 onClick={() => handleSearch(query, page + 1)}
                 disabled={loading || page >= results.meta!.last_page}
-                className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)] transition-colors disabled:opacity-30"
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-md text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)] transition-colors disabled:opacity-30"
               >
-                Next <ChevronRight className="h-3 w-3" />
+                Next <ChevronRight className="h-3.5 w-3.5" />
               </button>
             </div>
           )}
