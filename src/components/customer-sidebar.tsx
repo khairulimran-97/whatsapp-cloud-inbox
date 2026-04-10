@@ -293,9 +293,15 @@ function TransactionCard({ tx, onInsertText }: { tx: Transaction; onInsertText?:
         {/* Order number + amount */}
         <div className="flex items-center justify-between">
           {tx.order_number && (
-            <p className="text-[13px] font-bold text-[var(--wa-text-primary)] truncate font-mono" title={tx.order_number}>
-              {tx.order_number}
-            </p>
+            tx.receipt_url ? (
+              <a href={tx.receipt_url} target="_blank" rel="noopener noreferrer" className="text-[13px] font-bold text-[var(--wa-green)] hover:underline truncate font-mono" title={tx.order_number}>
+                {tx.order_number}
+              </a>
+            ) : (
+              <p className="text-[13px] font-bold text-[var(--wa-text-primary)] truncate font-mono" title={tx.order_number}>
+                {tx.order_number}
+              </p>
+            )
           )}
           <span className="text-sm font-bold text-[var(--wa-text-primary)] whitespace-nowrap flex-shrink-0 ml-2">
             {formatRM(tx.amount)}
@@ -316,22 +322,6 @@ function TransactionCard({ tx, onInsertText }: { tx: Transaction; onInsertText?:
             {formatDateTime(tx.created_at)}
           </span>
         </div>
-
-        {/* Receipt */}
-        {tx.receipt_url && isPaid && (
-          <div className="flex items-center gap-2">
-            <a
-              href={tx.receipt_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-md text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 transition-colors"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-              Receipt
-            </a>
-            <CopyButton text={tx.receipt_url} title="Copy receipt URL" />
-          </div>
-        )}
 
         {/* Content access */}
         {relatedContent.length > 0 && (
@@ -358,9 +348,15 @@ function LookupResultCard({ tx, onInsertText }: { tx: Transaction; onInsertText?
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
             {tx.order_number && (
-              <p className="text-sm font-bold text-[var(--wa-text-primary)] truncate font-mono" title={tx.order_number}>
-                {tx.order_number}
-              </p>
+              tx.receipt_url ? (
+                <a href={tx.receipt_url} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-[var(--wa-green)] hover:underline truncate font-mono" title={tx.order_number}>
+                  {tx.order_number}
+                </a>
+              ) : (
+                <p className="text-sm font-bold text-[var(--wa-text-primary)] truncate font-mono" title={tx.order_number}>
+                  {tx.order_number}
+                </p>
+              )
             )}
           </div>
           <span className="text-[15px] font-bold text-[var(--wa-text-primary)] whitespace-nowrap flex-shrink-0 ml-2">
@@ -408,21 +404,6 @@ function LookupResultCard({ tx, onInsertText }: { tx: Transaction; onInsertText?
             {formatDateTime(tx.created_at)}
           </span>
         </div>
-
-        {tx.receipt_url && isPaid && (
-          <div className="flex items-center gap-2 pt-0.5">
-            <a
-              href={tx.receipt_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-md text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 transition-colors"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-              Receipt
-            </a>
-            <CopyButton text={tx.receipt_url} title="Copy receipt URL" />
-          </div>
-        )}
 
         {relatedContent.length > 0 && (
           <div className="pt-1.5 mt-1 border-t border-[var(--wa-border)] space-y-0.5">
@@ -590,29 +571,32 @@ function OrdersTab({ onInsertText, query, setQuery, results, setResults, page, s
 type TabId = 'customer' | 'lookup';
 
 function TabBar({ activeTab, onChangeTab }: { activeTab: TabId; onChangeTab: (tab: TabId) => void }) {
-  const tabs: { id: TabId; label: string }[] = [
-    { id: 'customer', label: 'Customer' },
-    { id: 'lookup', label: 'Lookup' },
+  const tabs: { id: TabId; label: string; color: string; bg: string }[] = [
+    { id: 'customer', label: 'Customer', color: 'text-blue-500 dark:text-blue-400', bg: 'bg-blue-500/[0.06]' },
+    { id: 'lookup', label: 'Lookup', color: 'text-orange-500 dark:text-orange-400', bg: 'bg-orange-500/[0.06]' },
   ];
 
   return (
     <div className="flex border-b border-black/10 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02]">
-      {tabs.map((tab) => (
-        <button
-          key={tab.id}
-          onClick={() => onChangeTab(tab.id)}
-          className={`flex-1 py-2.5 text-xs font-semibold tracking-wide transition-all relative ${
-            activeTab === tab.id
-              ? 'text-[var(--wa-green)] bg-[var(--wa-green)]/[0.06]'
-              : 'text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-black/[0.03] dark:hover:bg-white/[0.03]'
-          }`}
-        >
-          {tab.label}
-          {activeTab === tab.id && (
-            <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[var(--wa-green)]" />
-          )}
-        </button>
-      ))}
+      {tabs.map((tab) => {
+        const isActive = activeTab === tab.id;
+        return (
+          <button
+            key={tab.id}
+            onClick={() => onChangeTab(tab.id)}
+            className={`flex-1 py-2.5 text-xs font-semibold tracking-wide transition-all relative ${
+              isActive
+                ? `${tab.color} ${tab.bg}`
+                : 'text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-black/[0.03] dark:hover:bg-white/[0.03]'
+            }`}
+          >
+            {tab.label}
+            {isActive && (
+              <div className={`absolute bottom-0 left-0 right-0 h-[2px] ${tab.id === 'customer' ? 'bg-blue-500' : 'bg-orange-500'}`} />
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }
