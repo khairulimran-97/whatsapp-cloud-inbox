@@ -284,62 +284,64 @@ function getStatusLabel(status?: string) {
 
 function TransactionCard({ tx, onInsertText }: { tx: Transaction; onInsertText?: (text: string) => void }) {
   const relatedContent = tx.protected_content?.filter(pc => pc.url) ?? [];
+  const isPaid = tx.status === 'success' || tx.status === 'completed' || tx.is_paid;
 
   return (
-    <div className="p-3 rounded-lg border border-[var(--wa-border)] bg-[var(--wa-hover)]">
-      {/* Row 1: order number + amount + status */}
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-2 min-w-0">
+    <div className="rounded-xl border border-black/10 dark:border-white/15 bg-[var(--wa-hover)] overflow-hidden">
+      <div className={`h-[3px] ${isPaid ? 'bg-green-500' : tx.status === 'pending' ? 'bg-amber-500' : 'bg-red-500/60'}`} />
+      <div className="p-3 space-y-2">
+        {/* Order number + amount */}
+        <div className="flex items-center justify-between">
           {tx.order_number && (
-            <p className="text-sm font-semibold text-[var(--wa-text-primary)] truncate">
+            <p className="text-[13px] font-bold text-[var(--wa-text-primary)] truncate font-mono" title={tx.order_number}>
               {tx.order_number}
             </p>
           )}
-          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--wa-panel-bg)] text-[var(--wa-text-secondary)] whitespace-nowrap">
+          <span className="text-sm font-bold text-[var(--wa-text-primary)] whitespace-nowrap flex-shrink-0 ml-2">
             {formatRM(tx.amount)}
           </span>
         </div>
-        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full whitespace-nowrap flex-shrink-0 ml-2 ${getStatusStyle(tx.status)}`}>
-          {getStatusLabel(tx.status)}
-        </span>
-      </div>
 
-      {/* Row 2: channel + date + receipt actions */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 min-w-0">
+        {/* Status + channel + date */}
+        <div className="flex items-center flex-wrap gap-1.5">
+          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${getStatusStyle(tx.status)}`}>
+            {getStatusLabel(tx.status)}
+          </span>
           {tx.payment_channel && (
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 whitespace-nowrap">
+            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 whitespace-nowrap">
               {tx.payment_channel}
             </span>
           )}
-          <p className="text-[11px] text-[var(--wa-text-secondary)]">
+          <span className="text-[11px] text-[var(--wa-text-secondary)] ml-auto">
             {formatDateTime(tx.created_at)}
-          </p>
+          </span>
         </div>
-        {tx.receipt_url && (
-          <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+
+        {/* Receipt */}
+        {tx.receipt_url && isPaid && (
+          <div className="flex items-center gap-2">
             <a
               href={tx.receipt_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="h-6 w-6 flex items-center justify-center rounded-md text-orange-400 hover:text-orange-300 hover:bg-orange-500/10 transition-colors"
-              title="Download receipt PDF"
+              className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-md text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 transition-colors"
             >
               <ExternalLink className="h-3.5 w-3.5" />
+              Receipt
             </a>
             <CopyButton text={tx.receipt_url} title="Copy receipt URL" />
           </div>
         )}
-      </div>
 
-      {/* Content access */}
-      {relatedContent.length > 0 && (
-        <div className="mt-2.5 pt-2 border-t border-black/15 dark:border-white/15 space-y-0.5">
-          {relatedContent.map((content, i) => (
-            <ContentAccessItem key={i} content={content} onInsertText={onInsertText} />
-          ))}
-        </div>
-      )}
+        {/* Content access */}
+        {relatedContent.length > 0 && (
+          <div className="pt-1.5 mt-1 border-t border-black/10 dark:border-white/15 space-y-0.5">
+            {relatedContent.map((content, i) => (
+              <ContentAccessItem key={i} content={content} onInsertText={onInsertText} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -350,13 +352,13 @@ function LookupResultCard({ tx, onInsertText }: { tx: Transaction; onInsertText?
   const isPaid = tx.status === 'success' || tx.status === 'completed' || tx.is_paid;
 
   return (
-    <div className="rounded-xl border border-[var(--wa-border)] bg-[var(--wa-hover)] overflow-hidden">
+    <div className="rounded-xl border border-black/10 dark:border-white/15 bg-[var(--wa-hover)] overflow-hidden">
       <div className={`h-[3px] ${isPaid ? 'bg-green-500' : tx.status === 'pending' ? 'bg-amber-500' : 'bg-red-500/60'}`} />
       <div className="p-3.5 space-y-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
             {tx.order_number && (
-              <p className="text-sm font-bold text-[var(--wa-text-primary)] truncate font-mono">
+              <p className="text-sm font-bold text-[var(--wa-text-primary)] truncate font-mono" title={tx.order_number}>
                 {tx.order_number}
               </p>
             )}
@@ -837,8 +839,8 @@ function InfoContent({ data, loading, phoneNumber, onInsertText }: { data: Custo
 
           {/* Recent transactions */}
           {data.recentTransactions && data.recentTransactions.length > 0 && (
-              <div className="border-t border-[var(--wa-border)] pt-4">
-                <h5 className="text-xs font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-1">
+              <div className="border-t border-black/10 dark:border-white/15 pt-4">
+                <h5 className="text-[11px] font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-2">
                   Recent Transactions
                 </h5>
                 <div className="space-y-2.5">
