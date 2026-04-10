@@ -912,12 +912,17 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
 
       {/* Quick Reply Dialog */}
       <Dialog open={showQuickReply} onOpenChange={setShowQuickReply}>
-        <DialogContent className="sm:max-w-[550px] max-h-[85vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="text-lg sr-only">Quick Reply</DialogTitle>
-            <DialogDescription className="sr-only">Manage quick reply templates</DialogDescription>
+        <DialogContent className="sm:max-w-[550px] max-h-[85vh] flex flex-col rounded-2xl p-0 gap-0">
+          <DialogHeader className="px-5 pt-5 pb-3 flex-shrink-0 border-b border-[var(--wa-border)]">
+            <DialogTitle className="text-[15px] flex items-center gap-2">
+              <MessageSquareText className="h-4.5 w-4.5 text-emerald-500" />
+              Quick Reply Templates
+            </DialogTitle>
+            <DialogDescription className="text-[12px]">
+              Manage your quick reply templates
+            </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 min-h-0 overflow-auto">
+          <div className="flex-1 min-h-0 overflow-auto p-4">
             <ReplyTemplatesTab onClose={() => setShowQuickReply(false)} />
           </div>
         </DialogContent>
@@ -1568,11 +1573,8 @@ function ReplyTemplatesTab({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="space-y-3 flex flex-col min-h-0">
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <h3 className="text-lg font-semibold text-[var(--wa-text-primary)]">Quick Reply</h3>
-          <span className="text-[11px] text-[var(--wa-text-secondary)] bg-black/[0.04] dark:bg-white/[0.06] px-2 py-0.5 rounded-full">{templates.length}</span>
-        </div>
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-[var(--wa-text-secondary)]">{templates.length} template{templates.length !== 1 ? 's' : ''}</span>
         <Button
           onClick={() => { setShowForm(true); setEditingTemplate(null); }}
           className="bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] text-white text-xs h-8 px-3 gap-1.5"
