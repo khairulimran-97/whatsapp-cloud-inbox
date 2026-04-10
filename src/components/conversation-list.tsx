@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, forwardRef, useImperativeHandle, useCallback, type ReactNode } from 'react';
 import { format, isValid, isToday, isYesterday } from 'date-fns';
-import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save, Plus, Pencil, Trash2, MessageSquareText, CloudDownload, TriangleAlert, RefreshCw, Database } from 'lucide-react';
+import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save, Plus, Pencil, Trash2, MessageSquareText, CloudDownload, TriangleAlert, RefreshCw, Database, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAutoPolling } from '@/hooks/use-auto-polling';
 import { useTheme } from '@/hooks/use-theme';
@@ -1543,6 +1543,33 @@ function DataTab() {
         >
           {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           {syncing ? 'Resyncing...' : 'Resync All Conversations'}
+        </Button>
+      </div>
+
+      <div className="bg-[var(--wa-hover)] rounded-lg p-4 space-y-3">
+        <div className="flex items-start gap-3">
+          <ExternalLink className="h-5 w-5 text-[var(--wa-text-secondary)] flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="text-sm font-medium text-[var(--wa-text-primary)]">Database Viewer</h3>
+            <p className="text-xs text-[var(--wa-text-secondary)] mt-1 leading-relaxed">
+              Browse SQLite tables, search data, and inspect rows. Generates a temporary token (4h) for secure access.
+            </p>
+          </div>
+        </div>
+        <Button
+          onClick={async () => {
+            try {
+              const res = await fetch('/api/admin/db-token', { method: 'POST' });
+              const data = await res.json();
+              if (data.token) {
+                window.open(`/admin/db?token=${data.token}`, '_blank');
+              }
+            } catch { /* ignore */ }
+          }}
+          className="w-full bg-gray-700 hover:bg-gray-600 text-white text-sm gap-2"
+        >
+          <Database className="h-4 w-4" />
+          Open Database Viewer
         </Button>
       </div>
 
