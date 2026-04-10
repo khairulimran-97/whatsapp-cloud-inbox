@@ -294,7 +294,7 @@ function TransactionCard({ tx, onInsertText }: { tx: Transaction; onInsertText?:
         <div className="flex items-center justify-between">
           {tx.order_number && (
             tx.receipt_url ? (
-              <a href={tx.receipt_url} target="_blank" rel="noopener noreferrer" className="text-[13px] font-bold text-[var(--wa-green)] hover:underline truncate font-mono" title={tx.order_number}>
+              <a href={tx.receipt_url} target="_blank" rel="noopener noreferrer" className="text-[13px] font-bold text-[var(--wa-green)] underline decoration-[var(--wa-green)]/40 hover:decoration-[var(--wa-green)] truncate font-mono" title={tx.order_number}>
                 {tx.order_number}
               </a>
             ) : (
@@ -349,7 +349,7 @@ function LookupResultCard({ tx, onInsertText }: { tx: Transaction; onInsertText?
           <div className="flex items-center gap-2 min-w-0">
             {tx.order_number && (
               tx.receipt_url ? (
-                <a href={tx.receipt_url} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-[var(--wa-green)] hover:underline truncate font-mono" title={tx.order_number}>
+                <a href={tx.receipt_url} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-[var(--wa-green)] underline decoration-[var(--wa-green)]/40 hover:decoration-[var(--wa-green)] truncate font-mono" title={tx.order_number}>
                   {tx.order_number}
                 </a>
               ) : (
