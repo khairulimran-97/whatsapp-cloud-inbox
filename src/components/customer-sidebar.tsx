@@ -352,39 +352,39 @@ function LookupResultCard({ tx, onInsertText }: { tx: Transaction; onInsertText?
   return (
     <div className="rounded-xl border border-[var(--wa-border)] bg-[var(--wa-hover)] overflow-hidden">
       <div className={`h-[3px] ${isPaid ? 'bg-green-500' : tx.status === 'pending' ? 'bg-amber-500' : 'bg-red-500/60'}`} />
-      <div className="p-3 space-y-2">
+      <div className="p-3.5 space-y-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
             {tx.order_number && (
-              <p className="text-[13px] font-bold text-[var(--wa-text-primary)] truncate font-mono">
+              <p className="text-sm font-bold text-[var(--wa-text-primary)] truncate font-mono">
                 {tx.order_number}
               </p>
             )}
           </div>
-          <span className="text-sm font-bold text-[var(--wa-text-primary)] whitespace-nowrap flex-shrink-0 ml-2">
+          <span className="text-[15px] font-bold text-[var(--wa-text-primary)] whitespace-nowrap flex-shrink-0 ml-2">
             {formatRM(tx.amount)}
           </span>
         </div>
 
-        {(tx.payer_name || tx.payer_email) && (
+        {(tx.payer_name || tx.payer_email || tx.payer_telephone_number) && (
           <div className="flex items-center gap-2 min-w-0">
-            <User className="h-3 w-3 text-[var(--wa-text-secondary)] flex-shrink-0" />
-            <p className="text-[11px] text-[var(--wa-text-primary)] truncate">
-              {tx.payer_name}{tx.payer_email ? ` · ${tx.payer_email}` : ''}
+            <User className="h-3.5 w-3.5 text-[var(--wa-text-secondary)] flex-shrink-0" />
+            <p className="text-xs text-[var(--wa-text-primary)] truncate">
+              {[tx.payer_name, tx.payer_email, tx.payer_telephone_number].filter(Boolean).join(' · ')}
             </p>
           </div>
         )}
 
         <div className="flex items-center flex-wrap gap-1.5">
-          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${getStatusStyle(tx.status)}`}>
+          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${getStatusStyle(tx.status)}`}>
             {getStatusLabel(tx.status)}
           </span>
           {tx.payment_channel && (
-            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 whitespace-nowrap">
+            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 whitespace-nowrap">
               {tx.payment_channel}
             </span>
           )}
-          <span className="text-[10px] text-[var(--wa-text-secondary)] ml-auto">
+          <span className="text-[11px] text-[var(--wa-text-secondary)] ml-auto">
             {formatDateTime(tx.created_at)}
           </span>
         </div>
@@ -395,9 +395,9 @@ function LookupResultCard({ tx, onInsertText }: { tx: Transaction; onInsertText?
               href={tx.receipt_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-medium rounded-md text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-md text-orange-400 bg-orange-500/10 hover:bg-orange-500/20 transition-colors"
             >
-              <ExternalLink className="h-3 w-3" />
+              <ExternalLink className="h-3.5 w-3.5" />
               Receipt
             </a>
             <CopyButton text={tx.receipt_url} title="Copy receipt URL" />
@@ -427,11 +427,18 @@ type OrdersSearchResult = {
   error?: string;
 };
 
-function OrdersTab({ onInsertText }: { onInsertText?: (text: string) => void }) {
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<OrdersSearchResult | null>(null);
+type OrdersTabProps = {
+  onInsertText?: (text: string) => void;
+  query: string;
+  setQuery: (q: string) => void;
+  results: OrdersSearchResult | null;
+  setResults: (r: OrdersSearchResult | null) => void;
+  page: number;
+  setPage: (p: number) => void;
+};
+
+function OrdersTab({ onInsertText, query, setQuery, results, setResults, page, setPage }: OrdersTabProps) {
   const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(1);
 
   const handleSearch = useCallback(async (q: string, p: number) => {
     if (!q.trim()) return;
@@ -447,7 +454,7 @@ function OrdersTab({ onInsertText }: { onInsertText?: (text: string) => void }) 
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [setResults, setPage]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -596,6 +603,10 @@ export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, pa
   const [data, setData] = useState<CustomerData | null>(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>('customer');
+  // Lift lookup state so it persists across tab switches
+  const [lookupQuery, setLookupQuery] = useState('');
+  const [lookupResults, setLookupResults] = useState<OrdersSearchResult | null>(null);
+  const [lookupPage, setLookupPage] = useState(1);
 
   const fetchCustomer = useCallback(async () => {
     if (!phoneNumber) return;
@@ -619,6 +630,9 @@ export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, pa
     if (!open && !inline) {
       setData(null);
       setActiveTab('customer');
+      setLookupQuery('');
+      setLookupResults(null);
+      setLookupPage(1);
     }
   }, [open, inline, phoneNumber, fetchCustomer]);
 
@@ -636,11 +650,12 @@ export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, pa
         </div>
         <TabBar activeTab={activeTab} onChangeTab={setActiveTab} />
         <div className="overflow-y-auto flex-1 p-4">
-          {activeTab === 'customer' ? (
+          <div className={activeTab !== 'customer' ? 'hidden' : ''}>
             <InfoContent data={data} loading={loading} phoneNumber={phoneNumber} onInsertText={onInsertText} />
-          ) : (
-            <OrdersTab onInsertText={onInsertText} />
-          )}
+          </div>
+          <div className={activeTab !== 'lookup' ? 'hidden' : ''}>
+            <OrdersTab onInsertText={onInsertText} query={lookupQuery} setQuery={setLookupQuery} results={lookupResults} setResults={setLookupResults} page={lookupPage} setPage={setLookupPage} />
+          </div>
         </div>
       </div>
     );
@@ -673,11 +688,12 @@ export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, pa
         </div>
         <TabBar activeTab={activeTab} onChangeTab={setActiveTab} />
         <div className="overflow-y-auto h-[calc(100%-60px-41px)] p-4">
-          {activeTab === 'customer' ? (
+          <div className={activeTab !== 'customer' ? 'hidden' : ''}>
             <InfoContent data={data} loading={loading} phoneNumber={phoneNumber} onInsertText={onInsertText} />
-          ) : (
-            <OrdersTab onInsertText={onInsertText} />
-          )}
+          </div>
+          <div className={activeTab !== 'lookup' ? 'hidden' : ''}>
+            <OrdersTab onInsertText={onInsertText} query={lookupQuery} setQuery={setLookupQuery} results={lookupResults} setResults={setLookupResults} page={lookupPage} setPage={setLookupPage} />
+          </div>
         </div>
       </div>
     </>
