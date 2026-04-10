@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, forwardRef, useImperativeHandle, type ReactNode } from 'react';
 import { format, isValid, isToday, isYesterday } from 'date-fns';
-import { Paperclip, Send, X, MessageSquare, ListTree, ArrowLeft, CircleCheck, RotateCcw, MailOpen, MoreVertical, Info, List, Link, Search, ChevronUp, ChevronDown, Zap, RefreshCw, HandMetal, Play, ImagePlus, LayoutList, MessageSquareQuote } from 'lucide-react';
+import { Paperclip, Send, X, MessageSquare, ListTree, ArrowLeft, CircleCheck, RotateCcw, MailOpen, MoreVertical, Info, List, Link, Search, ChevronUp, ChevronDown, Zap, RefreshCw, HandMetal, Play, ImagePlus, Plus, MessageSquareQuote } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MediaMessage } from '@/components/media-message';
 import { InteractiveMessageDialog } from '@/components/interactive-message-dialog';
@@ -1735,90 +1735,81 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                   className="hidden"
                 />
                 <div className="flex-1 min-w-0 flex items-end bg-[var(--wa-input-bg)] rounded-[21px] border-0 outline-none ring-0 focus-within:ring-[var(--wa-green)]/60 focus-within:ring-2 transition-all duration-200">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={sending}
-                    className="text-[var(--wa-icon)] hover:text-[var(--wa-text-primary)] h-[44px] w-11 flex items-center justify-center flex-shrink-0 transition-colors duration-200 disabled:opacity-40 rounded-l-[21px]"
-                    title="Upload file"
-                  >
-                    <ImagePlus className="h-[20px] w-[20px]" />
-                  </button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
                         type="button"
                         disabled={sending}
-                        className="text-[var(--wa-icon)] hover:text-[var(--wa-text-primary)] h-[44px] w-10 items-center justify-center flex-shrink-0 transition-colors duration-200 disabled:opacity-40 hidden sm:flex"
-                        title="Send interactive message"
+                        className="text-[var(--wa-icon)] hover:text-[var(--wa-text-primary)] h-[44px] w-11 flex items-center justify-center flex-shrink-0 transition-colors duration-200 disabled:opacity-40 rounded-l-[21px]"
+                        title="Actions"
                       >
-                        <LayoutList className="h-[20px] w-[20px]" />
+                        <Plus className="h-[22px] w-[22px]" />
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-52 rounded-xl shadow-lg">
+                    <DropdownMenuContent align="start" className="w-64 rounded-xl shadow-lg max-h-[60vh] overflow-y-auto">
+                      <DropdownMenuItem onClick={() => fileInputRef.current?.click()} className="py-2.5">
+                        <ImagePlus className="h-4 w-4 mr-3 text-blue-500" />
+                        Attach file
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-[var(--wa-text-secondary)]">Interactive</DropdownMenuLabel>
                       <DropdownMenuItem onClick={() => setShowInteractiveDialog(true)} className="py-2.5">
-                        <ListTree className="h-4 w-4 mr-3" />
+                        <ListTree className="h-4 w-4 mr-3 text-violet-500" />
                         Button message
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setShowListDialog(true)} className="py-2.5">
-                        <List className="h-4 w-4 mr-3" />
+                        <List className="h-4 w-4 mr-3 text-violet-500" />
                         List message
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setShowCtaDialog(true)} className="py-2.5">
-                        <Link className="h-4 w-4 mr-3" />
+                        <Link className="h-4 w-4 mr-3 text-violet-500" />
                         CTA URL message
                       </DropdownMenuItem>
+                      {replyTemplates.length > 0 && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-[var(--wa-text-secondary)]">Quick Reply</DropdownMenuLabel>
+                          {(() => {
+                            const grouped = replyTemplates.reduce<Record<string, typeof replyTemplates>>((acc, t) => {
+                              const cat = t.category || 'General';
+                              if (!acc[cat]) acc[cat] = [];
+                              acc[cat].push(t);
+                              return acc;
+                            }, {});
+                            return Object.entries(grouped).map(([cat, items], gi) => (
+                              <div key={cat}>
+                                {gi > 0 && <DropdownMenuSeparator />}
+                                {Object.keys(grouped).length > 1 && (
+                                  <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-[var(--wa-text-secondary)]/60 py-0.5">{cat}</DropdownMenuLabel>
+                                )}
+                                {items.map((t) => (
+                                  <DropdownMenuItem
+                                    key={t.id}
+                                    onClick={() => {
+                                      setMessageInput(prev => prev ? prev + '\n' + t.body : t.body);
+                                      requestAnimationFrame(() => {
+                                        if (textareaRef.current) {
+                                          textareaRef.current.style.height = 'auto';
+                                          textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
+                                        }
+                                      });
+                                    }}
+                                    className="py-2 flex flex-col items-start gap-0.5 cursor-pointer"
+                                  >
+                                    <span className="text-xs font-medium text-[var(--wa-text-primary)] flex items-center gap-1.5">
+                                      <MessageSquareQuote className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
+                                      {t.title}
+                                    </span>
+                                    <span className="text-[11px] text-[var(--wa-text-secondary)] line-clamp-2 whitespace-pre-wrap pl-5">{t.body}</span>
+                                  </DropdownMenuItem>
+                                ))}
+                              </div>
+                            ));
+                          })()}
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  {replyTemplates.length > 0 && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button
-                          type="button"
-                          disabled={sending}
-                          className="text-[var(--wa-green)] hover:text-[var(--wa-green-dark)] h-[44px] w-10 items-center justify-center flex-shrink-0 transition-colors duration-200 disabled:opacity-40 flex"
-                          title="Quick reply templates"
-                        >
-                          <MessageSquareQuote className="h-[20px] w-[20px]" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-72 rounded-xl shadow-lg max-h-[50vh] overflow-y-auto">
-                        {(() => {
-                          const grouped = replyTemplates.reduce<Record<string, typeof replyTemplates>>((acc, t) => {
-                            const cat = t.category || 'General';
-                            if (!acc[cat]) acc[cat] = [];
-                            acc[cat].push(t);
-                            return acc;
-                          }, {});
-                          return Object.entries(grouped).map(([cat, items], gi) => (
-                            <div key={cat}>
-                              {gi > 0 && <DropdownMenuSeparator />}
-                              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-[var(--wa-text-secondary)]">{cat}</DropdownMenuLabel>
-                              {items.map((t) => (
-                                <DropdownMenuItem
-                                  key={t.id}
-                                  onClick={() => {
-                                    setMessageInput(prev => prev ? prev + '\n' + t.body : t.body);
-                                    // Auto-resize textarea after template insert
-                                    requestAnimationFrame(() => {
-                                      if (textareaRef.current) {
-                                        textareaRef.current.style.height = 'auto';
-                                        textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
-                                      }
-                                    });
-                                  }}
-                                  className="py-2 flex flex-col items-start gap-0.5 cursor-pointer"
-                                >
-                                  <span className="text-xs font-medium text-[var(--wa-text-primary)]">{t.title}</span>
-                                  <span className="text-[11px] text-[var(--wa-text-secondary)] line-clamp-2 whitespace-pre-wrap">{t.body}</span>
-                                </DropdownMenuItem>
-                              ))}
-                            </div>
-                          ));
-                        })()}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
                   <textarea
                     ref={textareaRef}
                     value={messageInput}
