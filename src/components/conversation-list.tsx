@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, forwardRef, useImperativeHandle, useCallback, type ReactNode } from 'react';
 import { format, isValid, isToday, isYesterday } from 'date-fns';
-import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save, Plus, Pencil, Trash2, MessageSquareText, CloudDownload, TriangleAlert, RefreshCw, Database, ExternalLink } from 'lucide-react';
+import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save, Plus, Pencil, Trash2, MessageSquareText, CloudDownload, TriangleAlert, RefreshCw, Database, ExternalLink, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAutoPolling } from '@/hooks/use-auto-polling';
 import { useTheme } from '@/hooks/use-theme';
@@ -199,6 +199,8 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
   const [showProfile, setShowProfile] = useState(false);
   const [showPushDialog, setShowPushDialog] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showSchedule, setShowSchedule] = useState(false);
+  const [settingsDefaultTab, setSettingsDefaultTab] = useState<'bcl' | 'templates' | 'data' | undefined>(undefined);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const pageRef = useRef(1);
@@ -871,18 +873,56 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       </ScrollArea>
 
       {/* Bottom action bar */}
-      <div className="flex items-center justify-center px-3 py-1.5 border-t border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)] flex-shrink-0 safe-area-bottom">
-        <Button
-          onClick={() => setShowSettings(true)}
-          variant="ghost"
-          size="sm"
-          className="text-[var(--wa-text-secondary)] hover:bg-[var(--wa-border-strong)]/30 h-8 gap-1.5 px-3"
-          title="Settings"
+      <div className="flex items-center border-t border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)] flex-shrink-0 safe-area-bottom">
+        <button
+          onClick={() => { setSettingsDefaultTab('templates'); setShowSettings(true); }}
+          className="flex-1 flex flex-col items-center gap-0.5 py-2 text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-border-strong)]/20 transition-colors"
+        >
+          <MessageSquareText className="h-4 w-4" />
+          <span className="text-[10px]">Templates</span>
+        </button>
+        <button
+          onClick={() => { setSettingsDefaultTab(undefined); setShowSchedule(true); }}
+          className="flex-1 flex flex-col items-center gap-0.5 py-2 text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-border-strong)]/20 transition-colors"
+        >
+          <CalendarDays className="h-4 w-4" />
+          <span className="text-[10px]">PPV Schedule</span>
+        </button>
+        <button
+          onClick={() => { setSettingsDefaultTab(undefined); setShowSettings(true); }}
+          className="flex-1 flex flex-col items-center gap-0.5 py-2 text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-border-strong)]/20 transition-colors"
         >
           <Settings className="h-4 w-4" />
-          <span className="text-[12px]">Settings</span>
-        </Button>
+          <span className="text-[10px]">Settings</span>
+        </button>
       </div>
+
+      {/* PPV Schedule Modal (dummy) */}
+      <Dialog open={showSchedule} onOpenChange={setShowSchedule}>
+        <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>PPV Schedule</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {[
+              { title: 'Liga Super: JDT vs Selangor', date: 'Apr 12, 2026 · 9:00 PM', status: 'Upcoming' },
+              { title: 'Liga Super: KL City vs Terengganu', date: 'Apr 14, 2026 · 9:00 PM', status: 'Upcoming' },
+              { title: 'Piala FA: Kedah vs Pahang', date: 'Apr 16, 2026 · 8:45 PM', status: 'Upcoming' },
+              { title: 'Liga Super: Sabah vs JDT', date: 'Apr 19, 2026 · 9:00 PM', status: 'Upcoming' },
+            ].map((match, i) => (
+              <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-[var(--wa-hover)] border border-[var(--wa-border)]">
+                <CalendarDays className="h-5 w-5 text-[var(--wa-green)] flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-medium text-[var(--wa-text-primary)] truncate">{match.title}</p>
+                  <p className="text-[11px] text-[var(--wa-text-secondary)]">{match.date}</p>
+                </div>
+                <span className="text-[10px] font-medium text-[var(--wa-green)] bg-[var(--wa-green)]/10 px-2 py-0.5 rounded-full flex-shrink-0">{match.status}</span>
+              </div>
+            ))}
+            <p className="text-[11px] text-[var(--wa-text-secondary)] text-center pt-2">Schedule data is for preview only</p>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Business Profile Modal */}
       <Dialog open={showProfile} onOpenChange={setShowProfile}>
@@ -1041,7 +1081,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
           <DialogHeader>
             <DialogTitle className="text-lg">Settings</DialogTitle>
           </DialogHeader>
-          <SettingsDialog onClose={() => setShowSettings(false)} />
+          <SettingsDialog onClose={() => setShowSettings(false)} defaultTab={settingsDefaultTab} />
         </DialogContent>
       </Dialog>
     </div>
@@ -1058,8 +1098,8 @@ type ReplyTemplate = {
   created_at: string;
 };
 
-function SettingsDialog({ onClose }: { onClose: () => void }) {
-  const [tab, setTab] = useState<'bcl' | 'templates' | 'data'>('bcl');
+function SettingsDialog({ onClose, defaultTab }: { onClose: () => void; defaultTab?: 'bcl' | 'templates' | 'data' }) {
+  const [tab, setTab] = useState<'bcl' | 'templates' | 'data'>(defaultTab || 'bcl');
 
   return (
     <div className="flex flex-col min-h-0 flex-1">
