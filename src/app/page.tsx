@@ -43,6 +43,7 @@ function markUnreadOnServer(phone: string) {
 export default function Home() {
   const { authenticated, login } = useAuth();
   const [selectedConversation, setSelectedConversation] = useState<Conversation>();
+  const [searchHighlight, setSearchHighlight] = useState<string>();
   const [unreadCounts, setUnreadCounts] = useState<Map<string, number>>(new Map());
   const [initialUnreadCount, setInitialUnreadCount] = useState(0);
   const [typingPhone, setTypingPhone] = useState<string | null>(null);
@@ -82,11 +83,12 @@ export default function Home() {
     };
   }, []);
 
-  const handleSelectConversation = useCallback((conversation: Conversation) => {
+  const handleSelectConversation = useCallback((conversation: Conversation, searchQuery?: string) => {
     // Capture unread count BEFORE clearing (for "X unread messages" divider)
     const count = unreadCounts.get(conversation.phoneNumber) ?? 0;
     setInitialUnreadCount(count);
     setSelectedConversation(conversation);
+    setSearchHighlight(searchQuery);
     // Push history state so PWA back button returns to list instead of closing app
     window.history.pushState({ view: 'chat' }, '', `#${conversation.phoneNumber}`);
     // Clear unread badge from sidebar
@@ -402,6 +404,7 @@ export default function Home() {
         isVisible={!!selectedConversation}
         pollInterval={messagePollInterval}
         initialUnreadCount={initialUnreadCount}
+        searchHighlight={searchHighlight}
       />
     </div>
   );

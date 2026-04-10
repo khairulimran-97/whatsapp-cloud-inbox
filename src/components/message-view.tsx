@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { useEffect, useState, useRef, useCallback, forwardRef, useImperativeHandle, type ReactNode } from 'react';
 import { format, isValid, isToday, isYesterday } from 'date-fns';
 import { Paperclip, Send, X, MessageSquare, ListTree, ArrowLeft, CircleCheck, RotateCcw, MailOpen, MoreVertical, Info, List, Link, Search, ChevronUp, ChevronDown, Zap, RefreshCw, HandMetal, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -224,6 +224,20 @@ function shouldShowDateDivider(currentMsg: Message, prevMsg: Message | null): bo
   }
 }
 
+function highlightText(text: string, query?: string): ReactNode {
+  if (!query || !text) return text;
+  const stripped = query.replace(/^0+/, '');
+  const parts = [query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')];
+  if (stripped !== query) parts.push(stripped.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const regex = new RegExp(`(${parts.join('|')})`, 'gi');
+  const segments = text.split(regex);
+  if (segments.length === 1) return text;
+  return segments.map((seg, i) =>
+    regex.test(seg)
+      ? <mark key={i} className="bg-yellow-300/60 dark:bg-yellow-500/40 text-inherit rounded-sm">{seg}</mark>
+      : seg
+  );
+}
 
 type Props = {
   conversationIds?: string[];
@@ -242,6 +256,7 @@ type Props = {
   isVisible?: boolean;
   pollInterval?: number;
   initialUnreadCount?: number;
+  searchHighlight?: string;
 };
 
 export type MessageViewRef = {
@@ -250,7 +265,7 @@ export type MessageViewRef = {
   updateMessageStatus: (messageId: string, status: string) => void;
 };
 
-export const MessageView = forwardRef<MessageViewRef, Props>(function MessageView({ conversationIds, conversationStatuses, conversationStatus, phoneNumber, contactName, totalConversations, onTemplateSent, onStatusChanged, onConversationStatusUpdate, onMarkUnread, onBack, onInteraction, onTypingChange, isVisible = false, pollInterval = 5000, initialUnreadCount = 0 }: Props, ref) {
+export const MessageView = forwardRef<MessageViewRef, Props>(function MessageView({ conversationIds, conversationStatuses, conversationStatus, phoneNumber, contactName, totalConversations, onTemplateSent, onStatusChanged, onConversationStatusUpdate, onMarkUnread, onBack, onInteraction, onTypingChange, isVisible = false, pollInterval = 5000, initialUnreadCount = 0, searchHighlight }: Props, ref) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -1420,13 +1435,13 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                         "text-[14.2px] leading-[19px] break-words overflow-wrap-anywhere whitespace-pre-wrap",
                         (message.hasMedia || message.metadata?.mediaId) && 'px-[6px] pb-[2px]'
                       )}>
-                        {message.caption}
+                        {highlightText(message.caption, searchHighlight)}
                       </p>
                     )}
 
                     {message.content && !message.hasMedia && !(message.metadata?.mediaId && message.messageType) && message.content !== '[Image attached]' && (
                       <p className="text-[14.2px] leading-[19px] break-words overflow-wrap-anywhere whitespace-pre-wrap">
-                        {message.content}
+                        {highlightText(message.content, searchHighlight)}
                       </p>
                     )}
 

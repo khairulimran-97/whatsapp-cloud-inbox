@@ -151,7 +151,7 @@ function getMessageTypeIcon(type?: string): string {
 }
 
 type Props = {
-  onSelectConversation: (conversation: Conversation) => void;
+  onSelectConversation: (conversation: Conversation, searchQuery?: string) => void;
   onConversationsUpdated?: (conversations: Conversation[]) => void;
   selectedConversationId?: string;
   isHidden?: boolean;
@@ -778,7 +778,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
             return (
             <button
               key={conversation.id}
-              onClick={() => onSelectConversation(conversation)}
+              onClick={() => onSelectConversation(conversation, searchQuery || undefined)}
               className={cn(
                 'w-full px-3 py-4 md:py-3 border-b border-[var(--wa-border)] hover:bg-[var(--wa-hover)] active:bg-[var(--wa-active)] text-left transition-colors relative overflow-hidden',
                 selectedConversationId === conversation.phoneNumber && 'bg-[var(--wa-selected)]'
