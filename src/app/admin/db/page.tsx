@@ -41,6 +41,7 @@ export default function DbViewerPage() {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [selectedRow, setSelectedRow] = useState<Record<string, unknown> | null>(null);
+  const [selectedRowIdx, setSelectedRowIdx] = useState(-1);
   const [panelWidth, setPanelWidth] = useState(420);
   const dragRef = useRef(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -75,6 +76,7 @@ export default function DbViewerPage() {
     if (!token) return;
     setLoading(true);
     setSelectedRow(null);
+    setSelectedRowIdx(-1);
     try {
       const params = new URLSearchParams({ token, table, page: String(page), limit: '50' });
       if (searchVal) params.set('search', searchVal);
@@ -293,13 +295,20 @@ export default function DbViewerPage() {
               {rows.length === 0 && !loading ? (
                 <tr><td colSpan={columns.length + 1} className="text-center py-16 text-[#48484a]">No rows found</td></tr>
               ) : rows.map((row, i) => {
-                const isSelected = selectedRow === row;
+                const isSelected = selectedRowIdx === i;
                 return (
                   <tr
                     key={i}
-                    onClick={() => setSelectedRow(isSelected ? null : row)}
+                    onClick={() => {
+                      if (isSelected) { setSelectedRow(null); setSelectedRowIdx(-1); }
+                      else { setSelectedRow(row); setSelectedRowIdx(i); }
+                    }}
                     className={'cursor-pointer transition-colors ' +
-                      (isSelected ? 'bg-[#0a84ff]/15' : i % 2 === 0 ? 'bg-[#1c1c1e] hover:bg-[#252527]' : 'bg-[#222224] hover:bg-[#252527]')
+                      (isSelected
+                        ? 'bg-[#0a84ff]/20 outline outline-1 outline-[#0a84ff]/50'
+                        : i % 2 === 0
+                          ? 'bg-[#1c1c1e] hover:bg-[#252527]'
+                          : 'bg-[#222224] hover:bg-[#252527]')
                     }
                   >
                     <td className="px-2 py-[4px] text-[10px] text-[#48484a] text-center border-r border-[#2a2a2c] tabular-nums">{startRow + i}</td>
@@ -358,50 +367,73 @@ export default function DbViewerPage() {
           {/* Drag handle */}
           <div
             onMouseDown={startDrag}
-            className="w-1 flex-shrink-0 bg-[#3a3a3c] hover:bg-[#0a84ff] cursor-col-resize transition-colors relative group"
+            className="w-1.5 flex-shrink-0 bg-[#2a2a2c] hover:bg-[#0a84ff] cursor-col-resize transition-colors relative group"
           >
-            <div className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-4 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100">
-              <GripHorizontal className="h-3 w-3 text-[#0a84ff] rotate-90" />
+            <div className="absolute top-1/2 -translate-y-1/2 -left-1 w-4 h-10 flex items-center justify-center opacity-0 group-hover:opacity-100">
+              <GripHorizontal className="h-3.5 w-3.5 text-[#0a84ff] rotate-90" />
             </div>
           </div>
           {/* Panel content */}
-          <div className="flex-1 flex flex-col bg-[#2c2c2e] min-w-0">
-            <div className="flex items-center justify-between px-3 py-2 border-b border-[#3a3a3c] flex-shrink-0">
-              <span className="text-[11px] font-semibold text-[#8e8e93] uppercase tracking-wider">Row Detail</span>
-              <div className="flex items-center gap-1">
-                <button onClick={() => { copyValue(columns.map(c => c.name + ': ' + formatCell(selectedRow[c.name])).join('\n')); }} className="p-1 rounded hover:bg-[#3a3a3c] text-[#636366]" title="Copy all">
-                  {copied ? <Check className="h-3 w-3 text-[#30d158]" /> : <Copy className="h-3 w-3" />}
-                </button>
-                <button onClick={() => setSelectedRow(null)} className="p-1 rounded hover:bg-[#3a3a3c] text-[#636366]" title="Close">
-                  <X className="h-3 w-3" />
-                </button>
+          <div className="flex-1 flex flex-col bg-[#1c1c1e] min-w-0">
+            {/* Header with row identifier */}
+            <div className="px-4 py-3 border-b border-[#3a3a3c] flex-shrink-0 bg-[#2c2c2e]">
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded bg-[#0a84ff]/20 flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-[#0a84ff] tabular-nums">{startRow + selectedRowIdx}</span>
+                  </div>
+                  <span className="text-[12px] font-semibold text-[#e5e5ea]">Row Detail</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => { copyValue(columns.map(c => c.name + ': ' + formatCell(selectedRow[c.name])).join('\n')); }} className="p-1.5 rounded hover:bg-[#3a3a3c] text-[#636366] hover:text-white transition-colors" title="Copy all fields">
+                    {copied ? <Check className="h-3.5 w-3.5 text-[#30d158]" /> : <Copy className="h-3.5 w-3.5" />}
+                  </button>
+                  <button onClick={() => { setSelectedRow(null); setSelectedRowIdx(-1); }} className="p-1.5 rounded hover:bg-[#3a3a3c] text-[#636366] hover:text-white transition-colors" title="Close">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
+              {/* Show PK value as subtitle */}
+              {columns.filter(c => c.pk).map(c => (
+                <p key={c.name} className="text-[10px] text-[#8e8e93] ml-8 font-mono truncate">
+                  {c.name}: <span className="text-[#64d2ff]">{formatCell(selectedRow[c.name])}</span>
+                </p>
+              ))}
             </div>
-            <div className="flex-1 overflow-auto">
+            {/* Fields */}
+            <div className="flex-1 overflow-auto px-3 py-3 space-y-1">
               {columns.map(col => {
                 const raw = formatCell(selectedRow[col.name]);
                 const ts = formatTimestamp(selectedRow[col.name], col.name);
                 const isNull = isNullVal(selectedRow[col.name]);
+                const isPk = col.pk === 1;
                 return (
-                  <div key={col.name} className="border-b border-[#3a3a3c]/40 hover:bg-[#3a3a3c]/20 group">
-                    <div className="px-3 pt-2 pb-0.5 flex items-center gap-1.5">
-                      {col.pk ? <Key className="h-2.5 w-2.5 text-[#ff9f0a]" /> : null}
-                      <span className="text-[10px] font-medium text-[#636366] uppercase tracking-wide">{col.name}</span>
-                      <span className="text-[9px] text-[#48484a]">{col.type || 'TEXT'}</span>
-                      <div className="flex-1" />
+                  <div key={col.name} className="rounded-lg bg-[#2c2c2e] border border-[#3a3a3c]/50 hover:border-[#3a3a3c] transition-colors group">
+                    <div className="px-3 py-1.5 flex items-center gap-1.5 border-b border-[#3a3a3c]/30">
+                      {isPk ? <Key className="h-2.5 w-2.5 text-[#ff9f0a]" /> : null}
+                      <span className="text-[10px] font-semibold text-[#8e8e93] uppercase tracking-wide flex-1">{col.name}</span>
+                      <span className="text-[9px] text-[#48484a] bg-[#1c1c1e] px-1.5 py-0.5 rounded">{col.type || 'TEXT'}</span>
                       <button
                         onClick={e => { e.stopPropagation(); copyValue(raw); }}
-                        className="opacity-0 group-hover:opacity-100 p-0.5 text-[#636366] hover:text-white"
+                        className="opacity-0 group-hover:opacity-100 p-0.5 text-[#636366] hover:text-white transition-opacity"
+                        title="Copy value"
                       >
                         <Copy className="h-2.5 w-2.5" />
                       </button>
                     </div>
-                    <div className="px-3 pb-2">
+                    <div className="px-3 py-2">
                       {isNull ? (
-                        <span className="text-[#48484a] italic text-[11px]">NULL</span>
+                        <span className="text-[#48484a] italic text-[12px]">NULL</span>
+                      ) : isPk ? (
+                        <span className="text-[12px] font-mono text-[#64d2ff]">{raw}</span>
+                      ) : ts ? (
+                        <div>
+                          <p className="text-[12px] text-[#e5e5ea]">{ts}</p>
+                          <p className="text-[10px] text-[#636366] font-mono mt-0.5">{raw}</p>
+                        </div>
                       ) : (
-                        <pre className="text-[11px] font-mono whitespace-pre-wrap break-all text-[#e5e5ea] leading-relaxed">
-                          {ts ? ts + '\n(' + raw + ')' : raw}
+                        <pre className="text-[12px] font-mono whitespace-pre-wrap break-all text-[#e5e5ea] leading-relaxed max-h-40 overflow-auto">
+                          {raw}
                         </pre>
                       )}
                     </div>
