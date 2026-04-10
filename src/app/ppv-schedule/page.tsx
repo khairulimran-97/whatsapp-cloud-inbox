@@ -336,31 +336,25 @@ export default function PPVSchedulePage() {
                 {/* PIC groups with left accent border */}
                 <div className="space-y-4">
                   {pics.map(({ pic, items }) => (
-                    <div key={pic} className={cn(
-                      "border-l-[3px] rounded-r-xl pl-3",
-                      pic === 'No PIC yet'
-                        ? "border-l-gray-300 dark:border-l-gray-600"
-                        : "border-l-violet-500"
-                    )}>
-                      {/* PIC label */}
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className={cn(
-                          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold",
-                          pic === 'No PIC yet'
-                            ? "bg-gray-500/8 text-gray-500 dark:text-gray-400"
-                            : "bg-violet-500/10 text-violet-600 dark:text-violet-400"
-                        )}>
-                          <User className="h-3 w-3" />
-                          {pic}
-                        </div>
+                    <div key={pic} className="flex">
+                      {/* Vertical rotated PIC label on left border */}
+                      <div className={cn(
+                        "relative flex items-center justify-center w-6 flex-shrink-0 rounded-l-lg",
+                        pic === 'No PIC yet'
+                          ? "bg-gray-200 dark:bg-gray-700"
+                          : "bg-violet-500"
+                      )}>
                         <span className={cn(
-                          "text-[10px] font-medium",
-                          pic === 'No PIC yet' ? "text-gray-400" : "text-violet-500/50 dark:text-violet-400/50"
-                        )}>{items.length} match{items.length !== 1 ? 'es' : ''}</span>
+                          "text-[10px] font-bold uppercase tracking-wider whitespace-nowrap",
+                          "[writing-mode:vertical-lr] rotate-180",
+                          pic === 'No PIC yet'
+                            ? "text-gray-500 dark:text-gray-400"
+                            : "text-white"
+                        )}>{pic}</span>
                       </div>
 
                       {/* Cards */}
-                      <div className="space-y-2">
+                      <div className="flex-1 min-w-0 space-y-2 py-1.5 pl-3">
                         {items.map((s) => {
                           const dt = new Date(s.matchDatetime);
                           const timeStr = dt.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
