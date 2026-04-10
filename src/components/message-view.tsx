@@ -1971,7 +1971,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                     {items.map((t) => (
                       <div
                         key={t.id}
-                        className="group rounded-xl border border-black/8 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] hover:border-emerald-500/30 hover:bg-emerald-500/[0.03] transition-all duration-200 overflow-hidden"
+                        className="group rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-white/[0.04] hover:border-emerald-500/30 hover:bg-emerald-50 dark:hover:bg-emerald-500/[0.06] transition-all duration-200 overflow-hidden"
                       >
                         {/* Header */}
                         <div className="flex items-center gap-2.5 px-3.5 pt-3 pb-1.5">
