@@ -149,6 +149,17 @@ function CopyButton({ text, title = 'Copy' }: { text: string; title?: string }) 
   );
 }
 
+function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
+  return (
+    <span className="relative group/tip">
+      {children}
+      <span className="pointer-events-none absolute left-0 bottom-full mb-1 z-50 hidden group-hover/tip:block max-w-[280px] px-2 py-1 text-[11px] text-white bg-black/85 dark:bg-white/90 dark:text-black rounded-md shadow-lg whitespace-normal break-words leading-snug">
+        {text}
+      </span>
+    </span>
+  );
+}
+
 function MagicLinkButton({ content, onInsertText }: { content: ProtectedContent; onInsertText?: (text: string) => void }) {
   const [loading, setLoading] = useState(false);
   const [magicUrl, setMagicUrl] = useState<string | null>(null);
@@ -787,7 +798,10 @@ function InfoContent({ data, loading, phoneNumber, onInsertText }: { data: Custo
             {data.customer.phone && (
               <div className="flex items-center gap-3 text-sm group">
                 <Phone className="h-4 w-4 text-[var(--wa-text-secondary)] flex-shrink-0" />
-                <span className="text-[var(--wa-text-primary)] flex-1">{getPhoneFlag(data.customer.phone)} {data.customer.phone}</span>
+                <div className="flex items-center gap-1.5 flex-1">
+                  <span className="text-base leading-none">{getPhoneFlag(data.customer.phone)}</span>
+                  <span className="text-[var(--wa-text-primary)]">{data.customer.phone}</span>
+                </div>
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                   <CopyButton text={data.customer.phone} title="Copy phone" />
                 </div>
