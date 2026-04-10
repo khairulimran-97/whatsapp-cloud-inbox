@@ -367,28 +367,30 @@ function LookupResultCard({ tx, onInsertText }: { tx: Transaction; onInsertText?
         </div>
 
         {(tx.payer_name || tx.payer_email || tx.payer_telephone_number) && (
-          <table className="w-full text-xs border border-white/15 dark:border-white/20 rounded-lg overflow-hidden" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
-            <tbody>
-              {tx.payer_name && (
-                <tr className="border-b border-white/15 dark:border-white/20">
-                  <td className="px-2.5 py-1.5 text-[var(--wa-text-secondary)] bg-white/5 dark:bg-white/5 w-[70px] whitespace-nowrap border-r border-white/15 dark:border-white/20">Name</td>
-                  <td className="px-2.5 py-1.5 text-[var(--wa-text-primary)] font-medium truncate">{tx.payer_name}</td>
-                </tr>
-              )}
-              {tx.payer_email && (
-                <tr className="border-b border-white/15 dark:border-white/20">
-                  <td className="px-2.5 py-1.5 text-[var(--wa-text-secondary)] bg-white/5 dark:bg-white/5 w-[70px] whitespace-nowrap border-r border-white/15 dark:border-white/20">Email</td>
-                  <td className="px-2.5 py-1.5 text-[var(--wa-text-primary)] truncate">{tx.payer_email}</td>
-                </tr>
-              )}
-              {tx.payer_telephone_number && (
-                <tr>
-                  <td className="px-2.5 py-1.5 text-[var(--wa-text-secondary)] bg-white/5 dark:bg-white/5 w-[70px] whitespace-nowrap border-r border-white/15 dark:border-white/20">Phone</td>
-                  <td className="px-2.5 py-1.5 text-[var(--wa-text-primary)] truncate">{tx.payer_telephone_number}</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+          <div className="rounded-lg overflow-hidden border border-white/20">
+            <table className="w-full text-xs" style={{ borderCollapse: 'collapse' }}>
+              <tbody>
+                {tx.payer_name && (
+                  <tr>
+                    <td className="px-2.5 py-1.5 text-[var(--wa-text-secondary)] bg-white/5 w-[70px] whitespace-nowrap border-r border-b border-white/20">Name</td>
+                    <td className="px-2.5 py-1.5 text-[var(--wa-text-primary)] font-medium truncate border-b border-white/20">{tx.payer_name}</td>
+                  </tr>
+                )}
+                {tx.payer_email && (
+                  <tr>
+                    <td className="px-2.5 py-1.5 text-[var(--wa-text-secondary)] bg-white/5 w-[70px] whitespace-nowrap border-r border-b border-white/20">Email</td>
+                    <td className="px-2.5 py-1.5 text-[var(--wa-text-primary)] truncate border-b border-white/20">{tx.payer_email}</td>
+                  </tr>
+                )}
+                {tx.payer_telephone_number && (
+                  <tr>
+                    <td className="px-2.5 py-1.5 text-[var(--wa-text-secondary)] bg-white/5 w-[70px] whitespace-nowrap border-r border-white/20">Phone</td>
+                    <td className="px-2.5 py-1.5 text-[var(--wa-text-primary)] truncate">{tx.payer_telephone_number}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
 
         <div className="flex items-center flex-wrap gap-1.5">
