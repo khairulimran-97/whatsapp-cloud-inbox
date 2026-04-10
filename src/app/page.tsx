@@ -424,12 +424,14 @@ export default function Home() {
         typingPhone={typingPhone}
         panelWidth={listWidth}
       />
-      {/* Resize handle for conversation list */}
+      {/* Resize handle for conversation list — overlays the border, no extra gap */}
       <div
-        className="hidden md:flex w-1 flex-shrink-0 cursor-col-resize items-center justify-center hover:bg-[var(--wa-green)]/20 active:bg-[var(--wa-green)]/30 transition-colors group z-10 -ml-1"
+        className="hidden md:flex w-0 relative z-10 cursor-col-resize items-center justify-center group"
         onMouseDown={(e) => handleResizeStart('list', e)}
       >
-        <div className="w-[2px] h-8 rounded-full bg-transparent group-hover:bg-[var(--wa-green)]/60 group-active:bg-[var(--wa-green)] transition-colors" />
+        <div className="absolute inset-y-0 -left-1 -right-1 w-2 flex items-center justify-center hover:bg-[var(--wa-green)]/20 active:bg-[var(--wa-green)]/30 transition-colors">
+          <div className="w-[2px] h-8 rounded-full bg-transparent group-hover:bg-[var(--wa-green)]/60 group-active:bg-[var(--wa-green)] transition-colors" />
+        </div>
       </div>
       <MessageView
         ref={messageViewRef}

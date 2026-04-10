@@ -2016,10 +2016,12 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
       {phoneNumber && (
         <div className="hidden xl:flex">
           <div
-            className="w-1 flex-shrink-0 cursor-col-resize flex items-center justify-center hover:bg-[var(--wa-green)]/20 active:bg-[var(--wa-green)]/30 transition-colors group z-10"
+            className="w-0 relative z-10 cursor-col-resize flex items-center justify-center group"
             onMouseDown={handleSidebarResizeStart}
           >
-            <div className="w-[2px] h-8 rounded-full bg-transparent group-hover:bg-[var(--wa-green)]/60 group-active:bg-[var(--wa-green)] transition-colors" />
+            <div className="absolute inset-y-0 -left-1 -right-1 w-2 flex items-center justify-center hover:bg-[var(--wa-green)]/20 active:bg-[var(--wa-green)]/30 transition-colors">
+              <div className="w-[2px] h-8 rounded-full bg-transparent group-hover:bg-[var(--wa-green)]/60 group-active:bg-[var(--wa-green)] transition-colors" />
+            </div>
           </div>
           <CustomerSidebar
             phoneNumber={phoneNumber}
