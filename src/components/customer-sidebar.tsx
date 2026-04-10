@@ -326,17 +326,12 @@ function TransactionCard({ tx, onInsertText }: { tx: Transaction; onInsertText?:
         {/* Content access */}
         {relatedContent.length > 0 && (
           <div className="pt-1.5 mt-1 border-t border-black/10 dark:border-white/15 space-y-0.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-1">Protected Content</p>
             {relatedContent.map((content, i) => (
               <ContentAccessItem key={i} content={content} onInsertText={onInsertText} />
             ))}
           </div>
         )}
-      </div>
-    </div>
-  );
-}
-
-// Enhanced card for lookup search results
 function LookupResultCard({ tx, onInsertText }: { tx: Transaction; onInsertText?: (text: string) => void }) {
   const relatedContent = tx.protected_content?.filter(pc => pc.url) ?? [];
   const isPaid = tx.status === 'success' || tx.status === 'completed' || tx.is_paid;
@@ -406,7 +401,8 @@ function LookupResultCard({ tx, onInsertText }: { tx: Transaction; onInsertText?
         </div>
 
         {relatedContent.length > 0 && (
-          <div className="pt-1.5 mt-1 border-t border-[var(--wa-border)] space-y-0.5">
+          <div className="pt-1.5 mt-1 border-t border-black/10 dark:border-white/15 space-y-0.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-1">Protected Content</p>
             {relatedContent.map((content, i) => (
               <ContentAccessItem key={i} content={content} onInsertText={onInsertText} />
             ))}
