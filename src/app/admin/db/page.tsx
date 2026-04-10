@@ -220,7 +220,7 @@ export default function DbViewerPage() {
           ))}
         </div>
         <div className="px-3 py-2 border-t border-[#3a3a3c]">
-          <p className="text-[10px] text-[#48484a]">SQLite &bull; {tables.reduce((a, t) => a + t.count, 0).toLocaleString()} rows</p>
+          <p className="text-[10px] text-[#636366]">SQLite &bull; {tables.reduce((a, t) => a + t.count, 0).toLocaleString()} rows</p>
         </div>
       </div>
 
@@ -233,7 +233,7 @@ export default function DbViewerPage() {
           <span className="text-[10px] text-[#636366]">{pagination.total.toLocaleString()} rows</span>
           <div className="flex-1" />
           <div className="relative w-56">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-[#48484a]" />
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-[#636366]" />
             <input
               ref={searchRef}
               type="text"
@@ -241,11 +241,11 @@ export default function DbViewerPage() {
               onChange={e => setSearchInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
               placeholder="Filter..."
-              className="w-full bg-[#1c1c1e] border border-[#3a3a3c] rounded pl-7 pr-7 py-1 text-[11px] text-[#e5e5ea] placeholder-[#48484a] focus:outline-none focus:border-[#0a84ff]"
+              className="w-full bg-[#1c1c1e] border border-[#3a3a3c] rounded pl-7 pr-7 py-1 text-[11px] text-[#e5e5ea] placeholder-[#636366] focus:outline-none focus:border-[#0a84ff]"
             />
             {searchInput && (
               <button onClick={handleClearSearch} className="absolute right-2 top-1/2 -translate-y-1/2">
-                <X className="h-3 w-3 text-[#48484a] hover:text-white" />
+                <X className="h-3 w-3 text-[#636366] hover:text-white" />
               </button>
             )}
           </div>
@@ -271,7 +271,7 @@ export default function DbViewerPage() {
           <table className="w-full min-w-max border-collapse text-[12px]">
             <thead className="sticky top-0 z-[5]">
               <tr className="bg-[#28282a]">
-                <th className="w-12 px-2 py-[5px] text-[10px] text-[#48484a] font-normal text-center border-b border-r border-[#3a3a3c]">#</th>
+                <th className="w-12 px-2 py-[5px] text-[10px] text-[#636366] font-normal text-center border-b border-r border-[#3a3a3c]">#</th>
                 {columns.map(col => {
                   const isSorted = orderBy === col.name;
                   return (
@@ -283,7 +283,7 @@ export default function DbViewerPage() {
                       <span className="flex items-center gap-1">
                         {col.pk ? <Key className="h-2.5 w-2.5 text-[#ff9f0a]" /> : null}
                         <span className={'text-[11px] ' + (isSorted ? 'text-[#0a84ff] font-medium' : 'text-[#8e8e93]')}>{col.name}</span>
-                        <span className="text-[9px] text-[#48484a]">{col.type || 'TEXT'}</span>
+                        <span className="text-[9px] text-[#636366]">{col.type || 'TEXT'}</span>
                         {isSorted && (orderDir === 'asc' ? <ChevronUp className="h-2.5 w-2.5 text-[#0a84ff]" /> : <ChevronDown className="h-2.5 w-2.5 text-[#0a84ff]" />)}
                       </span>
                     </th>
@@ -293,7 +293,7 @@ export default function DbViewerPage() {
             </thead>
             <tbody className="font-mono">
               {rows.length === 0 && !loading ? (
-                <tr><td colSpan={columns.length + 1} className="text-center py-16 text-[#48484a]">No rows found</td></tr>
+                <tr><td colSpan={columns.length + 1} className="text-center py-16 text-[#636366]">No rows found</td></tr>
               ) : rows.map((row, i) => {
                 const isSelected = selectedRowIdx === i;
                 return (
@@ -311,7 +311,7 @@ export default function DbViewerPage() {
                           : 'bg-[#222224] hover:bg-[#252527]')
                     }
                   >
-                    <td className="px-2 py-[4px] text-[10px] text-[#48484a] text-center border-r border-[#2a2a2c] tabular-nums">{startRow + i}</td>
+                    <td className="px-2 py-[4px] text-[10px] text-[#636366] text-center border-r border-[#2a2a2c] tabular-nums">{startRow + i}</td>
                     {columns.map(col => {
                       const raw = formatCell(row[col.name]);
                       const ts = formatTimestamp(row[col.name], col.name);
@@ -321,7 +321,7 @@ export default function DbViewerPage() {
                       return (
                         <td key={col.name} className="px-3 py-[4px] border-r border-[#2a2a2c] last:border-r-0 whitespace-nowrap">
                           {isNull ? (
-                            <span className="text-[#3a3a3c] italic text-[10px]">NULL</span>
+                            <span className="text-[#636366] italic text-[10px]">NULL</span>
                           ) : col.pk ? (
                             <span className="text-[#64d2ff]">{display}</span>
                           ) : ts ? (
@@ -400,46 +400,63 @@ export default function DbViewerPage() {
                 </p>
               ))}
             </div>
-            {/* Fields */}
-            <div className="flex-1 overflow-auto px-3 py-3 space-y-1">
-              {columns.map(col => {
-                const raw = formatCell(selectedRow[col.name]);
-                const ts = formatTimestamp(selectedRow[col.name], col.name);
-                const isNull = isNullVal(selectedRow[col.name]);
-                const isPk = col.pk === 1;
-                return (
-                  <div key={col.name} className="rounded-lg bg-[#2c2c2e] border border-[#3a3a3c]/50 hover:border-[#3a3a3c] transition-colors group">
-                    <div className="px-3 py-1.5 flex items-center gap-1.5 border-b border-[#3a3a3c]/30">
-                      {isPk ? <Key className="h-2.5 w-2.5 text-[#ff9f0a]" /> : null}
-                      <span className="text-[10px] font-semibold text-[#8e8e93] uppercase tracking-wide flex-1">{col.name}</span>
-                      <span className="text-[9px] text-[#48484a] bg-[#1c1c1e] px-1.5 py-0.5 rounded">{col.type || 'TEXT'}</span>
-                      <button
-                        onClick={e => { e.stopPropagation(); copyValue(raw); }}
-                        className="opacity-0 group-hover:opacity-100 p-0.5 text-[#636366] hover:text-white transition-opacity"
-                        title="Copy value"
-                      >
-                        <Copy className="h-2.5 w-2.5" />
-                      </button>
-                    </div>
-                    <div className="px-3 py-2">
-                      {isNull ? (
-                        <span className="text-[#48484a] italic text-[12px]">NULL</span>
-                      ) : isPk ? (
-                        <span className="text-[12px] font-mono text-[#64d2ff]">{raw}</span>
-                      ) : ts ? (
-                        <div>
-                          <p className="text-[12px] text-[#e5e5ea]">{ts}</p>
-                          <p className="text-[10px] text-[#636366] font-mono mt-0.5">{raw}</p>
-                        </div>
-                      ) : (
-                        <pre className="text-[12px] font-mono whitespace-pre-wrap break-all text-[#e5e5ea] leading-relaxed max-h-40 overflow-auto">
-                          {raw}
-                        </pre>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+            {/* Fields as table */}
+            <div className="flex-1 overflow-auto">
+              <table className="w-full text-[12px] border-collapse">
+                <thead className="sticky top-0 z-[1]">
+                  <tr className="bg-[#28282a]">
+                    <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-[#8e8e93] uppercase tracking-wide border-b border-[#3a3a3c] w-[140px]">Field</th>
+                    <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-[#8e8e93] uppercase tracking-wide border-b border-[#3a3a3c] w-[60px]">Type</th>
+                    <th className="px-3 py-1.5 text-left text-[10px] font-semibold text-[#8e8e93] uppercase tracking-wide border-b border-[#3a3a3c]">Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {columns.map((col, ci) => {
+                    const raw = formatCell(selectedRow[col.name]);
+                    const ts = formatTimestamp(selectedRow[col.name], col.name);
+                    const isNull = isNullVal(selectedRow[col.name]);
+                    const isPk = col.pk === 1;
+                    return (
+                      <tr key={col.name} className={'border-b border-[#2a2a2c] group ' + (ci % 2 === 0 ? 'bg-[#1c1c1e]' : 'bg-[#222224]')}>
+                        <td className="px-3 py-2 align-top">
+                          <span className="flex items-center gap-1.5">
+                            {isPk && <Key className="h-2.5 w-2.5 text-[#ff9f0a] flex-shrink-0" />}
+                            <span className="text-[11px] font-medium text-[#e5e5ea]">{col.name}</span>
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 align-top">
+                          <span className="text-[10px] text-[#8e8e93] bg-[#2c2c2e] px-1.5 py-0.5 rounded font-medium">{col.type || 'TEXT'}</span>
+                        </td>
+                        <td className="px-3 py-2 align-top">
+                          <div className="flex items-start gap-2">
+                            <div className="flex-1 min-w-0">
+                              {isNull ? (
+                                <span className="text-[#636366] italic">NULL</span>
+                              ) : isPk ? (
+                                <span className="font-mono text-[#64d2ff] break-all">{raw}</span>
+                              ) : ts ? (
+                                <div>
+                                  <p className="text-[#e5e5ea]">{ts}</p>
+                                  <p className="text-[10px] text-[#8e8e93] font-mono mt-0.5">{raw}</p>
+                                </div>
+                              ) : (
+                                <pre className="font-mono whitespace-pre-wrap break-all text-[#e5e5ea] leading-relaxed max-h-40 overflow-auto">{raw}</pre>
+                              )}
+                            </div>
+                            <button
+                              onClick={e => { e.stopPropagation(); copyValue(raw); }}
+                              className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-[#3a3a3c] text-[#636366] hover:text-white transition-opacity flex-shrink-0 mt-0.5"
+                              title="Copy value"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
