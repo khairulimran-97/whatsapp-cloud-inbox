@@ -1293,17 +1293,17 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
           {merchants.map(m => (
             <div key={m.id} className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors ${
               m.isDefault
-                ? 'border-[var(--wa-green)]/30 bg-[var(--wa-green)]/[0.04]'
+                ? 'border-blue-500/30 bg-blue-500/[0.04]'
                 : 'border-[var(--wa-border)] bg-[var(--wa-search-bg)]'
             }`}>
-              <div className="h-8 w-8 rounded-full bg-[var(--wa-green)]/15 flex items-center justify-center flex-shrink-0">
-                <Store className="h-3.5 w-3.5 text-[var(--wa-green)]" />
+              <div className="h-8 w-8 rounded-full bg-blue-500/15 flex items-center justify-center flex-shrink-0">
+                <Store className="h-3.5 w-3.5 text-blue-400" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[13px] font-medium text-[var(--wa-text-primary)] truncate">{m.name}</span>
                   {m.isDefault && (
-                    <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-[var(--wa-green)]/15 text-[var(--wa-green)]">Default</span>
+                    <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400">Default</span>
                   )}
                 </div>
                 <p className="text-[10px] text-[var(--wa-text-secondary)]/60 font-mono truncate mt-0.5">
@@ -1314,7 +1314,7 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
                 {!m.isDefault && (
                   <button
                     onClick={() => handleSetDefault(m.id)}
-                    className="text-[10px] font-medium px-2 py-1 rounded-md text-[var(--wa-text-secondary)] hover:text-[var(--wa-green)] hover:bg-[var(--wa-green)]/10 transition-colors mr-0.5"
+                    className="text-[10px] font-medium px-2 py-1 rounded-md text-[var(--wa-text-secondary)] hover:text-blue-400 hover:bg-blue-500/10 transition-colors mr-0.5"
                   >
                     Set Default
                   </button>
