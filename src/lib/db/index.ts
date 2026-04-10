@@ -96,6 +96,18 @@ function createDb() {
     );
     CREATE INDEX IF NOT EXISTS idx_webhook_logs_created ON webhook_logs(created_at);
     CREATE INDEX IF NOT EXISTS idx_webhook_logs_event ON webhook_logs(event_type);
+    CREATE TABLE IF NOT EXISTS ppv_schedules (
+      id TEXT PRIMARY KEY,
+      match_datetime INTEGER NOT NULL,
+      match_details TEXT NOT NULL,
+      category TEXT NOT NULL DEFAULT 'Liga Super',
+      status TEXT NOT NULL DEFAULT 'upcoming',
+      bcl_account TEXT DEFAULT '',
+      pic TEXT DEFAULT '',
+      remark TEXT DEFAULT '',
+      created_at INTEGER,
+      updated_at INTEGER
+    );
   `);
 
   // Migration: add source column to existing tables
