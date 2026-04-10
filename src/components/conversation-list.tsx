@@ -1654,10 +1654,6 @@ function ReplyTemplatesTab({ onClose }: { onClose: () => void }) {
           </div>
         </ScrollArea>
       )}
-
-      <div className="flex justify-end pt-1">
-        <Button variant="ghost" onClick={onClose} className="text-sm">Close</Button>
-      </div>
     </div>
   );
 }
