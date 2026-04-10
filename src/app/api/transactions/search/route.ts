@@ -38,6 +38,13 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await res.json();
+    // Add receipt_url to each transaction
+    if (data.data && Array.isArray(data.data)) {
+      data.data = data.data.map((tx: Record<string, unknown>) => ({
+        ...tx,
+        receipt_url: tx.order_number ? `https://bcl.my/receipts/${tx.order_number}` : null,
+      }));
+    }
     return NextResponse.json({ configured: true, ...data });
   } catch {
     return NextResponse.json(
