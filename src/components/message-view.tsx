@@ -2003,7 +2003,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                         </div>
                         {/* Body */}
                         <div className="px-3.5 py-2.5">
-                          <p className="text-[11.5px] text-[var(--wa-text-secondary)] whitespace-pre-wrap line-clamp-3 leading-[1.6] pl-[38px]">{t.body}</p>
+                          <p className="text-[11.5px] text-[var(--wa-text-secondary)] whitespace-pre-wrap leading-[1.6] pl-[38px]">{t.body}</p>
                         </div>
                       </div>
                     ))}
