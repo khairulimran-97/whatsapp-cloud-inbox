@@ -1963,22 +1963,32 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
               return Object.entries(grouped).map(([cat, items], gi) => (
                 <div key={cat}>
                   {(gi > 0 || Object.keys(grouped).length > 1) && (
-                    <div className={cn("px-1 py-1 text-[10px] uppercase tracking-wider font-semibold text-[var(--wa-text-secondary)]", gi > 0 && "mt-1 pt-2")}>
+                    <div className={cn("px-1 py-1 text-[10px] uppercase tracking-wider font-semibold text-[var(--wa-text-secondary)]", gi > 0 && "mt-3 pt-2 border-t border-[var(--wa-border)]")}>
                       {cat}
                     </div>
                   )}
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     {items.map((t) => (
                       <div
                         key={t.id}
-                        className="rounded-xl border border-[var(--wa-border)] bg-[var(--wa-panel-bg)] hover:border-[var(--wa-green)]/40 transition-colors overflow-hidden px-3.5 py-3"
+                        className="group rounded-xl border border-black/8 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] hover:border-emerald-500/30 hover:bg-emerald-500/[0.03] transition-all duration-200 overflow-hidden"
                       >
-                        <h4 className="text-[13px] font-semibold text-[var(--wa-text-primary)] flex items-center gap-2">
-                          <MessageSquareQuote className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
-                          {t.title}
-                        </h4>
-                        <p className="text-[11px] text-[var(--wa-text-secondary)] mt-1.5 whitespace-pre-wrap line-clamp-4 leading-relaxed pl-[22px]">{t.body}</p>
-                        <div className="flex justify-end mt-2.5">
+                        {/* Header */}
+                        <div className="flex items-center gap-2.5 px-3.5 pt-3 pb-1.5">
+                          <div className="h-7 w-7 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                            <MessageSquareQuote className="h-3.5 w-3.5 text-emerald-500" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h4 className="text-[13px] font-semibold text-[var(--wa-text-primary)] truncate">{t.title}</h4>
+                            <span className="text-[9px] uppercase tracking-wider text-[var(--wa-text-secondary)]/60 font-medium">{t.category || 'General'}</span>
+                          </div>
+                        </div>
+                        {/* Body */}
+                        <div className="px-3.5 pb-2.5">
+                          <p className="text-[11.5px] text-[var(--wa-text-secondary)] whitespace-pre-wrap line-clamp-3 leading-[1.6]">{t.body}</p>
+                        </div>
+                        {/* Action */}
+                        <div className="flex justify-end px-3 pb-2.5">
                           <button
                             onClick={() => {
                               setMessageInput(prev => prev ? prev + '\n' + t.body : t.body);
@@ -1991,7 +2001,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                                 }
                               });
                             }}
-                            className="text-[11px] font-semibold text-white bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] px-3.5 py-1 rounded-md transition-colors flex items-center gap-1"
+                            className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-4 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
                           >
                             <Send className="h-3 w-3" />
                             Use
