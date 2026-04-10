@@ -1971,26 +1971,14 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                     {items.map((t) => (
                       <div
                         key={t.id}
-                        className="rounded-xl border border-[var(--wa-border)] bg-[var(--wa-panel-bg)] hover:border-[var(--wa-green)]/40 transition-colors overflow-hidden"
+                        className="rounded-xl border border-[var(--wa-border)] bg-[var(--wa-panel-bg)] hover:border-[var(--wa-green)]/40 transition-colors overflow-hidden px-3.5 py-3"
                       >
-                        <div className="px-3.5 pt-3 pb-2">
-                          <h4 className="text-[13px] font-semibold text-[var(--wa-text-primary)] flex items-center gap-2">
-                            <MessageSquareQuote className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
-                            {t.title}
-                          </h4>
-                          <p className="text-[11px] text-[var(--wa-text-secondary)] mt-1.5 whitespace-pre-wrap line-clamp-4 leading-relaxed pl-[22px]">{t.body}</p>
-                        </div>
-                        <div className="flex items-center justify-end gap-2 px-3 py-2 bg-[var(--wa-hover)]/50 border-t border-[var(--wa-border)]">
-                          <button
-                            onClick={() => {
-                              if (navigator.clipboard) {
-                                navigator.clipboard.writeText(t.body);
-                              }
-                            }}
-                            className="text-[11px] text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] px-2.5 py-1 rounded-md hover:bg-[var(--wa-hover)] transition-colors"
-                          >
-                            Copy
-                          </button>
+                        <h4 className="text-[13px] font-semibold text-[var(--wa-text-primary)] flex items-center gap-2">
+                          <MessageSquareQuote className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
+                          {t.title}
+                        </h4>
+                        <p className="text-[11px] text-[var(--wa-text-secondary)] mt-1.5 whitespace-pre-wrap line-clamp-4 leading-relaxed pl-[22px]">{t.body}</p>
+                        <div className="flex justify-end mt-2.5">
                           <button
                             onClick={() => {
                               setMessageInput(prev => prev ? prev + '\n' + t.body : t.body);
