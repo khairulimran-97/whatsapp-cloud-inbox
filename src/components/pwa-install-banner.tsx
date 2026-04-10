@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Download } from 'lucide-react';
+import { X } from 'lucide-react';
 
 const DISMISSED_KEY = 'pwa-install-dismissed';
 
@@ -48,19 +48,19 @@ export function PwaInstallBanner() {
   if (!show) return null;
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-lg bg-[#2ecc71] px-4 py-3 text-white shadow-lg max-w-sm w-[calc(100%-2rem)]">
-      <Download className="h-5 w-5 shrink-0" />
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-xl bg-[#1a1a1a] border border-[#333] px-4 py-3 text-white shadow-2xl max-w-sm w-[calc(100%-2rem)]">
+      <img src="/icon-192.png" alt="" className="h-10 w-10 rounded-lg shrink-0" />
       <div className="flex-1 text-sm">
         <p className="font-semibold">Install PPV Support</p>
-        <p className="text-xs opacity-90">Add to home screen for quick access</p>
+        <p className="text-xs text-[#8e8e93]">Add to home screen for quick access</p>
       </div>
       <button
         onClick={handleInstall}
-        className="rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-[#2ecc71] hover:bg-white/90"
+        className="rounded-lg bg-[#2ecc71] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[#27ae60] transition-colors"
       >
         Install
       </button>
-      <button onClick={handleDismiss} className="p-1 hover:opacity-70">
+      <button onClick={handleDismiss} className="p-1 text-[#636366] hover:text-white transition-colors">
         <X className="h-4 w-4" />
       </button>
     </div>
