@@ -1671,10 +1671,10 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
         </div>
       </ScrollArea>
 
-      <div className="border-t border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)] safe-area-bottom">
+      <div className="border-t border-[var(--wa-border-strong)] safe-area-bottom">
             {/* Workflow execution banner */}
             {workflowExecution && (
-              <div className="px-[5px] py-2 border-b border-[var(--wa-border)]">
+              <div className="px-[5px] py-2 border-b border-[var(--wa-border)] bg-[var(--wa-panel-bg)]">
                 <div className="flex flex-col gap-2 px-3 py-2 bg-[#1a1a2e] rounded-lg border border-[#2a2a4a]">
                   <div className="flex items-center gap-2">
                     <Zap className="h-4 w-4 text-amber-400 flex-shrink-0" />
@@ -1706,7 +1706,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
               </div>
             )}
 
-            <div className="px-[5px]">
+            <div className="px-[5px] bg-[var(--wa-panel-header)]">
             {selectedFile && (
               <div className="pt-3 pb-0">
                 <div className="flex items-center gap-3 p-2.5 bg-[var(--wa-panel-bg)] rounded-lg border border-[var(--wa-border)]">
