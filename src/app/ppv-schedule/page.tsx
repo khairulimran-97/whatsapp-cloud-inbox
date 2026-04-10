@@ -348,9 +348,10 @@ export default function PPVSchedulePage() {
                                 </span>
                               )}
                               {s.bclAccount && (
-                                <span className="inline-flex items-center gap-1 text-[11px] text-[var(--wa-text-secondary)] bg-[var(--wa-hover)] px-2 py-0.5 rounded-md">
+                                <a href={`https://${s.bclAccount.replace(/^https?:\/\//, '')}`} target="_blank" rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-[11px] text-[var(--wa-green)] bg-[var(--wa-hover)] px-2 py-0.5 rounded-md hover:underline">
                                   <CreditCard className="h-3 w-3 opacity-60" />{s.bclAccount}
-                                </span>
+                                </a>
                               )}
                               {s.remark && (
                                 <span className="text-[11px] text-[var(--wa-text-secondary)] italic">{s.remark}</span>
