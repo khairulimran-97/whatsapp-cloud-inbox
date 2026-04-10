@@ -764,7 +764,7 @@ function InfoContent({ data, loading, phoneNumber, onInsertText }: { data: Custo
               </div>
               <div className="min-w-0">
                 <h4 className="text-[17px] font-semibold text-[var(--wa-text-primary)] truncate leading-tight" title={data.customer.name}>
-                  {getPhoneFlag(data.customer.phone || phoneNumber)} {data.customer.name}
+                  {data.customer.name}
                 </h4>
                 {data.customer.tin && (
                   <p className="text-xs text-[var(--wa-text-secondary)] mt-0.5">
@@ -775,16 +775,22 @@ function InfoContent({ data, loading, phoneNumber, onInsertText }: { data: Custo
             </div>
 
             {data.customer.email && (
-              <div className="flex items-center gap-3 text-sm">
+              <div className="flex items-center gap-3 text-sm group">
                 <Mail className="h-4 w-4 text-[var(--wa-text-secondary)] flex-shrink-0" />
-                <span className="text-[var(--wa-text-primary)] truncate">{data.customer.email}</span>
+                <span className="text-[var(--wa-text-primary)] truncate flex-1">{data.customer.email}</span>
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                  <CopyButton text={data.customer.email} title="Copy email" />
+                </div>
               </div>
             )}
 
             {data.customer.phone && (
-              <div className="flex items-center gap-3 text-sm">
+              <div className="flex items-center gap-3 text-sm group">
                 <Phone className="h-4 w-4 text-[var(--wa-text-secondary)] flex-shrink-0" />
-                <span className="text-[var(--wa-text-primary)]">{data.customer.phone}</span>
+                <span className="text-[var(--wa-text-primary)] flex-1">{getPhoneFlag(data.customer.phone)} {data.customer.phone}</span>
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                  <CopyButton text={data.customer.phone} title="Copy phone" />
+                </div>
               </div>
             )}
 
