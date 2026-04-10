@@ -596,15 +596,15 @@ function TabBar({ activeTab, onChangeTab }: { activeTab: TabId; onChangeTab: (ta
   ];
 
   return (
-    <div className="flex border-b border-[var(--wa-border)]">
+    <div className="flex border-b border-black/10 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02]">
       {tabs.map((tab) => (
         <button
           key={tab.id}
           onClick={() => onChangeTab(tab.id)}
-          className={`flex-1 py-2.5 text-xs font-semibold tracking-wide transition-colors relative ${
+          className={`flex-1 py-2.5 text-xs font-semibold tracking-wide transition-all relative ${
             activeTab === tab.id
-              ? 'text-[var(--wa-green)]'
-              : 'text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]'
+              ? 'text-[var(--wa-green)] bg-[var(--wa-green)]/[0.06]'
+              : 'text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-black/[0.03] dark:hover:bg-white/[0.03]'
           }`}
         >
           {tab.label}
