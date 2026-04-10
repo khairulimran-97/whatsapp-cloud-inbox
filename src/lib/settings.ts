@@ -16,3 +16,11 @@ export function getBclApiKey(): string {
   const row = db.select().from(schema.settings).where(eq(schema.settings.key, 'bcl_api_key')).get();
   return row?.value || '';
 }
+
+export function getBclMonitorKey(): string {
+  return process.env.BCL_MONITOR_KEY || '';
+}
+
+export function getBclBaseUrl(): string {
+  return process.env.BCL_BASE_URL || 'https://bcl.my';
+}

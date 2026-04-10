@@ -2020,6 +2020,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
               phoneNumber={phoneNumber}
               open={showCustomerSidebar}
               onClose={() => setShowCustomerSidebar(false)}
+              onInsertText={(text) => setMessageInput(prev => prev ? prev + '\n' + text : text)}
             />
           </div>
         </>
@@ -2043,6 +2044,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
             onClose={() => {}}
             inline
             panelWidth={sidebarWidth}
+            onInsertText={(text) => setMessageInput(prev => prev ? prev + '\n' + text : text)}
           />
         </div>
       )}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { X, User, Mail, Phone, MapPin, AlertCircle, Loader2, ExternalLink, ShieldCheck, Copy, Check } from 'lucide-react';
+import { X, User, Mail, Phone, MapPin, AlertCircle, Loader2, ExternalLink, ShieldCheck, Copy, Check, Search, KeyRound, Send, ChevronLeft, ChevronRight } from 'lucide-react';
 
 type Address = {
   address_lines?: string[];
@@ -39,6 +39,10 @@ type Transaction = {
   is_paid?: boolean;
   created_at?: string;
   receipt_url?: string | null;
+  payer_name?: string;
+  payer_email?: string;
+  payer_telephone_number?: string;
+  status_description?: string;
   protected_content?: ProtectedContent[];
   [key: string]: unknown;
 };
@@ -47,6 +51,7 @@ type ProtectedContent = {
   title: string;
   granted_at?: string;
   url?: string;
+  access_token?: string;
 };
 
 type CustomerData = {
@@ -65,6 +70,7 @@ type Props = {
   onClose: () => void;
   inline?: boolean;
   panelWidth?: number;
+  onInsertText?: (text: string) => void;
 };
 
 function formatRM(amount: number | string | undefined): string {
@@ -95,7 +101,17 @@ function formatAddress(address: Address | undefined): string | null {
   return parts.length > 0 ? parts.join(', ') : null;
 }
 
-function CopyButton({ text }: { text: string }) {
+function extractAccessToken(url: string): string | null {
+  try {
+    const u = new URL(url);
+    const segments = u.pathname.split('/').filter(Boolean);
+    return segments[segments.length - 1] || null;
+  } catch {
+    return null;
+  }
+}
+
+function CopyButton({ text, title = 'Copy' }: { text: string; title?: string }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -110,46 +126,163 @@ function CopyButton({ text }: { text: string }) {
     <button
       onClick={handleCopy}
       className="h-6 w-6 flex items-center justify-center rounded-md text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)] transition-colors flex-shrink-0"
-      title="Copy link"
+      title={title}
     >
       {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
     </button>
   );
 }
 
-function ContentAccessItem({ content }: { content: ProtectedContent }) {
-  return (
-    <div className="flex items-center gap-2 py-1.5">
-      <ShieldCheck className="h-3.5 w-3.5 text-green-400 flex-shrink-0" />
-      <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-[var(--wa-text-primary)] leading-snug truncate">
-          {content.title}
-        </p>
-        {content.granted_at && (
-          <p className="text-[10px] text-[var(--wa-text-secondary)]">
-            {formatDateTime(content.granted_at)}
-          </p>
-        )}
-      </div>
-      {content.url && (
-        <div className="flex items-center gap-1 flex-shrink-0 ml-auto">
-          <a
-            href={content.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="h-6 w-6 flex items-center justify-center rounded-md text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-colors"
-            title="Open content"
+function MagicLinkButton({ content, onInsertText }: { content: ProtectedContent; onInsertText?: (text: string) => void }) {
+  const [loading, setLoading] = useState(false);
+  const [magicUrl, setMagicUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const accessToken = content.access_token || (content.url ? extractAccessToken(content.url) : null);
+
+  const handleGenerate = async () => {
+    if (!accessToken) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/magic-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_token: accessToken }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Failed to generate');
+        return;
+      }
+      setMagicUrl(data.magic_url || data.data?.magic_url || null);
+      if (!data.magic_url && !data.data?.magic_url) {
+        setError('No magic URL returned');
+      }
+    } catch {
+      setError('Network error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    if (!magicUrl) return;
+    try {
+      await navigator.clipboard.writeText(magicUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* ignore */ }
+  };
+
+  const handleSend = () => {
+    if (magicUrl && onInsertText) {
+      onInsertText(magicUrl);
+    }
+  };
+
+  if (!accessToken) return null;
+
+  if (magicUrl) {
+    return (
+      <div className="mt-1.5 p-2 rounded-md bg-violet-500/10 border border-violet-500/20">
+        <p className="text-[10px] text-violet-400 font-medium mb-1">Magic Link (5 min, 3 uses)</p>
+        <p className="text-[11px] text-[var(--wa-text-primary)] break-all font-mono leading-relaxed">{magicUrl}</p>
+        <div className="flex items-center gap-1.5 mt-1.5">
+          <button
+            onClick={handleCopy}
+            className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md bg-[var(--wa-hover)] text-[var(--wa-text-primary)] hover:bg-[var(--wa-border)] transition-colors"
           >
-            <ExternalLink className="h-3.5 w-3.5" />
-          </a>
-          <CopyButton text={content.url} />
+            {copied ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3" />}
+            {copied ? 'Copied' : 'Copy'}
+          </button>
+          {onInsertText && (
+            <button
+              onClick={handleSend}
+              className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md bg-[var(--wa-green)] text-white hover:bg-[var(--wa-green-dark)] transition-colors"
+            >
+              <Send className="h-3 w-3" />
+              Send
+            </button>
+          )}
         </div>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-1">
+      <button
+        onClick={handleGenerate}
+        disabled={loading}
+        className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-medium rounded-md text-violet-400 hover:text-violet-300 bg-violet-500/10 hover:bg-violet-500/20 transition-colors disabled:opacity-50"
+        title="Generate magic link (bypass OTP)"
+      >
+        {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <KeyRound className="h-3 w-3" />}
+        Magic Link
+      </button>
+      {error && <p className="text-[10px] text-red-400 mt-1">{error}</p>}
     </div>
   );
 }
 
-function TransactionCard({ tx }: { tx: Transaction }) {
+function ContentAccessItem({ content, onInsertText }: { content: ProtectedContent; onInsertText?: (text: string) => void }) {
+  return (
+    <div className="py-1.5">
+      <div className="flex items-center gap-2">
+        <ShieldCheck className="h-3.5 w-3.5 text-green-400 flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium text-[var(--wa-text-primary)] leading-snug truncate">
+            {content.title}
+          </p>
+          {content.granted_at && (
+            <p className="text-[10px] text-[var(--wa-text-secondary)]">
+              {formatDateTime(content.granted_at)}
+            </p>
+          )}
+        </div>
+        {content.url && (
+          <div className="flex items-center gap-1 flex-shrink-0 ml-auto">
+            <a
+              href={content.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="h-6 w-6 flex items-center justify-center rounded-md text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-colors"
+              title="Open content"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+            <CopyButton text={content.url} title="Copy content URL" />
+          </div>
+        )}
+      </div>
+      <MagicLinkButton content={content} onInsertText={onInsertText} />
+    </div>
+  );
+}
+
+function getStatusStyle(status?: string) {
+  switch (status) {
+    case 'success':
+    case 'completed':
+      return 'bg-green-500/15 text-green-400';
+    case 'pending':
+      return 'bg-amber-500/15 text-amber-400';
+    case 'failed':
+    case 'cancelled':
+      return 'bg-red-500/15 text-red-400';
+    default:
+      return 'bg-[var(--wa-panel-bg)] text-[var(--wa-text-secondary)]';
+  }
+}
+
+function getStatusLabel(status?: string) {
+  if (!status) return 'Unknown';
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function TransactionCard({ tx, onInsertText }: { tx: Transaction; onInsertText?: (text: string) => void }) {
   const relatedContent = tx.protected_content?.filter(pc => pc.url) ?? [];
 
   return (
@@ -166,10 +299,18 @@ function TransactionCard({ tx }: { tx: Transaction }) {
             {formatRM(tx.amount)}
           </span>
         </div>
-        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400 whitespace-nowrap flex-shrink-0 ml-2">
-          Successful
+        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full whitespace-nowrap flex-shrink-0 ml-2 ${getStatusStyle(tx.status)}`}>
+          {getStatusLabel(tx.status)}
         </span>
       </div>
+
+      {/* Payer info (for search results) */}
+      {tx.payer_name && (
+        <p className="text-[11px] text-[var(--wa-text-primary)] truncate mb-0.5">{tx.payer_name}</p>
+      )}
+      {tx.payer_email && (
+        <p className="text-[10px] text-[var(--wa-text-secondary)] truncate mb-0.5">{tx.payer_email}</p>
+      )}
 
       {/* Row 2: channel + date + receipt actions */}
       <div className="flex items-center justify-between">
@@ -194,7 +335,7 @@ function TransactionCard({ tx }: { tx: Transaction }) {
             >
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
-            <CopyButton text={tx.receipt_url} />
+            <CopyButton text={tx.receipt_url} title="Copy receipt URL" />
           </div>
         )}
       </div>
@@ -203,7 +344,7 @@ function TransactionCard({ tx }: { tx: Transaction }) {
       {relatedContent.length > 0 && (
         <div className="mt-2.5 pt-2 border-t border-black/15 dark:border-white/15 space-y-0.5">
           {relatedContent.map((content, i) => (
-            <ContentAccessItem key={i} content={content} />
+            <ContentAccessItem key={i} content={content} onInsertText={onInsertText} />
           ))}
         </div>
       )}
@@ -211,9 +352,188 @@ function TransactionCard({ tx }: { tx: Transaction }) {
   );
 }
 
-export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, panelWidth }: Props) {
+// --- Orders Tab ---
+
+type OrdersSearchResult = {
+  configured: boolean;
+  success?: boolean;
+  data?: Transaction[];
+  meta?: { current_page: number; last_page: number; per_page: number; total: number };
+  summary?: { total_count: number; success_count: number; pending_count: number; failed_count: number };
+  error?: string;
+};
+
+function OrdersTab({ phoneNumber, onInsertText }: { phoneNumber: string; onInsertText?: (text: string) => void }) {
+  const [query, setQuery] = useState(phoneNumber || '');
+  const [results, setResults] = useState<OrdersSearchResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+
+  const handleSearch = useCallback(async (q: string, p: number) => {
+    if (!q.trim()) return;
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ q: q.trim(), page: String(p), per_page: '10' });
+      const res = await fetch(`/api/transactions/search?${params}`);
+      const data = await res.json();
+      setResults(data);
+      setPage(p);
+    } catch {
+      setResults({ configured: true, error: 'Network error' });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Auto-search with phone number on mount
+  useEffect(() => {
+    if (phoneNumber) {
+      handleSearch(phoneNumber, 1);
+    }
+  }, [phoneNumber, handleSearch]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSearch(query, 1);
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Search form */}
+      <form onSubmit={handleSubmit} className="flex gap-1.5">
+        <div className="flex-1 relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--wa-text-secondary)]" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Order ID, email, phone..."
+            className="w-full pl-8 pr-3 py-2 text-xs rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={loading || !query.trim()}
+          className="px-3 py-2 text-xs font-medium rounded-lg bg-[var(--wa-green)] text-white hover:bg-[var(--wa-green-dark)] transition-colors disabled:opacity-50"
+        >
+          {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Search'}
+        </button>
+      </form>
+
+      {/* Results */}
+      {loading && !results && (
+        <div className="flex flex-col items-center py-10 gap-2">
+          <Loader2 className="h-6 w-6 text-[var(--wa-green)] animate-spin" />
+          <p className="text-xs text-[var(--wa-text-secondary)]">Searching…</p>
+        </div>
+      )}
+
+      {results && !results.configured && (
+        <div className="flex flex-col items-center py-10 gap-2 text-center">
+          <AlertCircle className="h-8 w-8 text-[var(--wa-text-secondary)] opacity-50" />
+          <p className="text-xs text-[var(--wa-text-secondary)]">BCL API key not configured</p>
+        </div>
+      )}
+
+      {results && results.configured && results.error && (
+        <div className="flex flex-col items-center py-10 gap-2 text-center">
+          <AlertCircle className="h-8 w-8 text-red-400 opacity-50" />
+          <p className="text-xs text-red-400">{results.error}</p>
+        </div>
+      )}
+
+      {results && results.configured && !results.error && (
+        <>
+          {/* Summary bar */}
+          {results.summary && (
+            <div className="flex items-center gap-2 text-[10px] font-medium">
+              <span className="text-[var(--wa-text-secondary)]">{results.summary.total_count} total</span>
+              <span className="text-green-400">✓ {results.summary.success_count}</span>
+              <span className="text-amber-400">⏳ {results.summary.pending_count}</span>
+              <span className="text-red-400">✗ {results.summary.failed_count}</span>
+            </div>
+          )}
+
+          {/* Transaction list */}
+          {results.data && results.data.length > 0 ? (
+            <div className="space-y-2.5">
+              {results.data.map((tx, i) => (
+                <TransactionCard key={tx.order_number || tx.id || i} tx={tx} onInsertText={onInsertText} />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center py-10 gap-2 text-center">
+              <Search className="h-8 w-8 text-[var(--wa-text-secondary)] opacity-50" />
+              <p className="text-xs text-[var(--wa-text-secondary)]">No transactions found</p>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {results.meta && results.meta.last_page > 1 && (
+            <div className="flex items-center justify-between pt-1">
+              <button
+                onClick={() => handleSearch(query, page - 1)}
+                disabled={loading || page <= 1}
+                className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)] transition-colors disabled:opacity-30"
+              >
+                <ChevronLeft className="h-3 w-3" /> Prev
+              </button>
+              <span className="text-[10px] text-[var(--wa-text-secondary)]">
+                {page} / {results.meta.last_page}
+              </span>
+              <button
+                onClick={() => handleSearch(query, page + 1)}
+                disabled={loading || page >= results.meta!.last_page}
+                className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)] transition-colors disabled:opacity-30"
+              >
+                Next <ChevronRight className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// --- Tab UI ---
+
+type TabId = 'info' | 'orders';
+
+function TabBar({ activeTab, onChangeTab }: { activeTab: TabId; onChangeTab: (tab: TabId) => void }) {
+  const tabs: { id: TabId; label: string }[] = [
+    { id: 'info', label: 'Info' },
+    { id: 'orders', label: 'Orders' },
+  ];
+
+  return (
+    <div className="flex border-b border-[var(--wa-border)]">
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          onClick={() => onChangeTab(tab.id)}
+          className={`flex-1 py-2.5 text-xs font-semibold tracking-wide transition-colors relative ${
+            activeTab === tab.id
+              ? 'text-[var(--wa-green)]'
+              : 'text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]'
+          }`}
+        >
+          {tab.label}
+          {activeTab === tab.id && (
+            <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[var(--wa-green)]" />
+          )}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// --- Main Sidebar ---
+
+export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, panelWidth, onInsertText }: Props) {
   const [data, setData] = useState<CustomerData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabId>('info');
 
   const fetchCustomer = useCallback(async () => {
     if (!phoneNumber) return;
@@ -236,10 +556,11 @@ export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, pa
     }
     if (!open && !inline) {
       setData(null);
+      setActiveTab('info');
     }
   }, [open, inline, phoneNumber, fetchCustomer]);
 
-  // Inline mode: render as a static panel
+  // Inline mode
   if (inline) {
     return (
       <div
@@ -248,17 +569,22 @@ export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, pa
       >
         <div className="flex items-center h-[60px] px-4 border-b border-[var(--wa-border)] bg-[var(--wa-panel-bg)] flex-shrink-0">
           <h3 className="text-[13px] font-semibold text-[var(--wa-text-primary)]">
-            Customer Info
+            Customer
           </h3>
         </div>
+        <TabBar activeTab={activeTab} onChangeTab={setActiveTab} />
         <div className="overflow-y-auto flex-1 p-4">
-          <SidebarContent data={data} loading={loading} phoneNumber={phoneNumber} />
+          {activeTab === 'info' ? (
+            <InfoContent data={data} loading={loading} phoneNumber={phoneNumber} onInsertText={onInsertText} />
+          ) : (
+            <OrdersTab phoneNumber={phoneNumber} onInsertText={onInsertText} />
+          )}
         </div>
       </div>
     );
   }
 
-  // Overlay mode: slideover for smaller screens
+  // Overlay mode
   return (
     <>
       {open && (
@@ -274,7 +600,7 @@ export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, pa
       >
         <div className="flex items-center justify-between h-[60px] px-4 border-b border-[var(--wa-border)] bg-[var(--wa-panel-bg)]">
           <h3 className="text-[15px] font-semibold text-[var(--wa-text-primary)]">
-            Customer Info
+            Customer
           </h3>
           <button
             onClick={onClose}
@@ -283,15 +609,20 @@ export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, pa
             <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="overflow-y-auto h-[calc(100%-60px)] p-4">
-          <SidebarContent data={data} loading={loading} phoneNumber={phoneNumber} />
+        <TabBar activeTab={activeTab} onChangeTab={setActiveTab} />
+        <div className="overflow-y-auto h-[calc(100%-60px-41px)] p-4">
+          {activeTab === 'info' ? (
+            <InfoContent data={data} loading={loading} phoneNumber={phoneNumber} onInsertText={onInsertText} />
+          ) : (
+            <OrdersTab phoneNumber={phoneNumber} onInsertText={onInsertText} />
+          )}
         </div>
       </div>
     </>
   );
 }
 
-function SidebarContent({ data, loading, phoneNumber }: { data: CustomerData | null; loading: boolean; phoneNumber: string }) {
+function InfoContent({ data, loading, phoneNumber, onInsertText }: { data: CustomerData | null; loading: boolean; phoneNumber: string; onInsertText?: (text: string) => void }) {
   return (
     <>
       {loading && (
@@ -421,7 +752,7 @@ function SidebarContent({ data, loading, phoneNumber }: { data: CustomerData | n
                 </h5>
                 <div className="space-y-2.5">
                   {successTxns.map((tx, i) => (
-                    <TransactionCard key={tx.id || i} tx={tx} />
+                    <TransactionCard key={tx.id || i} tx={tx} onInsertText={onInsertText} />
                   ))}
                 </div>
               </div>
@@ -438,7 +769,7 @@ function SidebarContent({ data, loading, phoneNumber }: { data: CustomerData | n
                 </h5>
                 <div className="space-y-2">
                   {data.protectedContent.map((content, i) => (
-                    <ContentAccessItem key={i} content={content} />
+                    <ContentAccessItem key={i} content={content} onInsertText={onInsertText} />
                   ))}
                 </div>
               </div>
