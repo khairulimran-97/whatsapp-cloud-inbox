@@ -1614,18 +1614,6 @@ function ReplyTemplatesTab({ onClose }: { onClose: () => void }) {
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-[13px] font-semibold text-[var(--wa-text-primary)] truncate">{t.title}</p>
-                          {(() => {
-                            const catLower = (t.category || 'General').toLowerCase();
-                            const colors: Record<string, string> = {
-                              'bola sepak': 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
-                              'general': 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
-                              'marketing': 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
-                              'utility': 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-                              'authentication': 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
-                            };
-                            const colorClass = colors[catLower] || 'bg-teal-500/10 text-teal-600 dark:text-teal-400';
-                            return <span className={cn("text-[9px] uppercase tracking-wider font-medium px-1.5 py-0.5 rounded", colorClass)}>{t.category || 'General'}</span>;
-                          })()}
                         </div>
                         <div className="flex items-center gap-0.5 flex-shrink-0">
                           <button
