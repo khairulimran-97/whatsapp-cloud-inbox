@@ -914,7 +914,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       <Dialog open={showQuickReply} onOpenChange={setShowQuickReply}>
         <DialogContent className="sm:max-w-[550px] max-h-[85vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle className="text-lg">Quick Reply</DialogTitle>
+            <DialogTitle className="text-lg sr-only">Quick Reply</DialogTitle>
             <DialogDescription className="sr-only">Manage quick reply templates</DialogDescription>
           </DialogHeader>
           <div className="flex-1 min-h-0 overflow-auto">
@@ -1568,10 +1568,11 @@ function ReplyTemplatesTab({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="space-y-3 flex flex-col min-h-0">
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-[var(--wa-text-secondary)]">
-          {templates.length} template{templates.length !== 1 ? 's' : ''}
-        </p>
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <h3 className="text-lg font-semibold text-[var(--wa-text-primary)]">Quick Reply</h3>
+          <span className="text-[11px] text-[var(--wa-text-secondary)] bg-black/[0.04] dark:bg-white/[0.06] px-2 py-0.5 rounded-full">{templates.length}</span>
+        </div>
         <Button
           onClick={() => { setShowForm(true); setEditingTemplate(null); }}
           className="bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] text-white text-xs h-8 px-3 gap-1.5"
