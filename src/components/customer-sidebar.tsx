@@ -335,8 +335,8 @@ function TransactionCard({ tx, onInsertText }: { tx: Transaction; onInsertText?:
   const isPaid = tx.status === 'success' || tx.status === 'completed' || tx.is_paid;
 
   return (
-    <div className="rounded-xl border border-black/10 dark:border-white/15 bg-[var(--wa-hover)]">
-      <div className={`h-[3px] rounded-t-xl ${isPaid ? 'bg-green-500' : tx.status === 'pending' ? 'bg-amber-500' : 'bg-red-500/60'}`} />
+    <div className="rounded-xl border border-black/10 dark:border-white/15 bg-[var(--wa-hover)] overflow-hidden">
+      <div className={`h-[3px] ${isPaid ? 'bg-green-500' : tx.status === 'pending' ? 'bg-amber-500' : 'bg-red-500/60'}`} />
       <div className="p-3 space-y-2">
         {/* Order number + amount */}
         <div className="flex items-center justify-between">
