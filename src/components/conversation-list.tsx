@@ -925,28 +925,27 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
 
       {/* Business Profile Modal */}
       <Dialog open={showProfile} onOpenChange={setShowProfile}>
-        <DialogContent className="sm:max-w-[420px] rounded-2xl p-0 overflow-hidden gap-0">
-          {/* Header with gradient bg */}
-          <div className="relative bg-gradient-to-br from-[var(--wa-green)] to-emerald-600 px-6 pt-10 pb-8 text-center">
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIvPjwvc3ZnPg==')] opacity-60" />
-            <div className="relative">
-              <Avatar className="h-[88px] w-[88px] mx-auto mb-4 ring-4 ring-white/25 shadow-lg">
-                {profile?.profilePictureUrl && <AvatarImage src={profile.profilePictureUrl} alt="Business" />}
-                <AvatarFallback className="bg-white/20 text-white text-3xl font-bold">
-                  {profile?.verifiedName ? profile.verifiedName.slice(0, 2).toUpperCase() : 'WA'}
-                </AvatarFallback>
-              </Avatar>
+        <DialogContent className="sm:max-w-[400px] rounded-2xl p-0 overflow-hidden gap-0">
+          {/* Header */}
+          <div className="relative bg-gradient-to-b from-[var(--wa-green)] to-emerald-600 px-5 pt-5 pb-4 flex items-center gap-3.5">
+            <Avatar className="h-14 w-14 ring-2 ring-white/25 shadow-md flex-shrink-0">
+              {profile?.profilePictureUrl && <AvatarImage src={profile.profilePictureUrl} alt="Business" />}
+              <AvatarFallback className="bg-white/20 text-white text-lg font-bold">
+                {profile?.verifiedName ? profile.verifiedName.slice(0, 2).toUpperCase() : 'WA'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
               <DialogHeader>
-                <DialogTitle className="text-white text-xl font-bold tracking-tight">
+                <DialogTitle className="text-white text-[15px] font-bold text-left">
                   {profile?.verifiedName || 'Business Account'}
                 </DialogTitle>
                 <DialogDescription className="sr-only">Business profile details</DialogDescription>
               </DialogHeader>
               {profile?.displayPhoneNumber && (
-                <p className="text-white/80 text-sm mt-1.5 font-medium">{profile.displayPhoneNumber}</p>
+                <p className="text-white/75 text-[12px] mt-0.5">{profile.displayPhoneNumber}</p>
               )}
               {profile?.vertical && (
-                <span className="inline-block mt-2.5 px-3 py-0.5 rounded-full bg-white/15 text-white/90 text-[11px] font-medium capitalize">{profile.vertical}</span>
+                <span className="inline-block mt-1.5 px-2 py-px rounded-full bg-white/15 text-white/90 text-[10px] font-medium capitalize tracking-wide">{profile.vertical}</span>
               )}
             </div>
           </div>
