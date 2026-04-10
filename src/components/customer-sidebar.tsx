@@ -367,26 +367,28 @@ function LookupResultCard({ tx, onInsertText }: { tx: Transaction; onInsertText?
         </div>
 
         {(tx.payer_name || tx.payer_email || tx.payer_telephone_number) && (
-          <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
-            {tx.payer_name && (
-              <>
-                <span className="text-[var(--wa-text-secondary)]">Name</span>
-                <span className="text-[var(--wa-text-primary)] font-medium truncate">{tx.payer_name}</span>
-              </>
-            )}
-            {tx.payer_email && (
-              <>
-                <span className="text-[var(--wa-text-secondary)]">Email</span>
-                <span className="text-[var(--wa-text-primary)] truncate">{tx.payer_email}</span>
-              </>
-            )}
-            {tx.payer_telephone_number && (
-              <>
-                <span className="text-[var(--wa-text-secondary)]">Phone</span>
-                <span className="text-[var(--wa-text-primary)] truncate">{tx.payer_telephone_number}</span>
-              </>
-            )}
-          </div>
+          <table className="w-full text-xs border border-[var(--wa-border)] rounded-lg overflow-hidden">
+            <tbody>
+              {tx.payer_name && (
+                <tr className="border-b border-[var(--wa-border)]">
+                  <td className="px-2.5 py-1.5 text-[var(--wa-text-secondary)] bg-[var(--wa-panel-bg)] w-[70px] whitespace-nowrap">Name</td>
+                  <td className="px-2.5 py-1.5 text-[var(--wa-text-primary)] font-medium truncate">{tx.payer_name}</td>
+                </tr>
+              )}
+              {tx.payer_email && (
+                <tr className="border-b border-[var(--wa-border)]">
+                  <td className="px-2.5 py-1.5 text-[var(--wa-text-secondary)] bg-[var(--wa-panel-bg)] w-[70px] whitespace-nowrap">Email</td>
+                  <td className="px-2.5 py-1.5 text-[var(--wa-text-primary)] truncate">{tx.payer_email}</td>
+                </tr>
+              )}
+              {tx.payer_telephone_number && (
+                <tr>
+                  <td className="px-2.5 py-1.5 text-[var(--wa-text-secondary)] bg-[var(--wa-panel-bg)] w-[70px] whitespace-nowrap">Phone</td>
+                  <td className="px-2.5 py-1.5 text-[var(--wa-text-primary)] truncate">{tx.payer_telephone_number}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         )}
 
         <div className="flex items-center flex-wrap gap-1.5">
