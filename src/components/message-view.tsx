@@ -1263,9 +1263,9 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
 
       {/* 24-hour messaging window sticky notice */}
       {conversationStatus !== 'ended' && messages.length > 0 && (
-        <div className="sticky top-0 z-10 px-3 sm:px-4 md:px-[30px] py-1.5 bg-[var(--wa-panel-bg)] border-b border-[var(--wa-border)]">
+        <div className="sticky top-0 z-10">
           {windowInfo.status === 'no-inbound' ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--wa-notice-warn-bg)] rounded-lg border border-[var(--wa-notice-warn-border)] group relative">
+            <div className="flex items-center gap-2 px-3 sm:px-4 md:px-[30px] py-2 bg-[var(--wa-notice-warn-bg)] border-b border-[var(--wa-notice-warn-border)] group relative">
               <Info className="h-3.5 w-3.5 text-[var(--wa-notice-warn-text)] flex-shrink-0" />
               <p className="text-[11px] text-[var(--wa-notice-warn-text)] leading-snug flex-1 cursor-default">
                 <span className="font-medium">No reply from customer yet.</span> Send a template to start.
@@ -1283,7 +1283,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
               </div>
             </div>
           ) : windowInfo.status === 'expired' ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--wa-notice-warn-bg)] rounded-lg border border-[var(--wa-notice-warn-border)] group relative">
+            <div className="flex items-center gap-2 px-3 sm:px-4 md:px-[30px] py-2 bg-[var(--wa-notice-warn-bg)] border-b border-[var(--wa-notice-warn-border)] group relative">
               <Info className="h-3.5 w-3.5 text-[var(--wa-notice-warn-text)] flex-shrink-0" />
               <p className="text-[11px] text-[var(--wa-notice-warn-text)] leading-snug flex-1 cursor-default">
                 <span className="font-medium">24-hour window expired.</span> Only template messages allowed.
@@ -1301,7 +1301,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
               </div>
             </div>
           ) : windowInfo.status === 'expiring-soon' ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--wa-notice-urgent-bg)] rounded-lg border border-[var(--wa-notice-urgent-border)] group relative">
+            <div className="flex items-center gap-2 px-3 sm:px-4 md:px-[30px] py-2 bg-[var(--wa-notice-urgent-bg)] border-b border-[var(--wa-notice-urgent-border)] group relative">
               <Info className="h-3.5 w-3.5 text-[var(--wa-notice-urgent-text)] flex-shrink-0" />
               <p className="text-[11px] text-[var(--wa-notice-urgent-text)] leading-snug flex-1 cursor-default">
                 <span className="font-medium">Window closing soon.</span> ~{Math.ceil(windowInfo.hoursLeft)}h left.
@@ -1319,7 +1319,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--wa-notice-ok-bg)] rounded-lg border border-[var(--wa-notice-ok-border)] group relative">
+            <div className="flex items-center gap-2 px-3 sm:px-4 md:px-[30px] py-2 bg-[var(--wa-notice-ok-bg)] border-b border-[var(--wa-notice-ok-border)] group relative">
               <Info className="h-3.5 w-3.5 text-[var(--wa-notice-ok-text)] flex-shrink-0" />
               <p className="text-[11px] text-[var(--wa-notice-ok-text)] leading-snug flex-1 cursor-default">
                 <span className="font-medium">24-hour window active.</span> ~{Math.floor(windowInfo.hoursLeft)}h remaining.
