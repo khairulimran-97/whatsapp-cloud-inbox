@@ -1675,10 +1675,10 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
             {/* Workflow execution banner */}
             {workflowExecution && (
               <div className="px-[5px] py-2 border-b border-[var(--wa-border)] bg-[var(--wa-panel-bg)]">
-                <div className="flex flex-col gap-2 px-3 py-2 bg-[#1a1a2e] rounded-lg border border-[#2a2a4a]">
+                <div className="flex flex-col gap-2 px-3 py-2 bg-amber-500/[0.06] dark:bg-amber-500/10 rounded-lg border border-amber-500/15 dark:border-amber-500/20">
                   <div className="flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-amber-400 flex-shrink-0" />
-                    <span className="text-[12px] font-medium text-amber-400 truncate">{workflowExecution.workflowName}</span>
+                    <Zap className="h-4 w-4 text-amber-500 dark:text-amber-400 flex-shrink-0" />
+                    <span className="text-[12px] font-medium text-amber-600 dark:text-amber-400 truncate">{workflowExecution.workflowName}</span>
                     <span className="text-[12px] text-[var(--wa-text-secondary)] ml-auto flex-shrink-0">
                       {workflowExecution.status === 'handoff' ? 'You have control' : workflowExecution.status === 'waiting' ? 'Waiting for input' : workflowExecution.status === 'paused' ? 'Paused' : 'Running'}
                     </span>
