@@ -158,7 +158,7 @@ export default function PPVSchedulePage() {
 
   const filtered = filterCategory === 'all' ? timeFiltered : timeFiltered.filter(s => s.category === filterCategory);
 
-  // Group by PIC, then by date within each PIC
+  // Group by date, then by PIC within each date
   const grouped = useMemo(() => {
     const sorted = [...filtered].sort((a, b) => {
       const ta = new Date(a.matchDatetime).getTime();
@@ -166,32 +166,33 @@ export default function PPVSchedulePage() {
       return filterTime === 'completed' ? tb - ta : ta - tb;
     });
 
-    // Group by PIC
-    const picMap = new Map<string, PPVSchedule[]>();
+    // Group by date first
+    const dateMap = new Map<string, PPVSchedule[]>();
     for (const s of sorted) {
-      const picKey = s.pic?.trim() || 'No PIC yet';
-      if (!picMap.has(picKey)) picMap.set(picKey, []);
-      picMap.get(picKey)!.push(s);
+      const d = new Date(s.matchDatetime);
+      const key = d.toLocaleDateString('en-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      if (!dateMap.has(key)) dateMap.set(key, []);
+      dateMap.get(key)!.push(s);
     }
 
-    // Sort PIC groups: named PICs first (alphabetical), "No PIC yet" last
-    const picEntries = [...picMap.entries()].sort((a, b) => {
-      if (a[0] === 'No PIC yet') return 1;
-      if (b[0] === 'No PIC yet') return -1;
-      return a[0].localeCompare(b[0]);
-    });
-
-    // Within each PIC, group by date
-    const result: { pic: string; dates: Map<string, PPVSchedule[]> }[] = [];
-    for (const [pic, items] of picEntries) {
-      const dateMap = new Map<string, PPVSchedule[]>();
+    // Within each date, group by PIC
+    const result: { date: string; pics: { pic: string; items: PPVSchedule[] }[] }[] = [];
+    for (const [date, items] of dateMap) {
+      const picMap = new Map<string, PPVSchedule[]>();
       for (const s of items) {
-        const d = new Date(s.matchDatetime);
-        const key = d.toLocaleDateString('en-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-        if (!dateMap.has(key)) dateMap.set(key, []);
-        dateMap.get(key)!.push(s);
+        const picKey = s.pic?.trim() || 'No PIC yet';
+        if (!picMap.has(picKey)) picMap.set(picKey, []);
+        picMap.get(picKey)!.push(s);
       }
-      result.push({ pic, dates: dateMap });
+      // Named PICs first (alphabetical), "No PIC yet" last
+      const pics = [...picMap.entries()]
+        .sort((a, b) => {
+          if (a[0] === 'No PIC yet') return 1;
+          if (b[0] === 'No PIC yet') return -1;
+          return a[0].localeCompare(b[0]);
+        })
+        .map(([pic, items]) => ({ pic, items }));
+      result.push({ date, pics });
     }
     return result;
   }, [filtered, filterTime]);
@@ -317,47 +318,55 @@ export default function PPVSchedulePage() {
           </div>
         ) : (
           <div className="space-y-8">
-            {grouped.map(({ pic, dates }) => {
-              const totalCount = [...dates.values()].reduce((sum, arr) => sum + arr.length, 0);
-              return (
-              <div key={pic} className="flex gap-3">
-                {/* Vertical PIC badge on left */}
-                <div className="flex flex-col items-center pt-1">
-                  <div className={cn(
-                    "flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0",
-                    pic === 'No PIC yet'
-                      ? "bg-gray-500/10 text-gray-500 dark:text-gray-400"
-                      : "bg-[var(--wa-green)]/10 text-[var(--wa-green)]"
-                  )}>
-                    <User className="h-4 w-4" />
+            {grouped.map(({ date, pics }) => (
+              <div key={date}>
+                {/* Date header */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-2 text-[13px] font-semibold text-[var(--wa-text-primary)]">
+                    <CalendarDays className="h-4 w-4 text-[var(--wa-text-secondary)]" />
+                    {date}
                   </div>
-                  <div className={cn(
-                    "flex-1 w-px my-2",
-                    pic === 'No PIC yet' ? "bg-gray-300 dark:bg-gray-700" : "bg-[var(--wa-green)]/25"
-                  )} />
-                  <span className={cn(
-                    "text-[10px] font-bold tabular-nums",
-                    pic === 'No PIC yet' ? "text-gray-400" : "text-[var(--wa-green)]"
-                  )}>{totalCount}</span>
+                  <div className="flex-1 h-px bg-[var(--wa-border)]" />
+                  <span className="text-[11px] text-[var(--wa-text-secondary)]">
+                    {pics.reduce((sum, p) => sum + p.items.length, 0)} match{pics.reduce((sum, p) => sum + p.items.length, 0) !== 1 ? 'es' : ''}
+                  </span>
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className={cn(
-                    "text-[12px] font-semibold mb-3 leading-tight",
-                    pic === 'No PIC yet' ? "text-gray-500 dark:text-gray-400" : "text-[var(--wa-green)]"
-                  )}>{pic}</div>
-
-                  <div className="space-y-5">
-                  {[...dates.entries()].map(([dateLabel, items]) => (
-                    <div key={dateLabel}>
-                      {/* Date sub-header */}
-                      <div className="flex items-center gap-3 mb-2.5 ml-1">
-                        <div className="text-[11px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider">{dateLabel}</div>
-                        <div className="flex-1 h-px bg-[var(--wa-border)] opacity-50" />
-                        <span className="text-[10px] text-[var(--wa-text-secondary)] opacity-70">{items.length}</span>
+                {/* PIC sub-groups */}
+                <div className="space-y-5">
+                  {pics.map(({ pic, items }) => (
+                    <div key={pic} className="flex gap-3">
+                      {/* Vertical PIC badge on left */}
+                      <div className="flex flex-col items-center pt-0.5">
+                        <div className={cn(
+                          "flex items-center justify-center w-7 h-7 rounded-full flex-shrink-0",
+                          pic === 'No PIC yet'
+                            ? "bg-gray-500/10 text-gray-500 dark:text-gray-400"
+                            : "bg-[var(--wa-green)]/10 text-[var(--wa-green)]"
+                        )}>
+                          <User className="h-3.5 w-3.5" />
+                        </div>
+                        {items.length > 1 && (
+                          <>
+                            <div className={cn(
+                              "flex-1 w-px my-1.5",
+                              pic === 'No PIC yet' ? "bg-gray-300 dark:bg-gray-700" : "bg-[var(--wa-green)]/25"
+                            )} />
+                            <span className={cn(
+                              "text-[10px] font-bold tabular-nums",
+                              pic === 'No PIC yet' ? "text-gray-400" : "text-[var(--wa-green)]"
+                            )}>{items.length}</span>
+                          </>
+                        )}
                       </div>
-                      <div className="space-y-2.5">
+
+                      {/* Cards */}
+                      <div className="flex-1 min-w-0">
+                        <div className={cn(
+                          "text-[11px] font-semibold mb-2 leading-tight",
+                          pic === 'No PIC yet' ? "text-gray-500 dark:text-gray-400" : "text-[var(--wa-green)]"
+                        )}>{pic}</div>
+                        <div className="space-y-2.5">
                         {items.map((s) => {
                           const dt = new Date(s.matchDatetime);
                           const timeStr = dt.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
@@ -425,14 +434,13 @@ export default function PPVSchedulePage() {
                             </div>
                           );
                         })}
+                        </div>
                       </div>
                     </div>
                   ))}
-                  </div>
                 </div>
               </div>
-              );
-            })}
+            ))}
           </div>
         )}
       </main>
