@@ -222,43 +222,53 @@ function MagicLinkButton({ content, onInsertText }: { content: ProtectedContent;
 
   if (magicUrl) {
     return (
-      <div className="mt-1.5 p-2 rounded-md bg-violet-500/10 border border-violet-500/20">
-        <p className="text-[10px] text-violet-400 font-medium mb-1">Magic Link (5 min, 3 uses)</p>
-        <p className="text-[11px] text-[var(--wa-text-primary)] break-all font-mono leading-relaxed">{magicUrl}</p>
-        <div className="flex items-center gap-1.5 mt-1.5">
-          <button
-            onClick={handleCopy}
-            className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md bg-[var(--wa-hover)] text-[var(--wa-text-primary)] hover:bg-[var(--wa-border)] transition-colors"
-          >
-            {copied ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3" />}
-            {copied ? 'Copied' : 'Copy'}
-          </button>
-          {onInsertText && (
+      <div className="mt-2 rounded-lg border border-violet-500/25 bg-violet-500/[0.06] overflow-hidden">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-violet-500/10 border-b border-violet-500/15">
+          <KeyRound className="h-3.5 w-3.5 text-violet-400" />
+          <span className="text-[11px] font-semibold text-violet-400">Magic Link</span>
+          <span className="text-[10px] text-violet-400/60 ml-auto">5 min · 3 uses</span>
+        </div>
+        <div className="px-3 py-2">
+          <p className="text-[11px] text-[var(--wa-text-primary)] break-all font-mono leading-relaxed bg-black/5 dark:bg-white/5 rounded px-2 py-1.5">{magicUrl}</p>
+          <div className="flex items-center gap-2 mt-2">
             <button
-              onClick={handleSend}
-              className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md bg-[var(--wa-green)] text-white hover:bg-[var(--wa-green-dark)] transition-colors"
+              onClick={handleCopy}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium rounded-md bg-black/5 dark:bg-white/10 text-[var(--wa-text-primary)] hover:bg-black/10 dark:hover:bg-white/15 transition-colors"
             >
-              <Send className="h-3 w-3" />
-              Send
+              {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
+              {copied ? 'Copied!' : 'Copy'}
             </button>
-          )}
+            {onInsertText && (
+              <button
+                onClick={handleSend}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium rounded-md bg-[var(--wa-green)] text-white hover:bg-[var(--wa-green-dark)] transition-colors"
+              >
+                <Send className="h-3.5 w-3.5" />
+                Send to Chat
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="mt-1">
+    <div className="mt-1.5">
       <button
         onClick={handleGenerate}
         disabled={loading}
-        className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-medium rounded-md text-violet-400 hover:text-violet-300 bg-violet-500/10 hover:bg-violet-500/20 transition-colors disabled:opacity-50"
-        title="Generate magic link (bypass OTP)"
+        className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium rounded-lg text-violet-400 bg-violet-500/10 border border-violet-500/20 hover:bg-violet-500/20 hover:border-violet-500/30 transition-all disabled:opacity-50"
       >
-        {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <KeyRound className="h-3 w-3" />}
-        Magic Link
+        {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <KeyRound className="h-3.5 w-3.5" />}
+        {loading ? 'Generating...' : 'Generate Magic Link'}
       </button>
-      {error && <p className="text-[10px] text-red-400 mt-1">{error}</p>}
+      {error && (
+        <p className="text-[11px] text-red-400 mt-1.5 flex items-center gap-1">
+          <AlertCircle className="h-3 w-3" />
+          {error}
+        </p>
+      )}
     </div>
   );
 }
