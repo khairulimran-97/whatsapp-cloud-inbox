@@ -211,7 +211,7 @@ export default function PPVSchedulePage() {
                 </div>
                 <div>
                   <h1 className="text-[15px] font-semibold text-[var(--wa-text-primary)] leading-tight">PPV Schedule</h1>
-                  <p className="text-[11px] text-[var(--wa-text-secondary)] leading-tight">{schedules.length} total matches</p>
+                  <p className="text-[11px] text-[var(--wa-text-secondary)] leading-tight">{tabCounts.schedule + tabCounts.completed} total matches</p>
                 </div>
               </div>
             </div>
