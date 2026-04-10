@@ -30,11 +30,8 @@ export default function PPVSchedulePage() {
   const [filterTime, setFilterTime] = useState<'active' | 'schedule' | 'completed'>('active');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
-  const [isDark, setIsDark] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    const stored = localStorage.getItem('whatsapp-inbox-theme');
-    return stored !== 'light';
-  });
+  const [isDark, setIsDark] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   const [matchDatetime, setMatchDatetime] = useState('');
   const [matchDetails, setMatchDetails] = useState('');
@@ -60,6 +57,7 @@ export default function PPVSchedulePage() {
     const dark = stored !== 'light';
     document.documentElement.classList.toggle('dark', dark);
     setIsDark(dark);
+    setMounted(true);
   }, []);
 
   const toggleTheme = () => {
@@ -238,8 +236,8 @@ export default function PPVSchedulePage() {
             <div className="flex items-center gap-1.5">
               <button onClick={toggleTheme}
                 className="p-2 rounded-xl text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)] transition-colors"
-                title={isDark ? 'Light mode' : 'Dark mode'}>
-                {isDark ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
+                title={mounted ? (isDark ? 'Light mode' : 'Dark mode') : undefined}>
+                {mounted ? (isDark ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />) : <Sun className="h-[18px] w-[18px] opacity-0" />}
               </button>
               <button onClick={() => { resetForm(); setShowForm(true); }}
                 className="flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-semibold rounded-xl bg-[var(--wa-green)] text-white hover:opacity-90 active:scale-[0.97] transition-all shadow-sm">
@@ -322,19 +320,35 @@ export default function PPVSchedulePage() {
             {grouped.map(({ pic, dates }) => {
               const totalCount = [...dates.values()].reduce((sum, arr) => sum + arr.length, 0);
               return (
-              <fieldset key={pic} className="rounded-2xl border border-[var(--wa-border)] px-4 pb-4 pt-2">
-                <legend className={cn(
-                  "flex items-center gap-2 px-3 py-1.5 rounded-xl text-[12px] font-semibold mx-2",
-                  pic === 'No PIC yet'
-                    ? "bg-gray-500/10 text-gray-500 dark:text-gray-400"
-                    : "bg-[var(--wa-green)]/10 text-[var(--wa-green)]"
-                )}>
-                  <User className="h-3.5 w-3.5" />
-                  {pic}
-                  <span className="opacity-60">({totalCount})</span>
-                </legend>
+              <div key={pic} className="flex gap-3">
+                {/* Vertical PIC badge on left */}
+                <div className="flex flex-col items-center pt-1">
+                  <div className={cn(
+                    "flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0",
+                    pic === 'No PIC yet'
+                      ? "bg-gray-500/10 text-gray-500 dark:text-gray-400"
+                      : "bg-[var(--wa-green)]/10 text-[var(--wa-green)]"
+                  )}>
+                    <User className="h-4 w-4" />
+                  </div>
+                  <div className={cn(
+                    "flex-1 w-px my-2",
+                    pic === 'No PIC yet' ? "bg-gray-300 dark:bg-gray-700" : "bg-[var(--wa-green)]/25"
+                  )} />
+                  <span className={cn(
+                    "text-[10px] font-bold tabular-nums",
+                    pic === 'No PIC yet' ? "text-gray-400" : "text-[var(--wa-green)]"
+                  )}>{totalCount}</span>
+                </div>
 
-                <div className="space-y-5 mt-2">
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className={cn(
+                    "text-[12px] font-semibold mb-3 leading-tight",
+                    pic === 'No PIC yet' ? "text-gray-500 dark:text-gray-400" : "text-[var(--wa-green)]"
+                  )}>{pic}</div>
+
+                  <div className="space-y-5">
                   {[...dates.entries()].map(([dateLabel, items]) => (
                     <div key={dateLabel}>
                       {/* Date sub-header */}
@@ -414,8 +428,9 @@ export default function PPVSchedulePage() {
                       </div>
                     </div>
                   ))}
+                  </div>
                 </div>
-              </fieldset>
+              </div>
               );
             })}
           </div>
