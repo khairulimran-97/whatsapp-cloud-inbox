@@ -1570,19 +1570,21 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
             {/* Workflow execution banner */}
             {workflowExecution && (
               <div className="pt-2">
-                <div className="flex items-center gap-2 px-3 py-2 bg-[#1a1a2e] rounded-lg border border-[#2a2a4a]">
-                  <Zap className="h-4 w-4 text-amber-400 flex-shrink-0" />
-                  <p className="text-[12px] text-[var(--wa-text-primary)] leading-relaxed flex-1">
-                    <span className="font-medium text-amber-400">{workflowExecution.workflowName}</span>
-                    <span className="text-[var(--wa-text-secondary)] ml-1.5">
-                      {workflowExecution.status === 'handoff' ? '· You have control' : workflowExecution.status === 'waiting' ? '· Waiting for input' : workflowExecution.status === 'paused' ? '· Paused' : '· Running'}
-                    </span>
-                  </p>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 px-3 py-2 bg-[#1a1a2e] rounded-lg border border-[#2a2a4a]">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <Zap className="h-4 w-4 text-amber-400 flex-shrink-0" />
+                    <p className="text-[12px] text-[var(--wa-text-primary)] leading-relaxed truncate">
+                      <span className="font-medium text-amber-400">{workflowExecution.workflowName}</span>
+                      <span className="text-[var(--wa-text-secondary)] ml-1.5">
+                        {workflowExecution.status === 'handoff' ? '· You have control' : workflowExecution.status === 'waiting' ? '· Waiting for input' : workflowExecution.status === 'paused' ? '· Paused' : '· Running'}
+                      </span>
+                    </p>
+                  </div>
                   {workflowExecution.status === 'handoff' ? (
                     <button
                       onClick={() => handleWorkflowAction('ended')}
                       disabled={workflowActionLoading}
-                      className="text-[11px] font-semibold text-emerald-400 bg-emerald-400/10 hover:bg-emerald-400/20 px-3 py-1 rounded-full flex-shrink-0 transition-colors whitespace-nowrap flex items-center gap-1 disabled:opacity-50"
+                      className="text-[11px] font-semibold text-emerald-400 bg-emerald-400/10 hover:bg-emerald-400/20 px-3 py-1.5 rounded-full flex-shrink-0 transition-colors whitespace-nowrap flex items-center justify-center gap-1 disabled:opacity-50 w-full sm:w-auto"
                     >
                       <Play className="h-3 w-3" />
                       Resume Workflow
@@ -1591,7 +1593,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                     <button
                       onClick={() => handleWorkflowAction('handoff')}
                       disabled={workflowActionLoading}
-                      className="text-[11px] font-semibold text-amber-400 bg-amber-400/10 hover:bg-amber-400/20 px-3 py-1 rounded-full flex-shrink-0 transition-colors whitespace-nowrap flex items-center gap-1 disabled:opacity-50"
+                      className="text-[11px] font-semibold text-amber-400 bg-amber-400/10 hover:bg-amber-400/20 px-3 py-1.5 rounded-full flex-shrink-0 transition-colors whitespace-nowrap flex items-center justify-center gap-1 disabled:opacity-50 w-full sm:w-auto"
                     >
                       <HandMetal className="h-3 w-3" />
                       Take Control
