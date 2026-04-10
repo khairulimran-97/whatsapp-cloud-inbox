@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { validateDbToken } from '@/lib/db-token';
 
-const ALLOWED_TABLES = ['settings', 'conversations', 'contacts', 'messages', 'unread_counts', 'reply_templates', 'push_subscriptions', 'webhook_logs', 'ppv_schedules'];
-
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const token = searchParams.get('token');
@@ -22,11 +20,16 @@ export async function GET(request: NextRequest) {
   const db = getDb();
   const rawDb = (db as unknown as { session: { client: import('better-sqlite3').Database } }).session.client;
 
+  // Discover all user tables dynamically
+  const allTables = (rawDb.prepare(
+    `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '__%' ORDER BY name`
+  ).all() as { name: string }[]).map(r => r.name);
+
   // List tables with row counts
   if (!table) {
-    const tables = ALLOWED_TABLES.map(name => {
+    const tables = allTables.map(name => {
       try {
-        const row = rawDb.prepare(`SELECT COUNT(*) as count FROM ${name}`).get() as { count: number };
+        const row = rawDb.prepare(`SELECT COUNT(*) as count FROM "${name}"`).get() as { count: number };
         return { name, count: row.count };
       } catch {
         return { name, count: 0 };
@@ -35,8 +38,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ tables });
   }
 
-  if (!ALLOWED_TABLES.includes(table)) {
-    return NextResponse.json({ error: 'Table not allowed' }, { status: 400 });
+  if (!allTables.includes(table)) {
+    return NextResponse.json({ error: 'Table not found' }, { status: 400 });
   }
 
   // Get column info
