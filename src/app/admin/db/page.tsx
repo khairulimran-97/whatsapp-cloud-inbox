@@ -1,15 +1,21 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Search, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Database, Loader2, Copy, Check, X, Table2, Key, Filter, RotateCw } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Database, Loader2, Copy, Check, X, Table2, Key, Filter, RotateCw, MessageSquare, Users, Mail, Settings, CircleDot, FileText, Bell, ScrollText, GripHorizontal } from 'lucide-react';
 
 type TableInfo = { name: string; count: number };
 type Column = { name: string; type: string; pk: number };
 type Pagination = { page: number; limit: number; total: number; totalPages: number };
 
-const TABLE_ICONS: Record<string, string> = {
-  conversations: '💬', contacts: '👤', messages: '✉️', settings: '⚙️',
-  unread_counts: '🔴', reply_templates: '📝', push_subscriptions: '🔔', webhook_logs: '📋',
+const TABLE_ICONS: Record<string, typeof Table2> = {
+  conversations: MessageSquare,
+  contacts: Users,
+  messages: Mail,
+  settings: Settings,
+  unread_counts: CircleDot,
+  reply_templates: FileText,
+  push_subscriptions: Bell,
+  webhook_logs: ScrollText,
 };
 
 function formatTimestamp(val: unknown, colName: string): string | null {
@@ -35,6 +41,8 @@ export default function DbViewerPage() {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [selectedRow, setSelectedRow] = useState<Record<string, unknown> | null>(null);
+  const [panelWidth, setPanelWidth] = useState(420);
+  const dragRef = useRef(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -89,6 +97,30 @@ export default function DbViewerPage() {
     doLoadTable(selectedTable, pagination.page, search, orderBy, orderDir);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTable, pagination.page, search, orderBy, orderDir, token]);
+
+  // Drag to resize the detail panel width
+  const startDrag = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    dragRef.current = true;
+    const startX = e.clientX;
+    const startW = panelWidth;
+    const onMove = (ev: MouseEvent) => {
+      if (!dragRef.current) return;
+      const delta = startX - ev.clientX;
+      setPanelWidth(Math.max(300, Math.min(800, startW + delta)));
+    };
+    const onUp = () => {
+      dragRef.current = false;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, [panelWidth]);
 
   const handleSelectTable = (name: string) => {
     setSelectedTable(name);
@@ -175,7 +207,9 @@ export default function DbViewerPage() {
                   : 'text-[#e5e5ea] hover:bg-[#3a3a3c]')
               }
             >
-              <span className="text-sm leading-none">{TABLE_ICONS[t.name] || '📄'}</span>
+              <span className="text-sm leading-none">
+                {(() => { const Icon = TABLE_ICONS[t.name] || Table2; return <Icon className={'h-3.5 w-3.5 ' + (selectedTable === t.name ? 'text-white' : 'text-[#8e8e93]')} />; })()}
+              </span>
               <span className="flex-1 truncate text-[12px]">{t.name}</span>
               <span className={'text-[10px] tabular-nums ' + (selectedTable === t.name ? 'text-white/70' : 'text-[#636366]')}>
                 {t.count.toLocaleString()}
@@ -296,53 +330,6 @@ export default function DbViewerPage() {
           </table>
         </div>
 
-        {/* Row detail panel */}
-        {selectedRow && (
-          <div className="h-60 border-t border-[#3a3a3c] bg-[#2c2c2e] flex-shrink-0 overflow-auto">
-            <div className="flex items-center justify-between px-3 py-1 border-b border-[#3a3a3c] sticky top-0 bg-[#2c2c2e] z-[2]">
-              <span className="text-[10px] font-medium text-[#636366] uppercase tracking-wider">Row Detail</span>
-              <div className="flex items-center gap-1">
-                <button onClick={() => { copyValue(columns.map(c => c.name + ': ' + formatCell(selectedRow[c.name])).join('\n')); }} className="p-1 rounded hover:bg-[#3a3a3c] text-[#636366]" title="Copy all">
-                  {copied ? <Check className="h-3 w-3 text-[#30d158]" /> : <Copy className="h-3 w-3" />}
-                </button>
-                <button onClick={() => setSelectedRow(null)} className="p-1 rounded hover:bg-[#3a3a3c] text-[#636366]">
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            </div>
-            <div className="divide-y divide-[#3a3a3c]/50">
-              {columns.map(col => {
-                const raw = formatCell(selectedRow[col.name]);
-                const ts = formatTimestamp(selectedRow[col.name], col.name);
-                const isNull = isNullVal(selectedRow[col.name]);
-                return (
-                  <div key={col.name} className="flex hover:bg-[#3a3a3c]/30 group">
-                    <div className="w-40 flex-shrink-0 px-3 py-1.5 flex items-start gap-1.5 bg-[#28282a]">
-                      {col.pk ? <Key className="h-2.5 w-2.5 text-[#ff9f0a] mt-[3px]" /> : null}
-                      <span className="text-[11px] text-[#8e8e93]">{col.name}</span>
-                    </div>
-                    <div className="flex-1 px-3 py-1.5 min-w-0 flex items-start justify-between gap-2">
-                      {isNull ? (
-                        <span className="text-[#48484a] italic text-[11px]">NULL</span>
-                      ) : (
-                        <pre className="text-[11px] font-mono whitespace-pre-wrap break-all text-[#e5e5ea] leading-relaxed flex-1">
-                          {ts ? ts + '  (' + raw + ')' : raw}
-                        </pre>
-                      )}
-                      <button
-                        onClick={e => { e.stopPropagation(); copyValue(raw); }}
-                        className="opacity-0 group-hover:opacity-100 p-0.5 text-[#636366] hover:text-white flex-shrink-0"
-                      >
-                        <Copy className="h-3 w-3" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         {/* Status bar */}
         <div className="h-6 flex items-center justify-between px-3 border-t border-[#3a3a3c] bg-[#28282a] flex-shrink-0 text-[10px] text-[#636366]">
           <span>
@@ -364,6 +351,67 @@ export default function DbViewerPage() {
           </div>
         </div>
       </div>
+
+      {/* Right slideover detail panel */}
+      {selectedRow && (
+        <div className="flex-shrink-0 flex h-full" style={{ width: panelWidth }}>
+          {/* Drag handle */}
+          <div
+            onMouseDown={startDrag}
+            className="w-1 flex-shrink-0 bg-[#3a3a3c] hover:bg-[#0a84ff] cursor-col-resize transition-colors relative group"
+          >
+            <div className="absolute top-1/2 -translate-y-1/2 -left-1.5 w-4 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100">
+              <GripHorizontal className="h-3 w-3 text-[#0a84ff] rotate-90" />
+            </div>
+          </div>
+          {/* Panel content */}
+          <div className="flex-1 flex flex-col bg-[#2c2c2e] min-w-0">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-[#3a3a3c] flex-shrink-0">
+              <span className="text-[11px] font-semibold text-[#8e8e93] uppercase tracking-wider">Row Detail</span>
+              <div className="flex items-center gap-1">
+                <button onClick={() => { copyValue(columns.map(c => c.name + ': ' + formatCell(selectedRow[c.name])).join('\n')); }} className="p-1 rounded hover:bg-[#3a3a3c] text-[#636366]" title="Copy all">
+                  {copied ? <Check className="h-3 w-3 text-[#30d158]" /> : <Copy className="h-3 w-3" />}
+                </button>
+                <button onClick={() => setSelectedRow(null)} className="p-1 rounded hover:bg-[#3a3a3c] text-[#636366]" title="Close">
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-auto">
+              {columns.map(col => {
+                const raw = formatCell(selectedRow[col.name]);
+                const ts = formatTimestamp(selectedRow[col.name], col.name);
+                const isNull = isNullVal(selectedRow[col.name]);
+                return (
+                  <div key={col.name} className="border-b border-[#3a3a3c]/40 hover:bg-[#3a3a3c]/20 group">
+                    <div className="px-3 pt-2 pb-0.5 flex items-center gap-1.5">
+                      {col.pk ? <Key className="h-2.5 w-2.5 text-[#ff9f0a]" /> : null}
+                      <span className="text-[10px] font-medium text-[#636366] uppercase tracking-wide">{col.name}</span>
+                      <span className="text-[9px] text-[#48484a]">{col.type || 'TEXT'}</span>
+                      <div className="flex-1" />
+                      <button
+                        onClick={e => { e.stopPropagation(); copyValue(raw); }}
+                        className="opacity-0 group-hover:opacity-100 p-0.5 text-[#636366] hover:text-white"
+                      >
+                        <Copy className="h-2.5 w-2.5" />
+                      </button>
+                    </div>
+                    <div className="px-3 pb-2">
+                      {isNull ? (
+                        <span className="text-[#48484a] italic text-[11px]">NULL</span>
+                      ) : (
+                        <pre className="text-[11px] font-mono whitespace-pre-wrap break-all text-[#e5e5ea] leading-relaxed">
+                          {ts ? ts + '\n(' + raw + ')' : raw}
+                        </pre>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
