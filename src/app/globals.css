@@ -311,4 +311,7 @@
     opacity: 1 !important;
     pointer-events: auto !important;
   }
+  .panel-resizable {
+    width: var(--panel-w, 384px);
+  }
 }

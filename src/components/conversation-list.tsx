@@ -535,9 +535,9 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
         className={cn(
           "w-full md:flex-shrink-0 md:border-r border-[var(--wa-border-strong)] bg-[var(--wa-panel-bg)] flex flex-col panel-slide",
           isHidden ? "panel-slide-left" : "panel-slide-center",
-          !panelWidth && "md:w-96"
+          panelWidth ? "panel-resizable" : "md:w-96"
         )}
-        style={panelWidth ? { width: panelWidth, maxWidth: '100vw' } : undefined}
+        style={panelWidth ? { ['--panel-w' as string]: `${panelWidth}px` } : undefined}
       >
         <div className="px-4 pt-5 pb-3 border-b border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)]">
           <div className="safe-area-top" />
@@ -617,9 +617,9 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       className={cn(
         "w-full md:flex-shrink-0 md:border-r border-[var(--wa-border-strong)] bg-[var(--wa-panel-bg)] flex flex-col panel-slide",
         isHidden ? "panel-slide-left" : "panel-slide-center",
-        !panelWidth && "md:w-96"
+        panelWidth ? "panel-resizable" : "md:w-96"
       )}
-      style={panelWidth ? { width: panelWidth, maxWidth: '100vw' } : undefined}
+      style={panelWidth ? { ['--panel-w' as string]: `${panelWidth}px` } : undefined}
     >
       <div className="px-4 pt-5 pb-3 border-b border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)]">
         <div className="safe-area-top" />
