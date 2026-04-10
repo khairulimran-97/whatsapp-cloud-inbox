@@ -1981,7 +1981,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                           </div>
                           <div className="min-w-0 flex-1">
                             <h4 className="text-[13px] font-semibold text-[var(--wa-text-primary)] truncate">{t.title}</h4>
-                            <span className="text-[9px] uppercase tracking-wider text-[var(--wa-text-secondary)]/60 font-medium">{t.category || 'General'}</span>
+                            <span className="text-[9px] uppercase tracking-wider font-medium bg-black/[0.04] dark:bg-white/[0.06] text-[var(--wa-text-secondary)]/70 px-1.5 py-0.5 rounded">{t.category || 'General'}</span>
                           </div>
                           <button
                             onClick={() => {
