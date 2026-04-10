@@ -1592,14 +1592,40 @@ function ReplyTemplatesTab({ onClose }: { onClose: () => void }) {
           <div className="space-y-3">
             {Object.entries(grouped).map(([cat, items]) => (
               <div key={cat}>
-                <h5 className="text-[10px] font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-1.5">{cat}</h5>
-                <div className="space-y-1.5">
+                {(() => {
+                  const catLower = cat.toLowerCase();
+                  const colors: Record<string, string> = {
+                    'bola sepak': 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+                    'general': 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
+                    'marketing': 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+                    'utility': 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+                    'authentication': 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+                  };
+                  const colorClass = colors[catLower] || 'bg-teal-500/10 text-teal-600 dark:text-teal-400';
+                  return <span className={cn("text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded inline-block mb-1.5", colorClass)}>{cat}</span>;
+                })()}
+                <div className="space-y-2">
                   {items.map((t) => (
-                    <div key={t.id} className="group p-2.5 rounded-lg border border-[var(--wa-border)] bg-[var(--wa-hover)] hover:border-[var(--wa-green)]/30 transition-colors">
-                      <div className="flex items-start justify-between gap-2">
+                    <div key={t.id} className="group rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-white/[0.04] hover:border-emerald-500/30 hover:bg-emerald-50 dark:hover:bg-emerald-500/[0.06] transition-all duration-200 overflow-hidden">
+                      {/* Header */}
+                      <div className="flex items-center gap-2.5 px-3.5 pt-3 pb-2 border-b border-black/5 dark:border-white/5">
+                        <div className="h-7 w-7 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                          <MessageSquareText className="h-3.5 w-3.5 text-emerald-500" />
+                        </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-medium text-[var(--wa-text-primary)] truncate">{t.title}</p>
-                          <p className="text-[11px] text-[var(--wa-text-secondary)] mt-0.5 line-clamp-2 whitespace-pre-wrap">{t.body}</p>
+                          <p className="text-[13px] font-semibold text-[var(--wa-text-primary)] truncate">{t.title}</p>
+                          {(() => {
+                            const catLower = (t.category || 'General').toLowerCase();
+                            const colors: Record<string, string> = {
+                              'bola sepak': 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+                              'general': 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
+                              'marketing': 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+                              'utility': 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+                              'authentication': 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+                            };
+                            const colorClass = colors[catLower] || 'bg-teal-500/10 text-teal-600 dark:text-teal-400';
+                            return <span className={cn("text-[9px] uppercase tracking-wider font-medium px-1.5 py-0.5 rounded", colorClass)}>{t.category || 'General'}</span>;
+                          })()}
                         </div>
                         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                           <button
@@ -1610,11 +1636,15 @@ function ReplyTemplatesTab({ onClose }: { onClose: () => void }) {
                           </button>
                           <button
                             onClick={() => handleDelete(t.id)}
-                            className="h-7 w-7 flex items-center justify-center rounded-md text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                            className="h-7 w-7 flex items-center justify-center rounded-md text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
+                      </div>
+                      {/* Body */}
+                      <div className="px-3.5 py-2.5">
+                        <p className="text-[11.5px] text-[var(--wa-text-secondary)] whitespace-pre-wrap leading-[1.6] pl-[38px]">{t.body}</p>
                       </div>
                     </div>
                   ))}
