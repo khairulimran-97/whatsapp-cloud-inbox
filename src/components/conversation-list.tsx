@@ -1314,10 +1314,9 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
                 {!m.isDefault && (
                   <button
                     onClick={() => handleSetDefault(m.id)}
-                    title="Set as default"
-                    className="h-7 w-7 flex items-center justify-center rounded-md text-[var(--wa-text-secondary)] hover:text-[var(--wa-green)] hover:bg-[var(--wa-green)]/10 transition-colors"
+                    className="text-[10px] font-medium px-2 py-1 rounded-md text-[var(--wa-text-secondary)] hover:text-[var(--wa-green)] hover:bg-[var(--wa-green)]/10 transition-colors mr-0.5"
                   >
-                    <CheckCheck className="h-3.5 w-3.5" />
+                    Set Default
                   </button>
                 )}
                 <button
