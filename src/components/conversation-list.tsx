@@ -1258,7 +1258,6 @@ function ReplyTemplatesTab({ onClose }: { onClose: () => void }) {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
   const [body, setBody] = useState('');
-  const [appPassword, setAppPassword] = useState('');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
 
@@ -1277,7 +1276,6 @@ function ReplyTemplatesTab({ onClose }: { onClose: () => void }) {
     setTitle('');
     setCategory('');
     setBody('');
-    setAppPassword('');
     setEditingTemplate(null);
     setShowForm(false);
     setMessage(null);
@@ -1301,7 +1299,6 @@ function ReplyTemplatesTab({ onClose }: { onClose: () => void }) {
         method: isEdit ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-app-password': appPassword,
         },
         body: JSON.stringify({
           ...(isEdit && { id: editingTemplate.id }),
@@ -1326,12 +1323,10 @@ function ReplyTemplatesTab({ onClose }: { onClose: () => void }) {
   };
 
   const handleDelete = async (id: string) => {
-    const pw = prompt('Enter app password to delete:');
-    if (!pw) return;
+    if (!confirm('Delete this template?')) return;
     try {
       const res = await fetch(`/api/reply-templates?id=${id}`, {
         method: 'DELETE',
-        headers: { 'x-app-password': pw },
       });
       if (res.ok) {
         await fetchTemplates();
@@ -1394,17 +1389,6 @@ function ReplyTemplatesTab({ onClose }: { onClose: () => void }) {
             className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50 resize-none"
           />
         </div>
-        <div>
-          <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider">App Password</label>
-          <input
-            type="password"
-            value={appPassword}
-            onChange={(e) => setAppPassword(e.target.value)}
-            placeholder="Enter app password to confirm"
-            className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
-          />
-        </div>
-
         {message && (
           <p className={cn("text-xs px-3 py-2 rounded-lg", message.error ? "text-red-400 bg-red-500/10" : "text-green-400 bg-green-500/10")}>
             {message.text}
@@ -1415,7 +1399,7 @@ function ReplyTemplatesTab({ onClose }: { onClose: () => void }) {
           <Button variant="ghost" onClick={resetForm} className="text-sm">Cancel</Button>
           <Button
             onClick={handleSave}
-            disabled={saving || !title.trim() || !body.trim() || !appPassword}
+            disabled={saving || !title.trim() || !body.trim()}
             className="bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] text-white text-sm gap-1.5"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
