@@ -1671,10 +1671,10 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
         </div>
       </ScrollArea>
 
-      <div className="border-t border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)] safe-area-bottom px-3 sm:px-4 md:px-[30px]">
+      <div className="border-t border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)] safe-area-bottom">
             {/* Workflow execution banner */}
             {workflowExecution && (
-              <div className="pt-2">
+              <div className="px-3 sm:px-4 md:px-[30px] py-2 border-b border-[var(--wa-border)]">
                 <div className="flex flex-col gap-2 px-3 py-2 bg-[#1a1a2e] rounded-lg border border-[#2a2a4a]">
                   <div className="flex items-center gap-2">
                     <Zap className="h-4 w-4 text-amber-400 flex-shrink-0" />
@@ -1706,8 +1706,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
               </div>
             )}
 
-
-
+            <div className="px-3 sm:px-4 md:px-[30px]">
             {selectedFile && (
               <div className="pt-3 pb-0">
                 <div className="flex items-center gap-3 p-2.5 bg-[var(--wa-panel-bg)] rounded-lg border border-[var(--wa-border)]">
@@ -1735,7 +1734,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
 
             {conversationStatus === 'ended' ? (
               <div className="flex items-center min-h-[50px] bg-red-500/10 border-t border-red-500/20 -mx-3 sm:-mx-4 md:-mx-[30px] px-3 sm:px-4 md:px-[30px]">
-                <div className="flex-1 flex items-center justify-between gap-3 px-4">
+                <div className="flex-1 flex items-center justify-between gap-3 px-1">
                   <div className="flex items-center gap-2">
                     <div className="h-6 w-6 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
                       <CircleCheck className="h-3.5 w-3.5 text-red-400" />
@@ -1843,6 +1842,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
               </form>
               </>
             )}
+            </div>
       </div>
 
       <InteractiveMessageDialog
@@ -1941,17 +1941,17 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
 
       {/* Quick Reply Dialog */}
       <Dialog open={showQuickReplyDialog} onOpenChange={setShowQuickReplyDialog}>
-        <DialogContent className="sm:max-w-[440px] rounded-2xl p-0 gap-0 max-h-[70vh] flex flex-col">
-          <DialogHeader className="px-5 pt-5 pb-3 flex-shrink-0">
+        <DialogContent className="sm:max-w-[480px] rounded-2xl p-0 gap-0 max-h-[70vh] flex flex-col">
+          <DialogHeader className="px-5 pt-5 pb-3 flex-shrink-0 border-b border-[var(--wa-border)]">
             <DialogTitle className="text-[15px] flex items-center gap-2">
               <MessageSquareQuote className="h-4.5 w-4.5 text-emerald-500" />
               Quick Reply Templates
             </DialogTitle>
             <DialogDescription className="text-[12px]">
-              Click a template to insert into your message
+              Select a template to insert into your message
             </DialogDescription>
           </DialogHeader>
-          <div className="overflow-y-auto flex-1 px-3 pb-4">
+          <div className="overflow-y-auto flex-1 p-3 space-y-2">
             {(() => {
               const grouped = replyTemplates.reduce<Record<string, typeof replyTemplates>>((acc, t) => {
                 const cat = t.category || 'General';
@@ -1962,33 +1962,53 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
               return Object.entries(grouped).map(([cat, items], gi) => (
                 <div key={cat}>
                   {(gi > 0 || Object.keys(grouped).length > 1) && (
-                    <div className={cn("px-2 py-1.5 text-[10px] uppercase tracking-wider font-semibold text-[var(--wa-text-secondary)]", gi > 0 && "mt-2 border-t border-[var(--wa-border)] pt-3")}>
+                    <div className={cn("px-1 py-1 text-[10px] uppercase tracking-wider font-semibold text-[var(--wa-text-secondary)]", gi > 0 && "mt-1 pt-2")}>
                       {cat}
                     </div>
                   )}
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     {items.map((t) => (
-                      <button
+                      <div
                         key={t.id}
-                        onClick={() => {
-                          setMessageInput(prev => prev ? prev + '\n' + t.body : t.body);
-                          setShowQuickReplyDialog(false);
-                          requestAnimationFrame(() => {
-                            if (textareaRef.current) {
-                              textareaRef.current.style.height = 'auto';
-                              textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
-                              textareaRef.current.focus();
-                            }
-                          });
-                        }}
-                        className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-[var(--wa-hover)] transition-colors group cursor-pointer"
+                        className="rounded-xl border border-[var(--wa-border)] bg-[var(--wa-panel-bg)] hover:border-[var(--wa-green)]/40 transition-colors overflow-hidden"
                       >
-                        <span className="text-[13px] font-medium text-[var(--wa-text-primary)] flex items-center gap-2">
-                          <MessageSquareQuote className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0 opacity-60 group-hover:opacity-100" />
-                          {t.title}
-                        </span>
-                        <p className="text-[11px] text-[var(--wa-text-secondary)] mt-1 pl-[22px] whitespace-pre-wrap line-clamp-3 leading-relaxed">{t.body}</p>
-                      </button>
+                        <div className="px-3.5 pt-3 pb-2">
+                          <h4 className="text-[13px] font-semibold text-[var(--wa-text-primary)] flex items-center gap-2">
+                            <MessageSquareQuote className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
+                            {t.title}
+                          </h4>
+                          <p className="text-[11px] text-[var(--wa-text-secondary)] mt-1.5 whitespace-pre-wrap line-clamp-4 leading-relaxed pl-[22px]">{t.body}</p>
+                        </div>
+                        <div className="flex items-center justify-end gap-2 px-3 py-2 bg-[var(--wa-hover)]/50 border-t border-[var(--wa-border)]">
+                          <button
+                            onClick={() => {
+                              if (navigator.clipboard) {
+                                navigator.clipboard.writeText(t.body);
+                              }
+                            }}
+                            className="text-[11px] text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] px-2.5 py-1 rounded-md hover:bg-[var(--wa-hover)] transition-colors"
+                          >
+                            Copy
+                          </button>
+                          <button
+                            onClick={() => {
+                              setMessageInput(prev => prev ? prev + '\n' + t.body : t.body);
+                              setShowQuickReplyDialog(false);
+                              requestAnimationFrame(() => {
+                                if (textareaRef.current) {
+                                  textareaRef.current.style.height = 'auto';
+                                  textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
+                                  textareaRef.current.focus();
+                                }
+                              });
+                            }}
+                            className="text-[11px] font-semibold text-white bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] px-3.5 py-1 rounded-md transition-colors flex items-center gap-1"
+                          >
+                            <Send className="h-3 w-3" />
+                            Use
+                          </button>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
