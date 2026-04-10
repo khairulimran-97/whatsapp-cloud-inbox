@@ -1759,7 +1759,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                   ⚠️ Rate limited — message not sent. Please wait a moment and try again.
                 </div>
               )}
-              <form onSubmit={handleSendMessage} className="py-2.5 sm:py-3 flex gap-1.5 items-end">
+              <form onSubmit={handleSendMessage} className="py-1.5 sm:py-2 flex gap-1.5 items-end">
                 <input
                   ref={fileInputRef}
                   type="file"
