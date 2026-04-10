@@ -710,6 +710,7 @@ export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, pa
   // Multi-merchant
   const [merchants, setMerchants] = useState<BclMerchantInfo[]>([]);
   const [selectedMerchant, setSelectedMerchant] = useState<string>('');
+  const [merchantsReady, setMerchantsReady] = useState(false);
 
   useEffect(() => {
     fetch('/api/bcl-merchants')
@@ -722,12 +723,13 @@ export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, pa
           setSelectedMerchant(def.id);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setMerchantsReady(true));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchCustomer = useCallback(async () => {
-    if (!phoneNumber) return;
+    if (!phoneNumber || !merchantsReady) return;
     setLoading(true);
     setData(null);
     try {
@@ -741,10 +743,10 @@ export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, pa
     } finally {
       setLoading(false);
     }
-  }, [phoneNumber, selectedMerchant]);
+  }, [phoneNumber, selectedMerchant, merchantsReady]);
 
   useEffect(() => {
-    if ((open || inline) && phoneNumber) {
+    if ((open || inline) && phoneNumber && merchantsReady) {
       fetchCustomer();
     }
     if (!open && !inline) {
