@@ -361,7 +361,7 @@ export default function PPVSchedulePage() {
 
                             {/* Card content */}
                             <div className="flex-1 min-w-0">
-                              <div className="px-3.5 py-3">
+                              <div className="px-4 py-3.5">
                                 <div className="flex items-start justify-between gap-2">
                                   <h3 className="text-[14px] font-semibold text-[var(--wa-text-primary)] leading-snug">{s.matchDetails}</h3>
                                   <div className={cn("flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold", badge.bg, badge.text)}>
@@ -370,28 +370,28 @@ export default function PPVSchedulePage() {
                                   </div>
                                 </div>
 
-                                <div className="grid grid-cols-3 items-center gap-2 mt-1.5 text-[12px] text-[var(--wa-text-secondary)]">
-                                  <span className="inline-flex items-center gap-1.5">
+                                <div className="flex items-center gap-3 mt-3 text-[12px] text-[var(--wa-text-secondary)]">
+                                  <span className="inline-flex items-center gap-1.5 flex-shrink-0">
                                     <Clock className="h-3.5 w-3.5 opacity-50" />
                                     {timeStr}
                                   </span>
-                                  <span className="inline-flex items-center justify-center gap-1 px-2 py-0.5 rounded-full bg-[var(--wa-green)]/10 text-[var(--wa-green)] font-medium text-[11px]">
+                                  <span className="opacity-30">·</span>
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[var(--wa-green)]/10 text-[var(--wa-green)] font-medium text-[11px] whitespace-nowrap flex-shrink-0">
                                     <Trophy className="h-3 w-3" />
                                     {s.category}
                                   </span>
-                                  <span className="inline-flex items-center justify-end gap-1.5">
-                                    {s.bclAccount ? (
+                                  {s.bclAccount && (
+                                    <>
+                                      <span className="opacity-30">·</span>
                                       <a href={`https://${s.bclAccount.replace(/^https?:\/\//, '')}`} target="_blank" rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-1 text-[var(--wa-green)] hover:underline">
+                                        className="inline-flex items-center gap-1 text-[var(--wa-green)] hover:underline ml-auto flex-shrink-0">
                                         <CreditCard className="h-3.5 w-3.5 opacity-60" />{s.bclAccount}
                                       </a>
-                                    ) : s.remark ? (
-                                      <span className="italic opacity-70 truncate">{s.remark}</span>
-                                    ) : null}
-                                  </span>
+                                    </>
+                                  )}
                                 </div>
-                                {s.bclAccount && s.remark && (
-                                  <div className="mt-1 text-[11px] text-[var(--wa-text-secondary)] italic opacity-70">{s.remark}</div>
+                                {s.remark && (
+                                  <div className="mt-2 text-[12px] text-[var(--wa-text-secondary)] italic opacity-70">{s.remark}</div>
                                 )}
                               </div>
 
