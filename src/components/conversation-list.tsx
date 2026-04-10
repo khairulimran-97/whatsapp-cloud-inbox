@@ -1290,52 +1290,60 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
         )}
 
         <div className="space-y-2">
-          {merchants.map(m => (
-            <div key={m.id} className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors ${
-              m.isDefault
-                ? 'border-blue-500/30 bg-blue-500/[0.04]'
-                : 'border-[var(--wa-border)] bg-[var(--wa-search-bg)]'
-            }`}>
-              <div className="h-8 w-8 rounded-full bg-blue-500/15 flex items-center justify-center flex-shrink-0">
-                <Store className="h-3.5 w-3.5 text-blue-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[13px] font-medium text-[var(--wa-text-primary)] truncate">{m.name}</span>
-                  {m.isDefault && (
-                    <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400">Default</span>
-                  )}
+          {merchants.map(m => {
+            // When editing, only show the merchant being edited
+            if (editingId && m.id !== editingId) return null;
+            return (
+              <div key={m.id} className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors ${
+                m.isDefault
+                  ? 'border-blue-500/30 bg-blue-500/[0.04]'
+                  : 'border-amber-500/25 bg-amber-500/[0.03]'
+              }`}>
+                <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  m.isDefault ? 'bg-blue-500/15' : 'bg-amber-500/15'
+                }`}>
+                  <Store className={`h-3.5 w-3.5 ${m.isDefault ? 'text-blue-400' : 'text-amber-400'}`} />
                 </div>
-                <p className="text-[10px] text-[var(--wa-text-secondary)]/60 font-mono truncate mt-0.5">
-                  ••••{m.apiKey.slice(-6)}
-                </p>
-              </div>
-              <div className="flex items-center gap-0.5 flex-shrink-0">
-                {!m.isDefault && (
-                  <button
-                    onClick={() => handleSetDefault(m.id)}
-                    className="text-[10px] font-medium px-2 py-1 rounded-md text-[var(--wa-text-secondary)] hover:text-blue-400 hover:bg-blue-500/10 transition-colors mr-0.5"
-                  >
-                    Set Default
-                  </button>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[13px] font-medium text-[var(--wa-text-primary)] truncate">{m.name}</span>
+                    {m.isDefault && (
+                      <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400">Default</span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-[var(--wa-text-secondary)]/60 font-mono truncate mt-0.5">
+                    ••••{m.apiKey.slice(-6)}
+                  </p>
+                </div>
+                {!showForm && (
+                  <div className="flex items-center gap-0.5 flex-shrink-0">
+                    {!m.isDefault && (
+                      <button
+                        onClick={() => handleSetDefault(m.id)}
+                        className="text-[10px] font-medium px-2 py-1 rounded-md text-[var(--wa-text-secondary)] hover:text-blue-400 hover:bg-blue-500/10 transition-colors mr-0.5"
+                      >
+                        Set Default
+                      </button>
+                    )}
+                    <button
+                      onClick={() => startEdit(m)}
+                      title="Edit"
+                      className="h-7 w-7 flex items-center justify-center rounded-md text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)] transition-colors"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(m.id)}
+                      title="Remove"
+                      className="h-7 w-7 flex items-center justify-center rounded-md text-[var(--wa-text-secondary)] hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 )}
-                <button
-                  onClick={() => startEdit(m)}
-                  title="Edit"
-                  className="h-7 w-7 flex items-center justify-center rounded-md text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)] transition-colors"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </button>
-                <button
-                  onClick={() => handleDelete(m.id)}
-                  title="Remove"
-                  className="h-7 w-7 flex items-center justify-center rounded-md text-[var(--wa-text-secondary)] hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
