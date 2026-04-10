@@ -482,7 +482,7 @@ function MerchantSelector({ merchants, selected, onChange }: { merchants: BclMer
                 onClick={() => onChange(m.id)}
                 className={`text-[11px] font-medium px-3 py-1 rounded-md transition-all flex-1 min-w-0 truncate ${
                   isActive
-                    ? 'bg-blue-500 text-white shadow-sm'
+                    ? 'bg-violet-500 text-white shadow-sm'
                     : 'text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
                 }`}
               >
