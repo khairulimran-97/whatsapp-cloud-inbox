@@ -317,125 +317,115 @@ export default function PPVSchedulePage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-7">
             {grouped.map(({ date, pics }) => {
               const dateTotal = pics.reduce((sum, p) => sum + p.items.length, 0);
               return (
-              <fieldset key={date} className="rounded-2xl border border-[var(--wa-border)] px-4 pb-4 pt-2">
-                <legend className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-[12px] font-semibold mx-1 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-                  <CalendarDays className="h-3.5 w-3.5" />
-                  {date}
-                  <span className="opacity-60">({dateTotal})</span>
-                </legend>
+              <section key={date}>
+                {/* Date section header */}
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="inline-flex items-center gap-2 text-[13px] font-semibold text-indigo-600 dark:text-indigo-400">
+                    <CalendarDays className="h-4 w-4" />
+                    {date}
+                  </span>
+                  <div className="flex-1 h-px bg-indigo-500/15" />
+                  <span className="text-[11px] font-medium text-indigo-500/60 dark:text-indigo-400/60">{dateTotal}</span>
+                </div>
 
-                {/* PIC sub-groups */}
-                <div className="space-y-5 mt-2">
+                {/* PIC groups with left accent border */}
+                <div className="space-y-4">
                   {pics.map(({ pic, items }) => (
-                    <div key={pic} className="flex gap-3">
-                      {/* Vertical PIC badge on left */}
-                      <div className="flex flex-col items-center pt-0.5">
+                    <div key={pic} className={cn(
+                      "border-l-[3px] rounded-r-xl pl-3",
+                      pic === 'No PIC yet'
+                        ? "border-l-gray-300 dark:border-l-gray-600"
+                        : "border-l-violet-500"
+                    )}>
+                      {/* PIC label */}
+                      <div className="flex items-center gap-2 mb-2">
                         <div className={cn(
-                          "flex items-center justify-center w-7 h-7 rounded-full flex-shrink-0",
+                          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold",
                           pic === 'No PIC yet'
-                            ? "bg-gray-500/10 text-gray-500 dark:text-gray-400"
+                            ? "bg-gray-500/8 text-gray-500 dark:text-gray-400"
                             : "bg-violet-500/10 text-violet-600 dark:text-violet-400"
                         )}>
-                          <User className="h-3.5 w-3.5" />
+                          <User className="h-3 w-3" />
+                          {pic}
                         </div>
-                        {items.length > 1 && (
-                          <>
-                            <div className={cn(
-                              "flex-1 w-px my-1.5",
-                              pic === 'No PIC yet' ? "bg-gray-300 dark:bg-gray-700" : "bg-violet-500/25"
-                            )} />
-                            <span className={cn(
-                              "text-[10px] font-bold tabular-nums",
-                              pic === 'No PIC yet' ? "text-gray-400" : "text-violet-600 dark:text-violet-400"
-                            )}>{items.length}</span>
-                          </>
-                        )}
+                        <span className={cn(
+                          "text-[10px] font-medium",
+                          pic === 'No PIC yet' ? "text-gray-400" : "text-violet-500/50 dark:text-violet-400/50"
+                        )}>{items.length} match{items.length !== 1 ? 'es' : ''}</span>
                       </div>
 
                       {/* Cards */}
-                      <div className="flex-1 min-w-0">
-                        <div className={cn(
-                          "text-[11px] font-semibold mb-2 leading-tight",
-                          pic === 'No PIC yet' ? "text-gray-500 dark:text-gray-400" : "text-violet-600 dark:text-violet-400"
-                        )}>{pic}</div>
-                        <div className="space-y-2.5">
+                      <div className="space-y-2">
                         {items.map((s) => {
                           const dt = new Date(s.matchDatetime);
                           const timeStr = dt.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
-                          const dateShort = dt.toLocaleDateString('en-MY', { day: 'numeric', month: 'short' });
                           const badge = statusBadge(s.status);
                           return (
-                            <div key={s.id} className="group rounded-2xl bg-[var(--wa-panel-bg)] border border-[var(--wa-border)] transition-all hover:shadow-md hover:border-[var(--wa-border-strong,var(--wa-border))]">
-                              <div className="p-4">
-                                {/* Top row: title + status */}
-                                <div className="flex items-start justify-between gap-3">
-                                  <h3 className="text-[14px] font-semibold text-[var(--wa-text-primary)] leading-snug">{s.matchDetails}</h3>
-                                  <div className={cn("flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-semibold", badge.bg, badge.text)}>
+                            <div key={s.id} className="group rounded-xl bg-[var(--wa-panel-bg)] border border-[var(--wa-border)] transition-all hover:shadow-md hover:border-[var(--wa-border-strong,var(--wa-border))]">
+                              <div className="px-3.5 py-3">
+                                {/* Title + status on one row */}
+                                <div className="flex items-start justify-between gap-2">
+                                  <h3 className="text-[13px] font-semibold text-[var(--wa-text-primary)] leading-snug">{s.matchDetails}</h3>
+                                  <div className={cn("flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-semibold", badge.bg, badge.text)}>
                                     <span className={cn("w-1.5 h-1.5 rounded-full", badge.dot)} />
                                     {s.status.charAt(0).toUpperCase() + s.status.slice(1)}
                                   </div>
                                 </div>
 
-                                {/* Info row */}
-                                <div className="flex items-center gap-2 mt-2 flex-wrap">
-                                  <span className="inline-flex items-center gap-1.5 text-[12px] text-[var(--wa-text-secondary)]">
-                                    <Clock className="h-3.5 w-3.5 text-[var(--wa-text-secondary)] opacity-70" />
-                                    {dateShort} · {timeStr}
-                                  </span>
-                                  <span className="text-[var(--wa-border)]">·</span>
-                                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--wa-text-secondary)] bg-[var(--wa-hover)] px-2 py-0.5 rounded-md">
-                                    <Trophy className="h-3 w-3 opacity-60" />
-                                    {s.category}
-                                  </span>
+                                {/* Details row */}
+                                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap text-[11px] text-[var(--wa-text-secondary)]">
+                                  <Clock className="h-3 w-3 opacity-50" />
+                                  <span>{timeStr}</span>
+                                  <span className="opacity-30">·</span>
+                                  <Trophy className="h-3 w-3 opacity-50" />
+                                  <span>{s.category}</span>
                                   {s.bclAccount && (
                                     <>
-                                      <span className="text-[var(--wa-border)]">·</span>
+                                      <span className="opacity-30">·</span>
                                       <a href={`https://${s.bclAccount.replace(/^https?:\/\//, '')}`} target="_blank" rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-1 text-[11px] text-[var(--wa-green)] bg-[var(--wa-hover)] px-2 py-0.5 rounded-md hover:underline ml-auto">
+                                        className="inline-flex items-center gap-1 text-[var(--wa-green)] hover:underline">
                                         <CreditCard className="h-3 w-3 opacity-60" />{s.bclAccount}
                                       </a>
                                     </>
                                   )}
+                                  {s.remark && (
+                                    <>
+                                      <span className="opacity-30">·</span>
+                                      <span className="italic opacity-70">{s.remark}</span>
+                                    </>
+                                  )}
                                 </div>
-
-                                {/* Meta row - remark only (PIC shown in group header) */}
-                                {s.remark && (
-                                  <div className="flex items-center gap-2 mt-2">
-                                    <span className="text-[11px] text-[var(--wa-text-secondary)] italic">{s.remark}</span>
-                                  </div>
-                                )}
                               </div>
 
-                              {/* Actions */}
+                              {/* Compact actions */}
                               <div className="flex items-center border-t border-[var(--wa-border)] divide-x divide-[var(--wa-border)]">
                                 {s.status !== 'completed' && s.status !== 'cancelled' && (
                                   <button onClick={() => handleMarkComplete(s)}
-                                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/5 transition-colors">
-                                    <Check className="h-3.5 w-3.5" /> Complete
+                                    className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/5 transition-colors">
+                                    <Check className="h-3 w-3" /> Complete
                                   </button>
                                 )}
                                 <button onClick={() => openEdit(s)}
-                                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium text-[var(--wa-text-secondary)] hover:bg-[var(--wa-hover)] transition-colors">
-                                  <Pencil className="h-3.5 w-3.5" /> Edit
+                                  className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium text-[var(--wa-text-secondary)] hover:bg-[var(--wa-hover)] transition-colors">
+                                  <Pencil className="h-3 w-3" /> Edit
                                 </button>
                                 <button onClick={() => handleDelete(s.id)}
-                                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium text-red-500 dark:text-red-400 hover:bg-red-500/5 transition-colors">
-                                  <Trash2 className="h-3.5 w-3.5" /> Delete
+                                  className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium text-red-500 dark:text-red-400 hover:bg-red-500/5 transition-colors">
+                                  <Trash2 className="h-3 w-3" /> Delete
                                 </button>
                               </div>
                             </div>
                           );
                         })}
-                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
-              </fieldset>
+              </section>
               );
             })}
           </div>
