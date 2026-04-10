@@ -1734,8 +1734,8 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
             )}
 
             {conversationStatus === 'ended' ? (
-              <div className="py-2.5">
-                <div className="flex items-center justify-between gap-3 py-2 px-4 bg-[var(--wa-ended-pill-bg)] backdrop-blur-sm rounded-full border border-[var(--wa-border)] shadow-sm">
+              <div className="flex items-center justify-center min-h-[50px]">
+                <div className="flex items-center justify-between gap-3 py-1.5 px-4 bg-[var(--wa-ended-pill-bg)] backdrop-blur-sm rounded-full border border-[var(--wa-border)] shadow-sm">
                   <span className="text-[13px] text-[var(--wa-ended-pill-text)]">🔒 Conversation ended</span>
                   <button
                     className="text-[13px] font-medium text-[var(--wa-green)] hover:text-[var(--wa-green-dark)] active:text-[var(--wa-green-darker)] disabled:opacity-50 flex items-center gap-1"
