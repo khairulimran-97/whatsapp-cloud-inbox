@@ -275,7 +275,7 @@ export default function PPVSchedulePage() {
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-4">
         {/* Category pills */}
         {allCategories.length > 1 && (
-          <div className="flex items-center gap-2 pb-4 overflow-x-auto scrollbar-none -mx-4 px-4 sm:-mx-6 sm:px-6">
+          <div className="flex items-center gap-2 pb-4 mb-2 overflow-x-auto scrollbar-none -mx-4 px-4 sm:-mx-6 sm:px-6">
             <button onClick={() => setFilterCategory('all')}
               className={cn(
                 "px-3.5 py-1.5 text-[12px] font-medium rounded-full transition-all whitespace-nowrap flex-shrink-0 border",
