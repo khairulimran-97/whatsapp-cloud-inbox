@@ -64,6 +64,7 @@ type Props = {
   open: boolean;
   onClose: () => void;
   inline?: boolean;
+  panelWidth?: number;
 };
 
 function formatRM(amount: number | string | undefined): string {
@@ -210,7 +211,7 @@ function TransactionCard({ tx }: { tx: Transaction }) {
   );
 }
 
-export function CustomerSidebar({ phoneNumber, open, onClose, inline = false }: Props) {
+export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, panelWidth }: Props) {
   const [data, setData] = useState<CustomerData | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -241,7 +242,10 @@ export function CustomerSidebar({ phoneNumber, open, onClose, inline = false }: 
   // Inline mode: render as a static panel
   if (inline) {
     return (
-      <div className="w-[420px] flex-shrink-0 border-l border-[var(--wa-border)] bg-[var(--wa-panel-bg)] flex flex-col h-full">
+      <div
+        className="flex-shrink-0 border-l border-[var(--wa-border)] bg-[var(--wa-panel-bg)] flex flex-col h-full"
+        style={{ width: panelWidth || 420, maxWidth: '100vw' }}
+      >
         <div className="flex items-center h-[60px] px-4 border-b border-[var(--wa-border)] bg-[var(--wa-panel-bg)] flex-shrink-0">
           <h3 className="text-[13px] font-semibold text-[var(--wa-text-primary)]">
             Customer Info

@@ -279,6 +279,8 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [showMessageSearch, setShowMessageSearch] = useState(false);
   const [showCustomerSidebar, setShowCustomerSidebar] = useState(false);
+  const [showQuickReplyDialog, setShowQuickReplyDialog] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(420);
   const [messageSearchQuery, setMessageSearchQuery] = useState('');
   const [messageSearchResults, setMessageSearchResults] = useState<Message[]>([]);
   const [searchMatchIndex, setSearchMatchIndex] = useState(0);
@@ -308,6 +310,30 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
   const refreshingRef = useRef(false);
   const markedReadRef = useRef<string>('');
   const prevPhoneRef = useRef<string | undefined>(undefined);
+
+  const SIDEBAR_MIN = 300;
+  const SIDEBAR_MAX = 600;
+  const handleSidebarResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = sidebarWidth;
+    let currentW = startW;
+    const onMove = (ev: MouseEvent) => {
+      // Dragging left = wider sidebar (delta is negative)
+      currentW = Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, startW - (ev.clientX - startX)));
+      setSidebarWidth(currentW);
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [sidebarWidth]);
 
   // Initialize notification sound — shares unlock from parent's first click
   useEffect(() => {
@@ -1770,44 +1796,11 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                       {replyTemplates.length > 0 && (
                         <>
                           <DropdownMenuSeparator />
-                          <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-[var(--wa-text-secondary)]">Quick Reply</DropdownMenuLabel>
-                          {(() => {
-                            const grouped = replyTemplates.reduce<Record<string, typeof replyTemplates>>((acc, t) => {
-                              const cat = t.category || 'General';
-                              if (!acc[cat]) acc[cat] = [];
-                              acc[cat].push(t);
-                              return acc;
-                            }, {});
-                            return Object.entries(grouped).map(([cat, items], gi) => (
-                              <div key={cat}>
-                                {gi > 0 && <DropdownMenuSeparator />}
-                                {Object.keys(grouped).length > 1 && (
-                                  <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-[var(--wa-text-secondary)]/60 py-0.5">{cat}</DropdownMenuLabel>
-                                )}
-                                {items.map((t) => (
-                                  <DropdownMenuItem
-                                    key={t.id}
-                                    onClick={() => {
-                                      setMessageInput(prev => prev ? prev + '\n' + t.body : t.body);
-                                      requestAnimationFrame(() => {
-                                        if (textareaRef.current) {
-                                          textareaRef.current.style.height = 'auto';
-                                          textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
-                                        }
-                                      });
-                                    }}
-                                    className="py-2 flex flex-col items-start gap-0.5 cursor-pointer"
-                                  >
-                                    <span className="text-xs font-medium text-[var(--wa-text-primary)] flex items-center gap-1.5">
-                                      <MessageSquareQuote className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
-                                      {t.title}
-                                    </span>
-                                    <span className="text-[11px] text-[var(--wa-text-secondary)] line-clamp-2 whitespace-pre-wrap pl-5">{t.body}</span>
-                                  </DropdownMenuItem>
-                                ))}
-                              </div>
-                            ));
-                          })()}
+                          <DropdownMenuItem onClick={() => setShowQuickReplyDialog(true)} className="py-2.5">
+                            <MessageSquareQuote className="h-4 w-4 mr-3 text-emerald-500" />
+                            Quick Reply
+                            <span className="ml-auto text-[10px] text-[var(--wa-text-secondary)]">{replyTemplates.length}</span>
+                          </DropdownMenuItem>
                         </>
                       )}
                     </DropdownMenuContent>
@@ -1941,6 +1934,65 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
         </DialogContent>
       </Dialog>
 
+      {/* Quick Reply Dialog */}
+      <Dialog open={showQuickReplyDialog} onOpenChange={setShowQuickReplyDialog}>
+        <DialogContent className="sm:max-w-[440px] rounded-2xl p-0 gap-0 max-h-[70vh] flex flex-col">
+          <DialogHeader className="px-5 pt-5 pb-3 flex-shrink-0">
+            <DialogTitle className="text-[15px] flex items-center gap-2">
+              <MessageSquareQuote className="h-4.5 w-4.5 text-emerald-500" />
+              Quick Reply Templates
+            </DialogTitle>
+            <DialogDescription className="text-[12px]">
+              Click a template to insert into your message
+            </DialogDescription>
+          </DialogHeader>
+          <div className="overflow-y-auto flex-1 px-3 pb-4">
+            {(() => {
+              const grouped = replyTemplates.reduce<Record<string, typeof replyTemplates>>((acc, t) => {
+                const cat = t.category || 'General';
+                if (!acc[cat]) acc[cat] = [];
+                acc[cat].push(t);
+                return acc;
+              }, {});
+              return Object.entries(grouped).map(([cat, items], gi) => (
+                <div key={cat}>
+                  {(gi > 0 || Object.keys(grouped).length > 1) && (
+                    <div className={cn("px-2 py-1.5 text-[10px] uppercase tracking-wider font-semibold text-[var(--wa-text-secondary)]", gi > 0 && "mt-2 border-t border-[var(--wa-border)] pt-3")}>
+                      {cat}
+                    </div>
+                  )}
+                  <div className="space-y-1">
+                    {items.map((t) => (
+                      <button
+                        key={t.id}
+                        onClick={() => {
+                          setMessageInput(prev => prev ? prev + '\n' + t.body : t.body);
+                          setShowQuickReplyDialog(false);
+                          requestAnimationFrame(() => {
+                            if (textareaRef.current) {
+                              textareaRef.current.style.height = 'auto';
+                              textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
+                              textareaRef.current.focus();
+                            }
+                          });
+                        }}
+                        className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-[var(--wa-hover)] transition-colors group cursor-pointer"
+                      >
+                        <span className="text-[13px] font-medium text-[var(--wa-text-primary)] flex items-center gap-2">
+                          <MessageSquareQuote className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0 opacity-60 group-hover:opacity-100" />
+                          {t.title}
+                        </span>
+                        <p className="text-[11px] text-[var(--wa-text-secondary)] mt-1 pl-[22px] whitespace-pre-wrap line-clamp-3 leading-relaxed">{t.body}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ));
+            })()}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Image Lightbox */}
       {lightboxUrl && (
         <Lightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />
@@ -1960,14 +2012,21 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
       )}
       </div>
 
-      {/* Inline sidebar for desktop (xl+) */}
+      {/* Inline sidebar for desktop (xl+) with resize handle */}
       {phoneNumber && (
-        <div className="hidden xl:block">
+        <div className="hidden xl:flex">
+          <div
+            className="w-1 flex-shrink-0 cursor-col-resize flex items-center justify-center hover:bg-[var(--wa-green)]/20 active:bg-[var(--wa-green)]/30 transition-colors group z-10"
+            onMouseDown={handleSidebarResizeStart}
+          >
+            <div className="w-[2px] h-8 rounded-full bg-[var(--wa-border)] group-hover:bg-[var(--wa-green)]/60 group-active:bg-[var(--wa-green)] transition-colors" />
+          </div>
           <CustomerSidebar
             phoneNumber={phoneNumber}
             open={true}
             onClose={() => {}}
             inline
+            panelWidth={sidebarWidth}
           />
         </div>
       )}
