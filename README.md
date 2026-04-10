@@ -140,32 +140,117 @@ Open [http://localhost:4000](http://localhost:4000)
 ### Quick Start
 
 ```bash
-docker compose up -d              # Start
-docker compose down               # Stop
+docker compose up -d              # Start containers
+docker compose down               # Stop containers
 docker compose up -d --build      # Rebuild after code changes
+docker compose logs -f             # View live logs
 ```
 
-### Manual Docker
+### Image Details
+
+- **Base:** `node:22-alpine`
+- **Build:** Multi-stage (deps → build → production)
+- **Output:** Next.js standalone mode (~238MB final image)
+- **Port:** `4000`
+- **User:** Non-root (`nextjs:nodejs`, UID 1001)
+
+### Manual Docker Build
 
 ```bash
+# Build image
 docker build -t whatsapp-inbox .
-docker run -d -p 4000:4000 --env-file .env -v ./data:/app/data whatsapp-inbox
+
+# Run container
+docker run -d \
+  --name whatsapp-inbox \
+  -p 4000:4000 \
+  --env-file .env \
+  -v ./data:/app/data \
+  --restart unless-stopped \
+  whatsapp-inbox
 ```
 
 ### Production Deployment
 
+#### First-time Setup
+
 ```bash
-# On your server
+# 1. Clone repository on your server
 git clone <your-repo-url>
 cd whatsapp-cloud-inbox
-cp .env.example .env    # Edit with your credentials
+
+# 2. Configure environment
+cp .env.example .env
+nano .env                          # Fill in your credentials
+
+# 3. Build and start
 docker compose up -d --build
 
-# For updates
-git pull && docker compose up -d --build
+# 4. Verify it's running
+docker compose ps                  # Check container status
+curl http://localhost:4000         # Should return HTML
 ```
 
-The `data/` directory is volume-mounted to persist the SQLite database across container restarts.
+#### Updating to Latest Version
+
+```bash
+cd whatsapp-cloud-inbox
+
+# 1. Pull latest code
+git pull
+
+# 2. Rebuild and restart (zero-downtime with --build)
+docker compose up -d --build
+
+# 3. Verify
+docker compose ps
+docker compose logs --tail=20      # Check for startup errors
+```
+
+#### Rollback to Previous Version
+
+```bash
+# If something breaks after update
+git log --oneline -5               # Find the previous commit
+git checkout <commit-hash>         # Revert to that commit
+docker compose up -d --build       # Rebuild with old code
+```
+
+### Data Persistence
+
+The `data/` directory is volume-mounted to persist the SQLite database (`data/app.db`) across container restarts and rebuilds.
+
+```
+data/
+└── app.db          # SQLite database (auto-created on first run)
+```
+
+> **⚠️ Backup:** The database is a single file. Back it up with:
+> ```bash
+> cp data/app.db data/app.db.backup
+> ```
+
+### Useful Commands
+
+```bash
+# View container logs
+docker compose logs -f --tail=100
+
+# Restart without rebuilding
+docker compose restart
+
+# Check resource usage
+docker stats whatsapp-cloud-inbox-app-1
+
+# Enter container shell (for debugging)
+docker compose exec app sh
+
+# Check database size
+ls -lh data/app.db
+
+# Full rebuild from scratch (clears build cache)
+docker compose build --no-cache && docker compose up -d
+```
 
 ## Webhook Setup
 
