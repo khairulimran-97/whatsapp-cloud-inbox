@@ -202,6 +202,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
   const [showSettings, setShowSettings] = useState(false);
   const [showQuickReply, setShowQuickReply] = useState(false);
   const [quickReplyAddTrigger, setQuickReplyAddTrigger] = useState(0);
+  const [quickReplyCount, setQuickReplyCount] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const pageRef = useRef(1);
@@ -913,29 +914,29 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
 
       {/* Quick Reply Dialog */}
       <Dialog open={showQuickReply} onOpenChange={setShowQuickReply}>
-        <DialogContent className="sm:max-w-[550px] max-h-[85vh] flex flex-col rounded-2xl p-0 gap-0">
-          <DialogHeader className="px-5 pt-5 pb-3 flex-shrink-0 border-b border-[var(--wa-border)] pr-12">
-            <div className="flex items-center justify-between gap-3">
+        <DialogContent className="sm:max-w-[550px] max-w-[calc(100%-1rem)] max-h-[85vh] flex flex-col rounded-2xl p-0 gap-0">
+          <DialogHeader className="px-4 sm:px-5 pt-4 sm:pt-5 pb-3 flex-shrink-0 border-b border-[var(--wa-border)] pr-12">
+            <div className="flex items-start sm:items-center justify-between gap-2 sm:gap-3 flex-col sm:flex-row">
               <div>
                 <DialogTitle className="text-[15px] flex items-center gap-2">
                   <MessageSquareText className="h-4.5 w-4.5 text-emerald-500" />
                   Quick Reply Templates
                 </DialogTitle>
                 <DialogDescription className="text-[12px] mt-1">
-                  Manage your quick reply templates
+                  Manage {quickReplyCount} template{quickReplyCount !== 1 ? 's' : ''} for quick replies
                 </DialogDescription>
               </div>
               <Button
                 onClick={() => setQuickReplyAddTrigger(t => t + 1)}
-                className="bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] text-white text-xs h-8 px-3 gap-1.5"
+                className="bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] text-white text-xs h-8 px-3 gap-1.5 flex-shrink-0"
               >
                 <Plus className="h-3.5 w-3.5" />
                 Add Template
               </Button>
             </div>
           </DialogHeader>
-          <div className="flex-1 min-h-0 overflow-auto p-4">
-            <ReplyTemplatesTab onClose={() => setShowQuickReply(false)} addTrigger={quickReplyAddTrigger} />
+          <div className="flex-1 min-h-0 overflow-auto p-3 sm:p-4">
+            <ReplyTemplatesTab onClose={() => setShowQuickReply(false)} addTrigger={quickReplyAddTrigger} onCountChange={setQuickReplyCount} />
           </div>
         </DialogContent>
       </Dialog>
@@ -1423,7 +1424,7 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
   );
 }
 
-function ReplyTemplatesTab({ onClose, addTrigger }: { onClose: () => void; addTrigger?: number }) {
+function ReplyTemplatesTab({ onClose, addTrigger, onCountChange }: { onClose: () => void; addTrigger?: number; onCountChange?: (count: number) => void }) {
   const [templates, setTemplates] = useState<ReplyTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingTemplate, setEditingTemplate] = useState<ReplyTemplate | null>(null);
@@ -1438,10 +1439,12 @@ function ReplyTemplatesTab({ onClose, addTrigger }: { onClose: () => void; addTr
     try {
       const res = await fetch('/api/reply-templates');
       const data = await res.json();
-      setTemplates(data.templates || []);
+      const list = data.templates || [];
+      setTemplates(list);
+      onCountChange?.(list.length);
     } catch { /* ignore */ }
     finally { setLoading(false); }
-  }, []);
+  }, [onCountChange]);
 
   useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
 
