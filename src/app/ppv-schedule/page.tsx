@@ -312,44 +312,51 @@ export default function PPVSchedulePage() {
                   {items.map((s) => {
                     const dt = new Date(s.matchDatetime);
                     const timeStr = dt.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
+                    const dateShort = dt.toLocaleDateString('en-MY', { day: 'numeric', month: 'short' });
                     const badge = statusBadge(s.status);
                     return (
                       <div key={s.id} className="group rounded-2xl bg-[var(--wa-panel-bg)] border border-[var(--wa-border)] transition-all hover:shadow-md hover:border-[var(--wa-border-strong,var(--wa-border))]">
                         <div className="p-4">
-                          <div className="flex items-start gap-3">
-                            {/* Time column */}
-                            <div className="flex-shrink-0 w-14 pt-0.5 text-center">
-                              <div className="text-[15px] font-bold text-[var(--wa-text-primary)] tabular-nums">{timeStr}</div>
-                              <div className={cn("inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold", badge.bg, badge.text)}>
-                                <span className={cn("w-1.5 h-1.5 rounded-full", badge.dot)} />
-                                {s.status.charAt(0).toUpperCase() + s.status.slice(1)}
-                              </div>
-                            </div>
-
-                            {/* Content */}
-                            <div className="flex-1 min-w-0">
-                              <h3 className="text-[14px] font-semibold text-[var(--wa-text-primary)] leading-snug">{s.matchDetails}</h3>
-                              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--wa-text-secondary)] bg-[var(--wa-hover)] px-2 py-0.5 rounded-md">
-                                  <CalendarDays className="h-3 w-3" />
-                                  {s.category}
-                                </span>
-                                {s.pic && (
-                                  <span className="inline-flex items-center gap-1 text-[11px] text-[var(--wa-text-secondary)] bg-[var(--wa-hover)] px-2 py-0.5 rounded-md">
-                                    <User className="h-3 w-3" />{s.pic}
-                                  </span>
-                                )}
-                                {s.bclAccount && (
-                                  <span className="inline-flex items-center gap-1 text-[11px] text-[var(--wa-text-secondary)] bg-[var(--wa-hover)] px-2 py-0.5 rounded-md">
-                                    <CreditCard className="h-3 w-3" />{s.bclAccount}
-                                  </span>
-                                )}
-                              </div>
-                              {s.remark && (
-                                <p className="mt-1.5 text-[12px] text-[var(--wa-text-secondary)] italic leading-relaxed">{s.remark}</p>
-                              )}
+                          {/* Top row: title + status */}
+                          <div className="flex items-start justify-between gap-3">
+                            <h3 className="text-[14px] font-semibold text-[var(--wa-text-primary)] leading-snug">{s.matchDetails}</h3>
+                            <div className={cn("flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-semibold", badge.bg, badge.text)}>
+                              <span className={cn("w-1.5 h-1.5 rounded-full", badge.dot)} />
+                              {s.status.charAt(0).toUpperCase() + s.status.slice(1)}
                             </div>
                           </div>
+
+                          {/* Info row */}
+                          <div className="flex items-center gap-2 mt-2 flex-wrap">
+                            <span className="inline-flex items-center gap-1.5 text-[12px] text-[var(--wa-text-secondary)]">
+                              <Clock className="h-3.5 w-3.5 text-[var(--wa-text-secondary)] opacity-70" />
+                              {dateShort} · {timeStr}
+                            </span>
+                            <span className="text-[var(--wa-border)]">·</span>
+                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--wa-text-secondary)] bg-[var(--wa-hover)] px-2 py-0.5 rounded-md">
+                              <Trophy className="h-3 w-3 opacity-60" />
+                              {s.category}
+                            </span>
+                          </div>
+
+                          {/* Meta row */}
+                          {(s.pic || s.bclAccount || s.remark) && (
+                            <div className="flex items-center gap-2 mt-2 flex-wrap">
+                              {s.pic && (
+                                <span className="inline-flex items-center gap-1 text-[11px] text-[var(--wa-text-secondary)] bg-[var(--wa-hover)] px-2 py-0.5 rounded-md">
+                                  <User className="h-3 w-3 opacity-60" />{s.pic}
+                                </span>
+                              )}
+                              {s.bclAccount && (
+                                <span className="inline-flex items-center gap-1 text-[11px] text-[var(--wa-text-secondary)] bg-[var(--wa-hover)] px-2 py-0.5 rounded-md">
+                                  <CreditCard className="h-3 w-3 opacity-60" />{s.bclAccount}
+                                </span>
+                              )}
+                              {s.remark && (
+                                <span className="text-[11px] text-[var(--wa-text-secondary)] italic">{s.remark}</span>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         {/* Actions */}
