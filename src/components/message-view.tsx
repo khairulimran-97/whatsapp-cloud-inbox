@@ -1981,7 +1981,18 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                           </div>
                           <div className="min-w-0 flex-1">
                             <h4 className="text-[13px] font-semibold text-[var(--wa-text-primary)] truncate">{t.title}</h4>
-                            <span className="text-[9px] uppercase tracking-wider font-medium bg-black/[0.04] dark:bg-white/[0.06] text-[var(--wa-text-secondary)]/70 px-1.5 py-0.5 rounded">{t.category || 'General'}</span>
+                            {(() => {
+                              const cat = (t.category || 'General').toLowerCase();
+                              const colors: Record<string, string> = {
+                                'bola sepak': 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+                                'general': 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
+                                'marketing': 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+                                'utility': 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+                                'authentication': 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+                              };
+                              const colorClass = colors[cat] || 'bg-teal-500/10 text-teal-600 dark:text-teal-400';
+                              return <span className={cn("text-[9px] uppercase tracking-wider font-medium px-1.5 py-0.5 rounded", colorClass)}>{t.category || 'General'}</span>;
+                            })()}
                           </div>
                           <button
                             onClick={() => {
