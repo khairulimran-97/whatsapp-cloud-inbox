@@ -1734,11 +1734,16 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
             )}
 
             {conversationStatus === 'ended' ? (
-              <div className="flex items-center min-h-[50px]">
-                <div className="flex-1 flex items-center justify-between gap-3 py-1.5 px-4 bg-[var(--wa-ended-pill-bg)] backdrop-blur-sm rounded-full border border-[var(--wa-border)] shadow-sm">
-                  <span className="text-[13px] text-[var(--wa-ended-pill-text)]">🔒 Conversation ended</span>
+              <div className="flex items-center min-h-[50px] bg-red-500/10 border-t border-red-500/20">
+                <div className="flex-1 flex items-center justify-between gap-3 px-4">
+                  <div className="flex items-center gap-2">
+                    <div className="h-6 w-6 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+                      <CircleCheck className="h-3.5 w-3.5 text-red-400" />
+                    </div>
+                    <span className="text-[13px] font-medium text-red-400">Conversation ended</span>
+                  </div>
                   <button
-                    className="text-[13px] font-medium text-[var(--wa-green)] hover:text-[var(--wa-green-dark)] active:text-[var(--wa-green-darker)] disabled:opacity-50 flex items-center gap-1"
+                    className="text-[12px] font-semibold text-[var(--wa-green)] bg-[var(--wa-green)]/10 hover:bg-[var(--wa-green)]/20 active:bg-[var(--wa-green)]/30 disabled:opacity-50 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full transition-colors"
                     disabled={updatingStatus}
                     onClick={() => setConfirmAction('reopen')}
                   >
