@@ -544,6 +544,14 @@ function OrdersTab({ onInsertText, query, setQuery, results, setResults, page, s
     handleSearch(query, 1);
   };
 
+  // Re-search when merchant changes
+  useEffect(() => {
+    if (query.trim() && results) {
+      handleSearch(query, 1);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [merchantId]);
+
   return (
     <div className="space-y-3">
       {/* Search form */}
