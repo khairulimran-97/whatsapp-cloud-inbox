@@ -364,26 +364,26 @@ export default function PPVSchedulePage() {
                               <div className="px-3.5 py-3">
                                 {/* Title + status on one row */}
                                 <div className="flex items-start justify-between gap-2">
-                                  <h3 className="text-[13px] font-semibold text-[var(--wa-text-primary)] leading-snug">{s.matchDetails}</h3>
-                                  <div className={cn("flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-semibold", badge.bg, badge.text)}>
+                                  <h3 className="text-[14px] font-semibold text-[var(--wa-text-primary)] leading-snug">{s.matchDetails}</h3>
+                                  <div className={cn("flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold", badge.bg, badge.text)}>
                                     <span className={cn("w-1.5 h-1.5 rounded-full", badge.dot)} />
                                     {s.status.charAt(0).toUpperCase() + s.status.slice(1)}
                                   </div>
                                 </div>
 
                                 {/* Details row */}
-                                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap text-[11px] text-[var(--wa-text-secondary)]">
-                                  <Clock className="h-3 w-3 opacity-50" />
+                                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap text-[12px] text-[var(--wa-text-secondary)]">
+                                  <Clock className="h-3.5 w-3.5 opacity-50" />
                                   <span>{timeStr}</span>
                                   <span className="opacity-30">·</span>
-                                  <Trophy className="h-3 w-3 opacity-50" />
+                                  <Trophy className="h-3.5 w-3.5 opacity-50" />
                                   <span>{s.category}</span>
                                   {s.bclAccount && (
                                     <>
                                       <span className="opacity-30">·</span>
                                       <a href={`https://${s.bclAccount.replace(/^https?:\/\//, '')}`} target="_blank" rel="noopener noreferrer"
                                         className="inline-flex items-center gap-1 text-[var(--wa-green)] hover:underline">
-                                        <CreditCard className="h-3 w-3 opacity-60" />{s.bclAccount}
+                                        <CreditCard className="h-3.5 w-3.5 opacity-60" />{s.bclAccount}
                                       </a>
                                     </>
                                   )}
@@ -400,17 +400,17 @@ export default function PPVSchedulePage() {
                               <div className="flex items-center border-t border-[var(--wa-border)] divide-x divide-[var(--wa-border)]">
                                 {s.status !== 'completed' && s.status !== 'cancelled' && (
                                   <button onClick={() => handleMarkComplete(s)}
-                                    className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/5 transition-colors">
-                                    <Check className="h-3 w-3" /> Complete
+                                    className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[12px] font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/5 transition-colors">
+                                    <Check className="h-3.5 w-3.5" /> Complete
                                   </button>
                                 )}
                                 <button onClick={() => openEdit(s)}
-                                  className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium text-[var(--wa-text-secondary)] hover:bg-[var(--wa-hover)] transition-colors">
-                                  <Pencil className="h-3 w-3" /> Edit
+                                  className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[12px] font-medium text-[var(--wa-text-secondary)] hover:bg-[var(--wa-hover)] transition-colors">
+                                  <Pencil className="h-3.5 w-3.5" /> Edit
                                 </button>
                                 <button onClick={() => handleDelete(s.id)}
-                                  className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium text-red-500 dark:text-red-400 hover:bg-red-500/5 transition-colors">
-                                  <Trash2 className="h-3 w-3" /> Delete
+                                  className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[12px] font-medium text-red-500 dark:text-red-400 hover:bg-red-500/5 transition-colors">
+                                  <Trash2 className="h-3.5 w-3.5" /> Delete
                                 </button>
                               </div>
                             </div>
