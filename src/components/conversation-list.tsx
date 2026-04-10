@@ -643,6 +643,41 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
             </p>
           </div>
           <div className="flex items-center flex-shrink-0">
+            <div className="relative group">
+              <Button
+                onClick={() => setShowPushDialog(true)}
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-9 w-9",
+                  notificationEnabled
+                    ? "text-[var(--wa-green)] hover:bg-[var(--wa-green)]/10"
+                    : "text-[var(--wa-text-secondary)] hover:bg-[var(--wa-border-strong)]/30"
+                )}
+              >
+                {notificationEnabled ? <Bell className="h-[18px] w-[18px]" /> : <BellOff className="h-[18px] w-[18px]" />}
+              </Button>
+              <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 px-2 py-1 text-[11px] rounded-md bg-[var(--wa-tooltip-bg)] text-[var(--wa-tooltip-text)] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-lg">
+                {notificationPermission === 'denied'
+                  ? 'Blocked — enable in browser settings'
+                  : notificationEnabled
+                    ? 'Disable notifications'
+                    : 'Enable notifications'}
+              </span>
+            </div>
+            <div className="relative group">
+              <Button
+                onClick={toggleTheme}
+                variant="ghost"
+                size="icon"
+                className="text-[var(--wa-text-secondary)] hover:bg-[var(--wa-border-strong)]/30 h-9 w-9"
+              >
+                {theme === 'dark' ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
+              </Button>
+              <span className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 px-2 py-1 text-[11px] rounded-md bg-[var(--wa-tooltip-bg)] text-[var(--wa-tooltip-text)] whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-lg">
+                {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+              </span>
+            </div>
           </div>
         </div>
         <div className="relative">
@@ -836,40 +871,16 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       </ScrollArea>
 
       {/* Bottom action bar */}
-      <div className="flex items-center justify-between px-3 py-1.5 border-t border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)] flex-shrink-0 safe-area-bottom">
-        <div className="flex items-center gap-1">
-          <Button
-            onClick={() => setShowPushDialog(true)}
-            variant="ghost"
-            size="icon"
-            className={cn(
-              "h-8 w-8",
-              notificationEnabled
-                ? "text-[var(--wa-green)] hover:bg-[var(--wa-green)]/10"
-                : "text-[var(--wa-text-secondary)] hover:bg-[var(--wa-border-strong)]/30"
-            )}
-            title={notificationPermission === 'denied' ? 'Blocked — enable in browser settings' : notificationEnabled ? 'Disable notifications' : 'Enable notifications'}
-          >
-            {notificationEnabled ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
-          </Button>
-          <Button
-            onClick={toggleTheme}
-            variant="ghost"
-            size="icon"
-            className="text-[var(--wa-text-secondary)] hover:bg-[var(--wa-border-strong)]/30 h-8 w-8"
-            title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
-          >
-            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </Button>
-        </div>
+      <div className="flex items-center justify-center px-3 py-1.5 border-t border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)] flex-shrink-0 safe-area-bottom">
         <Button
           onClick={() => setShowSettings(true)}
           variant="ghost"
-          size="icon"
-          className="text-[var(--wa-text-secondary)] hover:bg-[var(--wa-border-strong)]/30 h-8 w-8"
+          size="sm"
+          className="text-[var(--wa-text-secondary)] hover:bg-[var(--wa-border-strong)]/30 h-8 gap-1.5 px-3"
           title="Settings"
         >
           <Settings className="h-4 w-4" />
+          <span className="text-[12px]">Settings</span>
         </Button>
       </div>
 
