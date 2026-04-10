@@ -1297,12 +1297,12 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
               <div key={m.id} className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors ${
                 m.isDefault
                   ? 'border-blue-500/30 bg-blue-500/[0.04]'
-                  : 'border-amber-500/25 bg-amber-500/[0.03]'
+                  : 'border-[var(--wa-border)] bg-[var(--wa-search-bg)]'
               }`}>
                 <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  m.isDefault ? 'bg-blue-500/15' : 'bg-amber-500/15'
+                  m.isDefault ? 'bg-blue-500/15' : 'bg-[var(--wa-hover)]'
                 }`}>
-                  <Store className={`h-3.5 w-3.5 ${m.isDefault ? 'text-blue-400' : 'text-amber-400'}`} />
+                  <Store className={`h-3.5 w-3.5 ${m.isDefault ? 'text-blue-400' : 'text-[var(--wa-text-secondary)]'}`} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
