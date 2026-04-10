@@ -30,7 +30,11 @@ export default function PPVSchedulePage() {
   const [filterTime, setFilterTime] = useState<'active' | 'schedule' | 'completed'>('active');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    const stored = localStorage.getItem('whatsapp-inbox-theme');
+    return stored !== 'light';
+  });
 
   const [matchDatetime, setMatchDatetime] = useState('');
   const [matchDetails, setMatchDetails] = useState('');
@@ -52,8 +56,8 @@ export default function PPVSchedulePage() {
   useEffect(() => { fetchSchedules(); }, [fetchSchedules]);
 
   useEffect(() => {
-    const stored = localStorage.getItem('theme');
-    const dark = stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const stored = localStorage.getItem('whatsapp-inbox-theme');
+    const dark = stored !== 'light';
     document.documentElement.classList.toggle('dark', dark);
     setIsDark(dark);
   }, []);
@@ -61,7 +65,7 @@ export default function PPVSchedulePage() {
   const toggleTheme = () => {
     const next = !isDark;
     setIsDark(next);
-    localStorage.setItem('theme', next ? 'dark' : 'light');
+    localStorage.setItem('whatsapp-inbox-theme', next ? 'dark' : 'light');
     document.documentElement.classList.toggle('dark', next);
   };
 
@@ -156,21 +160,42 @@ export default function PPVSchedulePage() {
 
   const filtered = filterCategory === 'all' ? timeFiltered : timeFiltered.filter(s => s.category === filterCategory);
 
-  // Group by date for schedule/completed tabs
+  // Group by PIC, then by date within each PIC
   const grouped = useMemo(() => {
-    const map = new Map<string, PPVSchedule[]>();
     const sorted = [...filtered].sort((a, b) => {
       const ta = new Date(a.matchDatetime).getTime();
       const tb = new Date(b.matchDatetime).getTime();
       return filterTime === 'completed' ? tb - ta : ta - tb;
     });
+
+    // Group by PIC
+    const picMap = new Map<string, PPVSchedule[]>();
     for (const s of sorted) {
-      const d = new Date(s.matchDatetime);
-      const key = d.toLocaleDateString('en-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(s);
+      const picKey = s.pic?.trim() || 'No PIC yet';
+      if (!picMap.has(picKey)) picMap.set(picKey, []);
+      picMap.get(picKey)!.push(s);
     }
-    return map;
+
+    // Sort PIC groups: named PICs first (alphabetical), "No PIC yet" last
+    const picEntries = [...picMap.entries()].sort((a, b) => {
+      if (a[0] === 'No PIC yet') return 1;
+      if (b[0] === 'No PIC yet') return -1;
+      return a[0].localeCompare(b[0]);
+    });
+
+    // Within each PIC, group by date
+    const result: { pic: string; dates: Map<string, PPVSchedule[]> }[] = [];
+    for (const [pic, items] of picEntries) {
+      const dateMap = new Map<string, PPVSchedule[]>();
+      for (const s of items) {
+        const d = new Date(s.matchDatetime);
+        const key = d.toLocaleDateString('en-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        if (!dateMap.has(key)) dateMap.set(key, []);
+        dateMap.get(key)!.push(s);
+      }
+      result.push({ pic, dates: dateMap });
+    }
+    return result;
   }, [filtered, filterTime]);
 
   const statusBadge = (s: string) => {
@@ -293,92 +318,106 @@ export default function PPVSchedulePage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {[...grouped.entries()].map(([dateLabel, items]) => (
-              <div key={dateLabel}>
-                {/* Date header (only for schedule/completed with multiple dates) */}
-                {(filterTime !== 'active' || grouped.size > 1) && (
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="text-[12px] font-semibold text-[var(--wa-text-secondary)] uppercase tracking-wider">{dateLabel}</div>
-                    <div className="flex-1 h-px bg-[var(--wa-border)]" />
-                    <span className="text-[11px] text-[var(--wa-text-secondary)]">{items.length} match{items.length > 1 ? 'es' : ''}</span>
+          <div className="space-y-8">
+            {grouped.map(({ pic, dates }) => (
+              <div key={pic}>
+                {/* PIC group header */}
+                <div className="flex items-center gap-2.5 mb-4">
+                  <div className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 rounded-xl text-[12px] font-semibold",
+                    pic === 'No PIC yet'
+                      ? "bg-gray-500/10 text-gray-500 dark:text-gray-400"
+                      : "bg-[var(--wa-green)]/10 text-[var(--wa-green)]"
+                  )}>
+                    <User className="h-3.5 w-3.5" />
+                    {pic}
                   </div>
-                )}
-                <div className="space-y-2.5">
-                  {items.map((s) => {
-                    const dt = new Date(s.matchDatetime);
-                    const timeStr = dt.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
-                    const dateShort = dt.toLocaleDateString('en-MY', { day: 'numeric', month: 'short' });
-                    const badge = statusBadge(s.status);
-                    return (
-                      <div key={s.id} className="group rounded-2xl bg-[var(--wa-panel-bg)] border border-[var(--wa-border)] transition-all hover:shadow-md hover:border-[var(--wa-border-strong,var(--wa-border))]">
-                        <div className="p-4">
-                          {/* Top row: title + status */}
-                          <div className="flex items-start justify-between gap-3">
-                            <h3 className="text-[14px] font-semibold text-[var(--wa-text-primary)] leading-snug">{s.matchDetails}</h3>
-                            <div className={cn("flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-semibold", badge.bg, badge.text)}>
-                              <span className={cn("w-1.5 h-1.5 rounded-full", badge.dot)} />
-                              {s.status.charAt(0).toUpperCase() + s.status.slice(1)}
-                            </div>
-                          </div>
+                  <div className="flex-1 h-px bg-[var(--wa-border)]" />
+                  <span className="text-[11px] text-[var(--wa-text-secondary)]">
+                    {[...dates.values()].reduce((sum, arr) => sum + arr.length, 0)} match{[...dates.values()].reduce((sum, arr) => sum + arr.length, 0) !== 1 ? 'es' : ''}
+                  </span>
+                </div>
 
-                          {/* Info row */}
-                          <div className="flex items-center gap-2 mt-2 flex-wrap">
-                            <span className="inline-flex items-center gap-1.5 text-[12px] text-[var(--wa-text-secondary)]">
-                              <Clock className="h-3.5 w-3.5 text-[var(--wa-text-secondary)] opacity-70" />
-                              {dateShort} · {timeStr}
-                            </span>
-                            <span className="text-[var(--wa-border)]">·</span>
-                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--wa-text-secondary)] bg-[var(--wa-hover)] px-2 py-0.5 rounded-md">
-                              <Trophy className="h-3 w-3 opacity-60" />
-                              {s.category}
-                            </span>
-                            {s.bclAccount && (
-                              <>
-                                <span className="text-[var(--wa-border)]">·</span>
-                                <a href={`https://${s.bclAccount.replace(/^https?:\/\//, '')}`} target="_blank" rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 text-[11px] text-[var(--wa-green)] bg-[var(--wa-hover)] px-2 py-0.5 rounded-md hover:underline ml-auto">
-                                  <CreditCard className="h-3 w-3 opacity-60" />{s.bclAccount}
-                                </a>
-                              </>
-                            )}
-                          </div>
-
-                          {/* Meta row */}
-                          {(s.pic || s.remark) && (
-                            <div className="flex items-center gap-2 mt-2 flex-wrap">
-                              {s.pic && (
-                                <span className="inline-flex items-center gap-1 text-[11px] text-[var(--wa-text-secondary)] bg-[var(--wa-hover)] px-2 py-0.5 rounded-md">
-                                  <User className="h-3 w-3 opacity-60" />{s.pic}
-                                </span>
-                              )}
-                              {s.remark && (
-                                <span className="text-[11px] text-[var(--wa-text-secondary)] italic">{s.remark}</span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center border-t border-[var(--wa-border)] divide-x divide-[var(--wa-border)]">
-                          {s.status !== 'completed' && s.status !== 'cancelled' && (
-                            <button onClick={() => handleMarkComplete(s)}
-                              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/5 transition-colors">
-                              <Check className="h-3.5 w-3.5" /> Complete
-                            </button>
-                          )}
-                          <button onClick={() => openEdit(s)}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium text-[var(--wa-text-secondary)] hover:bg-[var(--wa-hover)] transition-colors">
-                            <Pencil className="h-3.5 w-3.5" /> Edit
-                          </button>
-                          <button onClick={() => handleDelete(s.id)}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium text-red-500 dark:text-red-400 hover:bg-red-500/5 transition-colors">
-                            <Trash2 className="h-3.5 w-3.5" /> Delete
-                          </button>
-                        </div>
+                <div className="space-y-5">
+                  {[...dates.entries()].map(([dateLabel, items]) => (
+                    <div key={dateLabel}>
+                      {/* Date sub-header */}
+                      <div className="flex items-center gap-3 mb-2.5 ml-1">
+                        <div className="text-[11px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider">{dateLabel}</div>
+                        <div className="flex-1 h-px bg-[var(--wa-border)] opacity-50" />
+                        <span className="text-[10px] text-[var(--wa-text-secondary)] opacity-70">{items.length}</span>
                       </div>
-                    );
-                  })}
+                      <div className="space-y-2.5">
+                        {items.map((s) => {
+                          const dt = new Date(s.matchDatetime);
+                          const timeStr = dt.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
+                          const dateShort = dt.toLocaleDateString('en-MY', { day: 'numeric', month: 'short' });
+                          const badge = statusBadge(s.status);
+                          return (
+                            <div key={s.id} className="group rounded-2xl bg-[var(--wa-panel-bg)] border border-[var(--wa-border)] transition-all hover:shadow-md hover:border-[var(--wa-border-strong,var(--wa-border))]">
+                              <div className="p-4">
+                                {/* Top row: title + status */}
+                                <div className="flex items-start justify-between gap-3">
+                                  <h3 className="text-[14px] font-semibold text-[var(--wa-text-primary)] leading-snug">{s.matchDetails}</h3>
+                                  <div className={cn("flex-shrink-0 inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-semibold", badge.bg, badge.text)}>
+                                    <span className={cn("w-1.5 h-1.5 rounded-full", badge.dot)} />
+                                    {s.status.charAt(0).toUpperCase() + s.status.slice(1)}
+                                  </div>
+                                </div>
+
+                                {/* Info row */}
+                                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                  <span className="inline-flex items-center gap-1.5 text-[12px] text-[var(--wa-text-secondary)]">
+                                    <Clock className="h-3.5 w-3.5 text-[var(--wa-text-secondary)] opacity-70" />
+                                    {dateShort} · {timeStr}
+                                  </span>
+                                  <span className="text-[var(--wa-border)]">·</span>
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--wa-text-secondary)] bg-[var(--wa-hover)] px-2 py-0.5 rounded-md">
+                                    <Trophy className="h-3 w-3 opacity-60" />
+                                    {s.category}
+                                  </span>
+                                  {s.bclAccount && (
+                                    <>
+                                      <span className="text-[var(--wa-border)]">·</span>
+                                      <a href={`https://${s.bclAccount.replace(/^https?:\/\//, '')}`} target="_blank" rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 text-[11px] text-[var(--wa-green)] bg-[var(--wa-hover)] px-2 py-0.5 rounded-md hover:underline ml-auto">
+                                        <CreditCard className="h-3 w-3 opacity-60" />{s.bclAccount}
+                                      </a>
+                                    </>
+                                  )}
+                                </div>
+
+                                {/* Meta row - remark only (PIC shown in group header) */}
+                                {s.remark && (
+                                  <div className="flex items-center gap-2 mt-2">
+                                    <span className="text-[11px] text-[var(--wa-text-secondary)] italic">{s.remark}</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Actions */}
+                              <div className="flex items-center border-t border-[var(--wa-border)] divide-x divide-[var(--wa-border)]">
+                                {s.status !== 'completed' && s.status !== 'cancelled' && (
+                                  <button onClick={() => handleMarkComplete(s)}
+                                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/5 transition-colors">
+                                    <Check className="h-3.5 w-3.5" /> Complete
+                                  </button>
+                                )}
+                                <button onClick={() => openEdit(s)}
+                                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium text-[var(--wa-text-secondary)] hover:bg-[var(--wa-hover)] transition-colors">
+                                  <Pencil className="h-3.5 w-3.5" /> Edit
+                                </button>
+                                <button onClick={() => handleDelete(s.id)}
+                                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[12px] font-medium text-red-500 dark:text-red-400 hover:bg-red-500/5 transition-colors">
+                                  <Trash2 className="h-3.5 w-3.5" /> Delete
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
