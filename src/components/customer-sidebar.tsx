@@ -233,7 +233,7 @@ function MagicLinkButton({ content, onInsertText }: { content: ProtectedContent;
           <div className="flex items-center gap-2 mt-2">
             <button
               onClick={handleCopy}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium rounded-md bg-black/5 dark:bg-white/10 text-[var(--wa-text-primary)] hover:bg-black/10 dark:hover:bg-white/15 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium rounded-md bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 transition-colors"
             >
               {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
               {copied ? 'Copied!' : 'Copy'}
