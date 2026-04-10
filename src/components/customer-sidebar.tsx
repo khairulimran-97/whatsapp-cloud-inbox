@@ -111,6 +111,22 @@ function extractAccessToken(url: string): string | null {
   }
 }
 
+function getPhoneFlag(phone?: string): string {
+  if (!phone) return '';
+  const clean = phone.replace(/\D/g, '');
+  const prefixes: [string, string][] = [
+    ['60', '🇲🇾'], ['65', '🇸🇬'], ['62', '🇮🇩'], ['66', '🇹🇭'],
+    ['63', '🇵🇭'], ['84', '🇻🇳'], ['856', '🇱🇦'], ['855', '🇰🇭'],
+    ['95', '🇲🇲'], ['673', '🇧🇳'], ['91', '🇮🇳'], ['86', '🇨🇳'],
+    ['81', '🇯🇵'], ['82', '🇰🇷'], ['61', '🇦🇺'], ['44', '🇬🇧'],
+    ['1', '🇺🇸'], ['971', '🇦🇪'], ['966', '🇸🇦'],
+  ];
+  for (const [prefix, flag] of prefixes) {
+    if (clean.startsWith(prefix)) return flag;
+  }
+  return '🌐';
+}
+
 function CopyButton({ text, title = 'Copy' }: { text: string; title?: string }) {
   const [copied, setCopied] = useState(false);
 
@@ -233,7 +249,7 @@ function ContentAccessItem({ content, onInsertText }: { content: ProtectedConten
       <div className="flex items-center gap-2">
         <ShieldCheck className="h-3.5 w-3.5 text-green-400 flex-shrink-0" />
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-[var(--wa-text-primary)] leading-snug truncate">
+          <p className="text-xs font-medium text-[var(--wa-text-primary)] leading-snug truncate" title={content.title}>
             {content.title}
           </p>
           {content.granted_at && (
@@ -332,6 +348,12 @@ function TransactionCard({ tx, onInsertText }: { tx: Transaction; onInsertText?:
             ))}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// Enhanced card for lookup search results
 function LookupResultCard({ tx, onInsertText }: { tx: Transaction; onInsertText?: (text: string) => void }) {
   const relatedContent = tx.protected_content?.filter(pc => pc.url) ?? [];
   const isPaid = tx.status === 'success' || tx.status === 'completed' || tx.is_paid;
@@ -366,7 +388,7 @@ function LookupResultCard({ tx, onInsertText }: { tx: Transaction; onInsertText?
                 {tx.payer_name && (
                   <tr>
                     <td className="px-2.5 py-1.5 text-[var(--wa-text-secondary)] bg-black/5 dark:bg-white/5 w-[70px] whitespace-nowrap border-r border-b border-black/15 dark:border-white/20">Name</td>
-                    <td className="px-2.5 py-1.5 text-[var(--wa-text-primary)] font-medium truncate border-b border-black/15 dark:border-white/20">{tx.payer_name}</td>
+                    <td className="px-2.5 py-1.5 text-[var(--wa-text-primary)] font-medium truncate border-b border-black/15 dark:border-white/20" title={tx.payer_name}>{getPhoneFlag(tx.payer_telephone_number)} {tx.payer_name}</td>
                   </tr>
                 )}
                 {tx.payer_email && (
@@ -741,8 +763,8 @@ function InfoContent({ data, loading, phoneNumber, onInsertText }: { data: Custo
                 <User className="h-6 w-6 text-white" />
               </div>
               <div className="min-w-0">
-                <h4 className="text-[17px] font-semibold text-[var(--wa-text-primary)] truncate leading-tight">
-                  {data.customer.name}
+                <h4 className="text-[17px] font-semibold text-[var(--wa-text-primary)] truncate leading-tight" title={data.customer.name}>
+                  {getPhoneFlag(data.customer.phone || phoneNumber)} {data.customer.name}
                 </h4>
                 {data.customer.tin && (
                   <p className="text-xs text-[var(--wa-text-secondary)] mt-0.5">
