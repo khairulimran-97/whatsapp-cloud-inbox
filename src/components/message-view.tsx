@@ -312,11 +312,13 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
   useEffect(() => {
     notificationSoundRef.current = new Audio('/notification.wav');
     notificationSoundRef.current.volume = 0.8;
-    // Unlock audio on first user interaction
+    // Unlock audio on first user interaction (silent)
     const unlock = () => {
       const audio = notificationSoundRef.current;
       if (audio) {
-        audio.play().then(() => { audio.pause(); audio.currentTime = 0; }).catch(() => {});
+        const origVol = audio.volume;
+        audio.volume = 0;
+        audio.play().then(() => { audio.pause(); audio.currentTime = 0; audio.volume = origVol; }).catch(() => { audio.volume = origVol; });
       }
     };
     document.addEventListener('click', unlock, { once: true });

@@ -72,7 +72,9 @@ export default function Home() {
       if (audioUnlockedRef.current) return;
       const audio = notificationSoundRef.current;
       if (audio) {
-        audio.play().then(() => { audio.pause(); audio.currentTime = 0; audioUnlockedRef.current = true; }).catch(() => {});
+        const origVol = audio.volume;
+        audio.volume = 0;
+        audio.play().then(() => { audio.pause(); audio.currentTime = 0; audio.volume = origVol; audioUnlockedRef.current = true; }).catch(() => { audio.volume = origVol; });
       }
     };
     document.addEventListener('click', unlock, { once: true });
