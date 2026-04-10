@@ -3,12 +3,6 @@ import { getDb } from '@/lib/db';
 import { ppvSchedules } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
 
-function checkAuth(req: NextRequest): boolean {
-  if (!process.env.APP_PASSWORD) return true;
-  const pw = req.headers.get('x-app-password');
-  return pw === process.env.APP_PASSWORD;
-}
-
 // GET - list all schedules
 export async function GET() {
   try {
@@ -22,9 +16,6 @@ export async function GET() {
 
 // POST - create schedule
 export async function POST(req: NextRequest) {
-  if (!checkAuth(req)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
   try {
     const body = await req.json();
     const { matchDatetime, matchDetails, category, status, bclAccount, pic, remark } = body;
@@ -51,9 +42,6 @@ export async function POST(req: NextRequest) {
 
 // PUT - update schedule
 export async function PUT(req: NextRequest) {
-  if (!checkAuth(req)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
   try {
     const body = await req.json();
     const { id, matchDatetime, matchDetails, category, status, bclAccount, pic, remark } = body;
@@ -79,9 +67,6 @@ export async function PUT(req: NextRequest) {
 
 // DELETE - delete schedule
 export async function DELETE(req: NextRequest) {
-  if (!checkAuth(req)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
