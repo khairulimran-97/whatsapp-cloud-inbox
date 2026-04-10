@@ -1829,8 +1829,8 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                     placeholder="Type a message"
                     disabled={sending}
                     rows={1}
-                    className="flex-1 min-w-0 bg-transparent border-0 border-none py-[11px] pr-2 text-[15px] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)]/50 resize-none outline-none shadow-none ring-0 disabled:opacity-50"
-                    style={{ height: '44px' }}
+                    className="flex-1 min-w-0 bg-transparent py-[11px] pr-2 text-[15px] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)]/50 resize-none disabled:opacity-50 appearance-none"
+                    style={{ height: '44px', border: 'none', outline: 'none', boxShadow: 'none' }}
                   />
                   <button
                     type="submit"
