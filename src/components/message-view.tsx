@@ -1800,9 +1800,10 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                       {replyTemplates.length > 0 && (
                         <>
                           <DropdownMenuSeparator />
+                          <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-[var(--wa-text-secondary)]">Quick Reply</DropdownMenuLabel>
                           <DropdownMenuItem onClick={() => setShowQuickReplyDialog(true)} className="py-2.5">
                             <MessageSquareQuote className="h-4 w-4 mr-3 text-emerald-500" />
-                            Quick Reply
+                            Templates
                             <span className="ml-auto text-[10px] text-[var(--wa-text-secondary)]">{replyTemplates.length}</span>
                           </DropdownMenuItem>
                         </>
