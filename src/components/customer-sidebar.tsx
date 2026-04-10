@@ -444,16 +444,6 @@ function OrdersTab({ phoneNumber, onInsertText }: { phoneNumber: string; onInser
 
       {results && results.configured && !results.error && (
         <>
-          {/* Summary bar */}
-          {results.summary && (
-            <div className="flex items-center gap-2 text-[10px] font-medium">
-              <span className="text-[var(--wa-text-secondary)]">{results.summary.total_count} total</span>
-              <span className="text-green-400">✓ {results.summary.success_count}</span>
-              <span className="text-amber-400">⏳ {results.summary.pending_count}</span>
-              <span className="text-red-400">✗ {results.summary.failed_count}</span>
-            </div>
-          )}
-
           {/* Transaction list */}
           {results.data && results.data.length > 0 ? (
             <div className="space-y-2.5">
