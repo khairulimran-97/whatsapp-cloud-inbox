@@ -1320,7 +1320,7 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
                     {!m.isDefault && (
                       <button
                         onClick={() => handleSetDefault(m.id)}
-                        className="text-[10px] font-medium px-2 py-1 rounded-md text-[var(--wa-text-secondary)] hover:text-blue-400 hover:bg-blue-500/10 transition-colors mr-0.5"
+                        className="text-[10px] font-medium px-2 py-1 rounded-md text-[var(--wa-text-secondary)]/50 hover:text-blue-400 hover:bg-blue-500/10 transition-colors mr-0.5"
                       >
                         Set Default
                       </button>
@@ -1335,7 +1335,7 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
                     <button
                       onClick={() => handleDelete(m.id)}
                       title="Remove"
-                      className="h-7 w-7 flex items-center justify-center rounded-md text-[var(--wa-text-secondary)] hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                      className="h-7 w-7 flex items-center justify-center rounded-md text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
