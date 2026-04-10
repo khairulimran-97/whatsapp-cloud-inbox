@@ -914,8 +914,8 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
 
       {/* Quick Reply Dialog */}
       <Dialog open={showQuickReply} onOpenChange={setShowQuickReply}>
-        <DialogContent className="sm:max-w-[600px] max-w-[calc(100%-1rem)] max-h-[90vh] flex flex-col rounded-2xl p-0 gap-0">
-          <DialogHeader className="px-4 sm:px-5 pt-4 sm:pt-5 pb-3 flex-shrink-0 border-b border-[var(--wa-border)] pr-12">
+        <DialogContent className="sm:max-w-[600px] max-w-[calc(100%-1rem)] max-h-[90vh] flex flex-col rounded-2xl p-0 gap-0" showCloseButton={false}>
+          <DialogHeader className="px-4 sm:px-5 pt-4 sm:pt-5 pb-3 flex-shrink-0 border-b border-[var(--wa-border)]">
             <div className="flex items-start sm:items-center justify-between gap-2 sm:gap-3 flex-col sm:flex-row">
               <div>
                 <DialogTitle className="text-[15px] flex items-center gap-2">
@@ -926,13 +926,21 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
                   Manage {quickReplyCount} template{quickReplyCount !== 1 ? 's' : ''} for quick replies
                 </DialogDescription>
               </div>
-              <Button
-                onClick={() => setQuickReplyAddTrigger(t => t + 1)}
-                className="bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] text-white text-xs h-8 px-3 gap-1.5 flex-shrink-0"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Add Template
-              </Button>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Button
+                  onClick={() => setQuickReplyAddTrigger(t => t + 1)}
+                  className="bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] text-white text-xs h-8 px-3 gap-1.5"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add Template
+                </Button>
+                <button
+                  onClick={() => setShowQuickReply(false)}
+                  className="h-8 w-8 flex items-center justify-center rounded-lg text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </DialogHeader>
           <div className="flex-1 min-h-0 overflow-auto p-3 sm:p-4">
