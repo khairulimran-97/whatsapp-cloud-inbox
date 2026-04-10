@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { CalendarDays, Plus, Pencil, Trash2, Check, Save, Loader2, ArrowLeft, X, Sun, Moon, Clock, MapPin, User, CreditCard, MessageSquare, Trophy } from 'lucide-react';
+import { CalendarDays, Plus, Pencil, Trash2, Check, Save, Loader2, ArrowLeft, X, Sun, Moon, Clock, User, CreditCard, MessageSquare, Trophy } from 'lucide-react';
 import Link from 'next/link';
 
 function cn(...classes: (string | false | undefined)[]) {
@@ -32,7 +32,11 @@ export default function PPVSchedulePage() {
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
   const [isDark, setIsDark] = useState(true);
   const [mounted, setMounted] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(20);
+  const [tabCounts, setTabCounts] = useState({ active: 0, schedule: 0, completed: 0 });
+  const [serverActiveLabel, setServerActiveLabel] = useState<string>('Today');
+  const [serverCategories, setServerCategories] = useState<string[]>([]);
+  const [serverTotal, setServerTotal] = useState(0);
+  const PAGE_SIZE = 15;
 
   const [matchDatetime, setMatchDatetime] = useState('');
   const [matchDetails, setMatchDetails] = useState('');
@@ -42,16 +46,27 @@ export default function PPVSchedulePage() {
   const [pic, setPic] = useState('');
   const [remark, setRemark] = useState('');
 
-  const fetchSchedules = useCallback(async () => {
+  const fetchSchedules = useCallback(async (tab?: string, append = false, currentLength = 0) => {
     try {
-      const res = await fetch('/api/ppv-schedules');
+      const t = tab || 'active';
+      const offset = append ? currentLength : 0;
+      const res = await fetch(`/api/ppv-schedules?tab=${t}&limit=${PAGE_SIZE}&offset=${offset}`);
       const data = await res.json();
-      setSchedules(data.schedules || []);
+      const items = data.schedules || [];
+      if (append) {
+        setSchedules(prev => [...prev, ...items]);
+      } else {
+        setSchedules(items);
+      }
+      setServerTotal(data.total || 0);
+      if (data.counts) setTabCounts(data.counts);
+      if (data.activeLabel) setServerActiveLabel(data.activeLabel);
+      if (data.allCategories) setServerCategories(data.allCategories);
     } catch { /* ignore */ }
     finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { fetchSchedules(); }, [fetchSchedules]);
+  useEffect(() => { fetchSchedules(filterTime); }, [fetchSchedules, filterTime]);
 
   useEffect(() => {
     const stored = localStorage.getItem('whatsapp-inbox-theme');
@@ -102,7 +117,7 @@ export default function PPVSchedulePage() {
       });
       const data = await res.json();
       if (!res.ok) { setMessage({ text: data.error || 'Failed to save', error: true }); }
-      else { setMessage({ text: isEdit ? 'Updated' : 'Added' }); await fetchSchedules(); setTimeout(resetForm, 600); }
+      else { setMessage({ text: isEdit ? 'Updated' : 'Added' }); await fetchSchedules(filterTime); setTimeout(resetForm, 600); }
     } catch { setMessage({ text: 'Network error', error: true }); }
     finally { setSaving(false); }
   };
@@ -114,7 +129,7 @@ export default function PPVSchedulePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: s.id, status: 'completed' }),
       });
-      await fetchSchedules();
+      await fetchSchedules(filterTime);
     } catch { /* ignore */ }
   };
 
@@ -122,58 +137,19 @@ export default function PPVSchedulePage() {
     if (!confirm('Delete this schedule?')) return;
     try {
       await fetch(`/api/ppv-schedules?id=${id}`, { method: 'DELETE' });
-      await fetchSchedules();
+      await fetchSchedules(filterTime);
     } catch { /* ignore */ }
   };
 
-  const allCategories = useMemo(() => [...new Set(schedules.map(s => s.category))].filter(Boolean), [schedules]);
+  // Categories from server; filtering applied client-side on already-fetched page
+  const filtered = filterCategory === 'all' ? schedules : schedules.filter(s => s.category === filterCategory);
+  const hasMore = schedules.length < serverTotal;
 
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const todayEnd = new Date(todayStart.getTime() + 86400000);
-
-  const todayMatches = schedules.filter(s => {
-    const dt = new Date(s.matchDatetime);
-    return dt >= todayStart && dt < todayEnd && s.status !== 'completed' && s.status !== 'cancelled';
-  });
-  const hasTodayMatches = todayMatches.length > 0;
-
-  const nextDate = schedules
-    .filter(s => new Date(s.matchDatetime) >= todayEnd && s.status !== 'completed' && s.status !== 'cancelled')
-    .map(s => { const d = new Date(s.matchDatetime); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); })
-    .sort((a, b) => a - b)[0];
-  const nextDayEnd = nextDate ? nextDate + 86400000 : 0;
-  const nextMatches = nextDate ? schedules.filter(s => {
-    const t = new Date(s.matchDatetime).getTime();
-    return t >= nextDate && t < nextDayEnd && s.status !== 'completed' && s.status !== 'cancelled';
-  }) : [];
-
-  const activeMatches = hasTodayMatches ? todayMatches : nextMatches;
-  const activeLabel = hasTodayMatches ? 'Today' : 'Upcoming';
-  const activeCount = activeMatches.length;
-  const scheduleMatches = schedules.filter(s => s.status !== 'completed' && s.status !== 'cancelled');
-  const completedMatches = schedules.filter(s => s.status === 'completed' || s.status === 'cancelled');
-
-  const timeFiltered = filterTime === 'active' ? activeMatches
-    : filterTime === 'schedule' ? scheduleMatches : completedMatches;
-
-  const filtered = filterCategory === 'all' ? timeFiltered : timeFiltered.filter(s => s.category === filterCategory);
-  const totalFiltered = filtered.length;
-  const hasMore = visibleCount < totalFiltered;
-
-  // Group by date, then by PIC within each date (limited to visibleCount)
+  // Group by date, then by PIC within each date
   const grouped = useMemo(() => {
-    const sorted = [...filtered].sort((a, b) => {
-      const ta = new Date(a.matchDatetime).getTime();
-      const tb = new Date(b.matchDatetime).getTime();
-      return filterTime === 'completed' ? tb - ta : ta - tb;
-    });
-
-    const visible = sorted.slice(0, visibleCount);
-
-    // Group by date first
+    // Data already sorted by server, just group
     const dateMap = new Map<string, PPVSchedule[]>();
-    for (const s of visible) {
+    for (const s of filtered) {
       const d = new Date(s.matchDatetime);
       const key = d.toLocaleDateString('en-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
       if (!dateMap.has(key)) dateMap.set(key, []);
@@ -200,7 +176,7 @@ export default function PPVSchedulePage() {
       result.push({ date, pics });
     }
     return result;
-  }, [filtered, filterTime, visibleCount]);
+  }, [filtered]);
 
   const statusBadge = (s: string) => {
     switch (s) {
@@ -255,11 +231,11 @@ export default function PPVSchedulePage() {
           {/* Tabs */}
           <div className="flex -mb-px">
             {([
-              { key: 'active' as const, label: activeLabel, count: activeCount, color: 'bg-blue-500/15 text-blue-600 dark:text-blue-400', activeColor: 'bg-blue-500/20 text-blue-600 dark:text-blue-400' },
-              { key: 'schedule' as const, label: 'Schedule', count: scheduleMatches.length, color: 'bg-amber-500/15 text-amber-600 dark:text-amber-400', activeColor: 'bg-amber-500/20 text-amber-600 dark:text-amber-400' },
-              { key: 'completed' as const, label: 'Completed', count: completedMatches.length, color: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400', activeColor: 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' },
+              { key: 'active' as const, label: serverActiveLabel, count: tabCounts.active, color: 'bg-blue-500/15 text-blue-600 dark:text-blue-400', activeColor: 'bg-blue-500/20 text-blue-600 dark:text-blue-400' },
+              { key: 'schedule' as const, label: 'Schedule', count: tabCounts.schedule, color: 'bg-amber-500/15 text-amber-600 dark:text-amber-400', activeColor: 'bg-amber-500/20 text-amber-600 dark:text-amber-400' },
+              { key: 'completed' as const, label: 'Completed', count: tabCounts.completed, color: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400', activeColor: 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' },
             ]).map(f => (
-              <button key={f.key} onClick={() => { setFilterTime(f.key); setVisibleCount(20); }}
+              <button key={f.key} onClick={() => { setFilterTime(f.key); setFilterCategory('all'); }}
                 className={cn(
                   "flex-1 py-3 text-[12px] sm:text-[13px] font-medium transition-all border-b-2 text-center relative",
                   filterTime === f.key
@@ -279,9 +255,9 @@ export default function PPVSchedulePage() {
 
       <main className="max-w-3xl mx-auto px-3 sm:px-6 py-4">
         {/* Category pills */}
-        {allCategories.length > 1 && (
+        {serverCategories.length > 1 && (
           <div className="flex items-center gap-2 pb-4 mb-2 overflow-x-auto scrollbar-none -mx-4 px-4 sm:-mx-6 sm:px-6">
-            <button onClick={() => { setFilterCategory('all'); setVisibleCount(20); }}
+            <button onClick={() => setFilterCategory('all')}
               className={cn(
                 "px-3.5 py-1.5 text-[12px] font-medium rounded-full transition-all whitespace-nowrap flex-shrink-0 border",
                 filterCategory === 'all'
@@ -290,8 +266,8 @@ export default function PPVSchedulePage() {
               )}>
               All
             </button>
-            {allCategories.map(c => (
-              <button key={c} onClick={() => { setFilterCategory(filterCategory === c ? 'all' : c); setVisibleCount(20); }}
+            {serverCategories.map(c => (
+              <button key={c} onClick={() => setFilterCategory(filterCategory === c ? 'all' : c)}
                 className={cn(
                   "px-3.5 py-1.5 text-[12px] font-medium rounded-full transition-all whitespace-nowrap flex-shrink-0 border",
                   filterCategory === c
@@ -434,10 +410,10 @@ export default function PPVSchedulePage() {
         {hasMore && !loading && (
           <div className="flex justify-center py-4">
             <button
-              onClick={() => setVisibleCount(v => v + 20)}
+              onClick={() => fetchSchedules(filterTime, true, schedules.length)}
               className="px-6 py-2.5 text-[13px] font-medium rounded-full border border-[var(--wa-border)] bg-[var(--wa-panel-bg)] text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:border-[var(--wa-text-secondary)] transition-all"
             >
-              Show more ({totalFiltered - visibleCount} remaining)
+              Show more ({serverTotal - schedules.length} remaining)
             </button>
           </div>
         )}
@@ -478,7 +454,7 @@ export default function PPVSchedulePage() {
                     <CalendarDays className="h-3.5 w-3.5" /> Category
                   </label>
                   <input list="ppv-cats" value={category} onChange={e => setCategory(e.target.value)} placeholder="Type or select" className={inputCls} />
-                  <datalist id="ppv-cats">{allCategories.map(c => <option key={c} value={c} />)}</datalist>
+                  <datalist id="ppv-cats">{serverCategories.map(c => <option key={c} value={c} />)}</datalist>
                 </div>
                 <div>
                   <label className="text-[12px] font-semibold text-[var(--wa-text-secondary)] uppercase tracking-wider">Status</label>

@@ -1,14 +1,68 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { ppvSchedules } from '@/lib/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
-// GET - list all schedules
-export async function GET() {
+// GET - list schedules with server-side tab filtering + pagination
+export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url);
+    const tab = searchParams.get('tab'); // active, schedule, completed
+    const limit = parseInt(searchParams.get('limit') || '0') || 0;
+    const offset = parseInt(searchParams.get('offset') || '0') || 0;
+
     const db = getDb();
-    const rows = db.select().from(ppvSchedules).orderBy(desc(ppvSchedules.matchDatetime)).all();
-    return NextResponse.json({ schedules: rows });
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+
+    // Always compute counts + categories for all tabs (lightweight)
+    const allRows = db.select().from(ppvSchedules).all();
+    const scheduleAll = allRows.filter(r => !['completed', 'cancelled'].includes(r.status));
+    const completedAll = allRows.filter(r => ['completed', 'cancelled'].includes(r.status));
+
+    // Active = today's matches or next upcoming day (same logic as client)
+    const todayEnd = new Date(todayStart.getTime() + 86400000);
+    const todayMatches = scheduleAll.filter(r => {
+      const dt = new Date(r.matchDatetime);
+      return dt >= todayStart && dt < todayEnd;
+    });
+    const hasTodayMatches = todayMatches.length > 0;
+    let activeAll: typeof allRows;
+    if (hasTodayMatches) {
+      activeAll = todayMatches;
+    } else {
+      const nextDate = scheduleAll
+        .filter(r => new Date(r.matchDatetime) >= todayEnd)
+        .map(r => { const d = new Date(r.matchDatetime); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); })
+        .sort((a, b) => a - b)[0];
+      activeAll = nextDate
+        ? scheduleAll.filter(r => { const t = new Date(r.matchDatetime).getTime(); return t >= nextDate && t < nextDate + 86400000; })
+        : [];
+    }
+
+    const counts = {
+      active: activeAll.length,
+      schedule: scheduleAll.length,
+      completed: completedAll.length,
+    };
+    const activeLabel = hasTodayMatches ? 'Today' : 'Upcoming';
+    const allCategories = [...new Set(allRows.map(r => r.category))].filter(Boolean);
+
+    // Get filtered rows for the requested tab
+    let rows: typeof allRows;
+    if (tab === 'active') {
+      rows = activeAll.sort((a, b) => new Date(a.matchDatetime).getTime() - new Date(b.matchDatetime).getTime());
+    } else if (tab === 'completed') {
+      rows = completedAll.sort((a, b) => new Date(b.matchDatetime).getTime() - new Date(a.matchDatetime).getTime());
+    } else if (tab === 'schedule') {
+      rows = scheduleAll.sort((a, b) => new Date(a.matchDatetime).getTime() - new Date(b.matchDatetime).getTime());
+    } else {
+      rows = allRows;
+    }
+
+    const total = rows.length;
+    const sliced = limit > 0 ? rows.slice(offset, offset + limit) : rows;
+
+    return NextResponse.json({ schedules: sliced, total, counts, activeLabel, allCategories });
   } catch (e: unknown) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }
