@@ -317,23 +317,19 @@ export default function PPVSchedulePage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-8">
-            {grouped.map(({ date, pics }) => (
-              <div key={date}>
-                {/* Date header */}
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex items-center gap-2 text-[13px] font-semibold text-[var(--wa-text-primary)]">
-                    <CalendarDays className="h-4 w-4 text-[var(--wa-text-secondary)]" />
-                    {date}
-                  </div>
-                  <div className="flex-1 h-px bg-[var(--wa-border)]" />
-                  <span className="text-[11px] text-[var(--wa-text-secondary)]">
-                    {pics.reduce((sum, p) => sum + p.items.length, 0)} match{pics.reduce((sum, p) => sum + p.items.length, 0) !== 1 ? 'es' : ''}
-                  </span>
-                </div>
+          <div className="space-y-6">
+            {grouped.map(({ date, pics }) => {
+              const dateTotal = pics.reduce((sum, p) => sum + p.items.length, 0);
+              return (
+              <fieldset key={date} className="rounded-2xl border border-[var(--wa-border)] px-4 pb-4 pt-2">
+                <legend className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-[12px] font-semibold mx-1 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                  <CalendarDays className="h-3.5 w-3.5" />
+                  {date}
+                  <span className="opacity-60">({dateTotal})</span>
+                </legend>
 
                 {/* PIC sub-groups */}
-                <div className="space-y-5">
+                <div className="space-y-5 mt-2">
                   {pics.map(({ pic, items }) => (
                     <div key={pic} className="flex gap-3">
                       {/* Vertical PIC badge on left */}
@@ -342,7 +338,7 @@ export default function PPVSchedulePage() {
                           "flex items-center justify-center w-7 h-7 rounded-full flex-shrink-0",
                           pic === 'No PIC yet'
                             ? "bg-gray-500/10 text-gray-500 dark:text-gray-400"
-                            : "bg-[var(--wa-green)]/10 text-[var(--wa-green)]"
+                            : "bg-violet-500/10 text-violet-600 dark:text-violet-400"
                         )}>
                           <User className="h-3.5 w-3.5" />
                         </div>
@@ -350,11 +346,11 @@ export default function PPVSchedulePage() {
                           <>
                             <div className={cn(
                               "flex-1 w-px my-1.5",
-                              pic === 'No PIC yet' ? "bg-gray-300 dark:bg-gray-700" : "bg-[var(--wa-green)]/25"
+                              pic === 'No PIC yet' ? "bg-gray-300 dark:bg-gray-700" : "bg-violet-500/25"
                             )} />
                             <span className={cn(
                               "text-[10px] font-bold tabular-nums",
-                              pic === 'No PIC yet' ? "text-gray-400" : "text-[var(--wa-green)]"
+                              pic === 'No PIC yet' ? "text-gray-400" : "text-violet-600 dark:text-violet-400"
                             )}>{items.length}</span>
                           </>
                         )}
@@ -364,7 +360,7 @@ export default function PPVSchedulePage() {
                       <div className="flex-1 min-w-0">
                         <div className={cn(
                           "text-[11px] font-semibold mb-2 leading-tight",
-                          pic === 'No PIC yet' ? "text-gray-500 dark:text-gray-400" : "text-[var(--wa-green)]"
+                          pic === 'No PIC yet' ? "text-gray-500 dark:text-gray-400" : "text-violet-600 dark:text-violet-400"
                         )}>{pic}</div>
                         <div className="space-y-2.5">
                         {items.map((s) => {
@@ -439,8 +435,9 @@ export default function PPVSchedulePage() {
                     </div>
                   ))}
                 </div>
-              </div>
-            ))}
+              </fieldset>
+              );
+            })}
           </div>
         )}
       </main>
