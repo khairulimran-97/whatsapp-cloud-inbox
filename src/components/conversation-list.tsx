@@ -1276,9 +1276,9 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
           {!showForm && (
             <button
               onClick={() => { resetForm(); setShowForm(true); }}
-              className="text-xs text-[var(--wa-green)] hover:underline flex items-center gap-1"
+              className="text-xs font-medium px-3 py-1.5 rounded-lg bg-[var(--wa-green)]/15 text-[var(--wa-green)] hover:bg-[var(--wa-green)]/25 transition-colors flex items-center gap-1.5"
             >
-              <Plus className="h-3 w-3" /> Add
+              <Plus className="h-3.5 w-3.5" /> Add Merchant
             </button>
           )}
         </div>
