@@ -77,10 +77,10 @@ export async function GET(request: NextRequest) {
     const detailData = await detailRes.json();
     const detail = detailData?.data;
 
-    // Show all recent transactions (top 10)
+    // Show all recent transactions (top 5)
     const allTxns = (detail?.recent_transactions ?? []) as Array<Record<string, unknown>>;
     const recentTxns = allTxns
-      .slice(0, 10)
+      .slice(0, 5)
       .map((tx) => ({
         ...tx,
         receipt_url: tx.order_number
