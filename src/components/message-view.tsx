@@ -1964,8 +1964,19 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
               return Object.entries(grouped).map(([cat, items], gi) => (
                 <div key={cat}>
                   {(gi > 0 || Object.keys(grouped).length > 1) && (
-                    <div className={cn("px-1 py-1 text-[10px] uppercase tracking-wider font-semibold text-[var(--wa-text-secondary)]", gi > 0 && "mt-3 pt-2 border-t border-[var(--wa-border)]")}>
-                      {cat}
+                    <div className={cn("px-1 py-1", gi > 0 && "mt-3 pt-2 border-t border-[var(--wa-border)]")}>
+                      {(() => {
+                        const catLower = cat.toLowerCase();
+                        const colors: Record<string, string> = {
+                          'bola sepak': 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
+                          'general': 'bg-slate-500/10 text-slate-600 dark:text-slate-400',
+                          'marketing': 'bg-purple-500/10 text-purple-600 dark:text-purple-400',
+                          'utility': 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+                          'authentication': 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+                        };
+                        const colorClass = colors[catLower] || 'bg-teal-500/10 text-teal-600 dark:text-teal-400';
+                        return <span className={cn("text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded", colorClass)}>{cat}</span>;
+                      })()}
                     </div>
                   )}
                   <div className="space-y-2">
