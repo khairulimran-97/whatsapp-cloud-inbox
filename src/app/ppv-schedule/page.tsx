@@ -319,26 +319,22 @@ export default function PPVSchedulePage() {
           </div>
         ) : (
           <div className="space-y-8">
-            {grouped.map(({ pic, dates }) => (
-              <div key={pic}>
-                {/* PIC group header */}
-                <div className="flex items-center gap-2.5 mb-4">
-                  <div className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 rounded-xl text-[12px] font-semibold",
-                    pic === 'No PIC yet'
-                      ? "bg-gray-500/10 text-gray-500 dark:text-gray-400"
-                      : "bg-[var(--wa-green)]/10 text-[var(--wa-green)]"
-                  )}>
-                    <User className="h-3.5 w-3.5" />
-                    {pic}
-                  </div>
-                  <div className="flex-1 h-px bg-[var(--wa-border)]" />
-                  <span className="text-[11px] text-[var(--wa-text-secondary)]">
-                    {[...dates.values()].reduce((sum, arr) => sum + arr.length, 0)} match{[...dates.values()].reduce((sum, arr) => sum + arr.length, 0) !== 1 ? 'es' : ''}
-                  </span>
-                </div>
+            {grouped.map(({ pic, dates }) => {
+              const totalCount = [...dates.values()].reduce((sum, arr) => sum + arr.length, 0);
+              return (
+              <fieldset key={pic} className="rounded-2xl border border-[var(--wa-border)] px-4 pb-4 pt-2">
+                <legend className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-xl text-[12px] font-semibold mx-2",
+                  pic === 'No PIC yet'
+                    ? "bg-gray-500/10 text-gray-500 dark:text-gray-400"
+                    : "bg-[var(--wa-green)]/10 text-[var(--wa-green)]"
+                )}>
+                  <User className="h-3.5 w-3.5" />
+                  {pic}
+                  <span className="opacity-60">({totalCount})</span>
+                </legend>
 
-                <div className="space-y-5">
+                <div className="space-y-5 mt-2">
                   {[...dates.entries()].map(([dateLabel, items]) => (
                     <div key={dateLabel}>
                       {/* Date sub-header */}
@@ -419,8 +415,9 @@ export default function PPVSchedulePage() {
                     </div>
                   ))}
                 </div>
-              </div>
-            ))}
+              </fieldset>
+              );
+            })}
           </div>
         )}
       </main>
