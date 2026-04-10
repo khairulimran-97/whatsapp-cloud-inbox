@@ -201,6 +201,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
   const [showPushDialog, setShowPushDialog] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showQuickReply, setShowQuickReply] = useState(false);
+  const [quickReplyAddTrigger, setQuickReplyAddTrigger] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const pageRef = useRef(1);
@@ -914,16 +915,27 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       <Dialog open={showQuickReply} onOpenChange={setShowQuickReply}>
         <DialogContent className="sm:max-w-[550px] max-h-[85vh] flex flex-col rounded-2xl p-0 gap-0">
           <DialogHeader className="px-5 pt-5 pb-3 flex-shrink-0 border-b border-[var(--wa-border)]">
-            <DialogTitle className="text-[15px] flex items-center gap-2">
-              <MessageSquareText className="h-4.5 w-4.5 text-emerald-500" />
-              Quick Reply Templates
-            </DialogTitle>
-            <DialogDescription className="text-[12px]">
-              Manage your quick reply templates
-            </DialogDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="text-[15px] flex items-center gap-2">
+                  <MessageSquareText className="h-4.5 w-4.5 text-emerald-500" />
+                  Quick Reply Templates
+                </DialogTitle>
+                <DialogDescription className="text-[12px] mt-1">
+                  Manage your quick reply templates
+                </DialogDescription>
+              </div>
+              <Button
+                onClick={() => setQuickReplyAddTrigger(t => t + 1)}
+                className="bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] text-white text-xs h-8 px-3 gap-1.5"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Template
+              </Button>
+            </div>
           </DialogHeader>
           <div className="flex-1 min-h-0 overflow-auto p-4">
-            <ReplyTemplatesTab onClose={() => setShowQuickReply(false)} />
+            <ReplyTemplatesTab onClose={() => setShowQuickReply(false)} addTrigger={quickReplyAddTrigger} />
           </div>
         </DialogContent>
       </Dialog>
@@ -1411,7 +1423,7 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
   );
 }
 
-function ReplyTemplatesTab({ onClose }: { onClose: () => void }) {
+function ReplyTemplatesTab({ onClose, addTrigger }: { onClose: () => void; addTrigger?: number }) {
   const [templates, setTemplates] = useState<ReplyTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingTemplate, setEditingTemplate] = useState<ReplyTemplate | null>(null);
@@ -1432,6 +1444,13 @@ function ReplyTemplatesTab({ onClose }: { onClose: () => void }) {
   }, []);
 
   useEffect(() => { fetchTemplates(); }, [fetchTemplates]);
+
+  useEffect(() => {
+    if (addTrigger && addTrigger > 0) {
+      setShowForm(true);
+      setEditingTemplate(null);
+    }
+  }, [addTrigger]);
 
   const resetForm = () => {
     setTitle('');
@@ -1573,16 +1592,6 @@ function ReplyTemplatesTab({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="space-y-3 flex flex-col min-h-0">
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-[var(--wa-text-secondary)]">{templates.length} template{templates.length !== 1 ? 's' : ''}</span>
-        <Button
-          onClick={() => { setShowForm(true); setEditingTemplate(null); }}
-          className="bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] text-white text-xs h-8 px-3 gap-1.5"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Add Template
-        </Button>
-      </div>
 
       {templates.length === 0 ? (
         <div className="text-center py-8">
