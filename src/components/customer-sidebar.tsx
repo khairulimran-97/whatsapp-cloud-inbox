@@ -467,6 +467,24 @@ function LookupResultCard({ tx, onInsertText }: { tx: Transaction; onInsertText?
   );
 }
 
+function MerchantSelector({ merchants, selected, onChange }: { merchants: BclMerchantInfo[]; selected: string; onChange: (id: string) => void }) {
+  if (merchants.length <= 1) return null;
+  return (
+    <div className="px-4 py-2 border-b border-[var(--wa-border)] bg-[var(--wa-panel-bg)]">
+      <select
+        value={selected}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full text-[12px] px-2.5 py-1.5 rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] focus:outline-none focus:border-[var(--wa-green)]/50 appearance-none cursor-pointer"
+        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center' }}
+      >
+        {merchants.map(m => (
+          <option key={m.id} value={m.id}>{m.name}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 // --- Orders Tab ---
 
 type OrdersSearchResult = {
@@ -486,9 +504,10 @@ type OrdersTabProps = {
   setResults: (r: OrdersSearchResult | null) => void;
   page: number;
   setPage: (p: number) => void;
+  merchantId?: string;
 };
 
-function OrdersTab({ onInsertText, query, setQuery, results, setResults, page, setPage }: OrdersTabProps) {
+function OrdersTab({ onInsertText, query, setQuery, results, setResults, page, setPage, merchantId }: OrdersTabProps) {
   const [loading, setLoading] = useState(false);
 
   const handleSearch = useCallback(async (q: string, p: number) => {
@@ -496,6 +515,7 @@ function OrdersTab({ onInsertText, query, setQuery, results, setResults, page, s
     setLoading(true);
     try {
       const params = new URLSearchParams({ q: q.trim(), page: String(p), per_page: '10' });
+      if (merchantId) params.set('merchant_id', merchantId);
       const res = await fetch(`/api/transactions/search?${params}`);
       const data = await res.json();
       setResults(data);
@@ -505,7 +525,7 @@ function OrdersTab({ onInsertText, query, setQuery, results, setResults, page, s
     } finally {
       setLoading(false);
     }
-  }, [setResults, setPage]);
+  }, [setResults, setPage, merchantId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -653,6 +673,14 @@ function TabBar({ activeTab, onChangeTab }: { activeTab: TabId; onChangeTab: (ta
 
 // --- Main Sidebar ---
 
+type BclMerchantInfo = {
+  id: string;
+  name: string;
+  apiKey: string;
+  baseUrl: string;
+  isDefault: boolean | null;
+};
+
 export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, panelWidth, onInsertText }: Props) {
   const [data, setData] = useState<CustomerData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -661,13 +689,33 @@ export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, pa
   const [lookupQuery, setLookupQuery] = useState('');
   const [lookupResults, setLookupResults] = useState<OrdersSearchResult | null>(null);
   const [lookupPage, setLookupPage] = useState(1);
+  // Multi-merchant
+  const [merchants, setMerchants] = useState<BclMerchantInfo[]>([]);
+  const [selectedMerchant, setSelectedMerchant] = useState<string>('');
+
+  useEffect(() => {
+    fetch('/api/bcl-merchants')
+      .then(r => r.json())
+      .then(d => {
+        const list = d.merchants || [];
+        setMerchants(list);
+        if (list.length > 0 && !selectedMerchant) {
+          const def = list.find((m: BclMerchantInfo) => m.isDefault) || list[0];
+          setSelectedMerchant(def.id);
+        }
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchCustomer = useCallback(async () => {
     if (!phoneNumber) return;
     setLoading(true);
     setData(null);
     try {
-      const res = await fetch(`/api/customers?phone=${encodeURIComponent(phoneNumber)}`);
+      const params = new URLSearchParams({ phone: phoneNumber });
+      if (selectedMerchant) params.set('merchant_id', selectedMerchant);
+      const res = await fetch(`/api/customers?${params}`);
       const json = await res.json();
       setData(json);
     } catch {
@@ -675,7 +723,7 @@ export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, pa
     } finally {
       setLoading(false);
     }
-  }, [phoneNumber]);
+  }, [phoneNumber, selectedMerchant]);
 
   useEffect(() => {
     if ((open || inline) && phoneNumber) {
@@ -703,12 +751,13 @@ export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, pa
           </h3>
         </div>
         <TabBar activeTab={activeTab} onChangeTab={setActiveTab} />
+        <MerchantSelector merchants={merchants} selected={selectedMerchant} onChange={setSelectedMerchant} />
         <div className="overflow-y-auto flex-1 p-4">
           <div className={activeTab !== 'customer' ? 'hidden' : ''}>
             <InfoContent data={data} loading={loading} phoneNumber={phoneNumber} onInsertText={onInsertText} />
           </div>
           <div className={activeTab !== 'lookup' ? 'hidden' : ''}>
-            <OrdersTab onInsertText={onInsertText} query={lookupQuery} setQuery={setLookupQuery} results={lookupResults} setResults={setLookupResults} page={lookupPage} setPage={setLookupPage} />
+            <OrdersTab onInsertText={onInsertText} query={lookupQuery} setQuery={setLookupQuery} results={lookupResults} setResults={setLookupResults} page={lookupPage} setPage={setLookupPage} merchantId={selectedMerchant} />
           </div>
         </div>
       </div>
@@ -741,12 +790,13 @@ export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, pa
           </button>
         </div>
         <TabBar activeTab={activeTab} onChangeTab={setActiveTab} />
+        <MerchantSelector merchants={merchants} selected={selectedMerchant} onChange={setSelectedMerchant} />
         <div className="overflow-y-auto h-[calc(100%-60px-41px)] p-4">
           <div className={activeTab !== 'customer' ? 'hidden' : ''}>
             <InfoContent data={data} loading={loading} phoneNumber={phoneNumber} onInsertText={onInsertText} />
           </div>
           <div className={activeTab !== 'lookup' ? 'hidden' : ''}>
-            <OrdersTab onInsertText={onInsertText} query={lookupQuery} setQuery={setLookupQuery} results={lookupResults} setResults={setLookupResults} page={lookupPage} setPage={setLookupPage} />
+            <OrdersTab onInsertText={onInsertText} query={lookupQuery} setQuery={setLookupQuery} results={lookupResults} setResults={setLookupResults} page={lookupPage} setPage={setLookupPage} merchantId={selectedMerchant} />
           </div>
         </div>
       </div>

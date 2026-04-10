@@ -44,6 +44,14 @@ function createDb() {
       keys_json TEXT NOT NULL,
       created_at INTEGER
     );
+    CREATE TABLE IF NOT EXISTS bcl_merchants (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      api_key TEXT NOT NULL,
+      base_url TEXT NOT NULL DEFAULT 'https://bcl.my',
+      is_default INTEGER DEFAULT 0,
+      created_at INTEGER
+    );
     CREATE TABLE IF NOT EXISTS contacts (
       phone TEXT PRIMARY KEY,
       name TEXT,

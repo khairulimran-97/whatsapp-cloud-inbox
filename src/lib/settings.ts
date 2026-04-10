@@ -24,3 +24,37 @@ export function getBclMonitorKey(): string {
 export function getBclBaseUrl(): string {
   return process.env.BCL_BASE_URL || 'https://bcl.my';
 }
+
+export type BclMerchant = {
+  id: string;
+  name: string;
+  apiKey: string;
+  baseUrl: string;
+  isDefault: boolean | null;
+};
+
+export function getBclMerchants(): BclMerchant[] {
+  const db = getDb();
+  return db.select().from(schema.bclMerchants).all();
+}
+
+export function getBclMerchant(id: string): BclMerchant | undefined {
+  const db = getDb();
+  return db.select().from(schema.bclMerchants).where(eq(schema.bclMerchants.id, id)).get();
+}
+
+/** Get API key and base URL for a merchant. Falls back to legacy single-key settings. */
+export function getBclCredentials(merchantId?: string | null): { apiKey: string; baseUrl: string; merchantName?: string } | null {
+  if (merchantId) {
+    const merchant = getBclMerchant(merchantId);
+    if (merchant) {
+      return { apiKey: merchant.apiKey, baseUrl: merchant.baseUrl, merchantName: merchant.name };
+    }
+  }
+  // Fallback: legacy single key
+  const apiKey = getBclApiKey();
+  if (apiKey) {
+    return { apiKey, baseUrl: getBclBaseUrl() };
+  }
+  return null;
+}

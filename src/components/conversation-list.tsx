@@ -1140,47 +1140,86 @@ function SettingsDialog({ onClose }: { onClose: () => void }) {
   );
 }
 
-function BclSettingsTab({ onClose }: { onClose: () => void }) {
-  const [bclKey, setBclKey] = useState('');
-  const [maskedKey, setMaskedKey] = useState('');
-  const [appPassword, setAdminSecret] = useState('');
-  const [showKey, setShowKey] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
-  const [appPasswordConfigured, setAdminConfigured] = useState(true);
+type BclMerchant = {
+  id: string;
+  name: string;
+  apiKey: string;
+  baseUrl: string;
+  isDefault: boolean | null;
+};
 
-  useEffect(() => {
-    fetch('/api/settings')
-      .then(r => r.json())
-      .then(data => {
-        setMaskedKey(data.bcl_api_key || '');
-        setAdminConfigured(data.app_password_configured !== false);
-      })
-      .catch(() => {});
+function BclSettingsTab({ onClose }: { onClose: () => void }) {
+  const [merchants, setMerchants] = useState<BclMerchant[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [appPassword, setAppPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [appPasswordConfigured, setAppPasswordConfigured] = useState(true);
+  const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
+  // Form state
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formName, setFormName] = useState('');
+  const [formKey, setFormKey] = useState('');
+  const [formUrl, setFormUrl] = useState('https://bcl.my/api');
+  const [showFormKey, setShowFormKey] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const fetchMerchants = useCallback(async () => {
+    try {
+      const [mRes, sRes] = await Promise.all([
+        fetch('/api/bcl-merchants'),
+        fetch('/api/settings'),
+      ]);
+      const mData = await mRes.json();
+      const sData = await sRes.json();
+      setMerchants(mData.merchants || []);
+      setAppPasswordConfigured(sData.app_password_configured !== false);
+    } catch { /* ignore */ }
+    finally { setLoading(false); }
   }, []);
 
+  useEffect(() => { fetchMerchants(); }, [fetchMerchants]);
+
+  const resetForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setFormName('');
+    setFormKey('');
+    setFormUrl('https://bcl.my/api');
+    setShowFormKey(false);
+  };
+
+  const startEdit = (m: BclMerchant) => {
+    setEditingId(m.id);
+    setFormName(m.name);
+    setFormKey('');
+    setFormUrl(m.baseUrl || 'https://bcl.my/api');
+    setShowForm(true);
+  };
+
   const handleSave = async () => {
+    if (!formName.trim()) return;
     setSaving(true);
     setMessage(null);
     try {
-      const res = await fetch('/api/settings', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-app-password': appPassword,
-        },
-        body: JSON.stringify({ bcl_api_key: bclKey }),
+      const method = editingId ? 'PUT' : 'POST';
+      const body: Record<string, string> = { name: formName.trim(), base_url: formUrl.trim() };
+      if (editingId) body.id = editingId;
+      if (formKey) body.api_key = formKey;
+      else if (!editingId) { setMessage({ text: 'API key is required', error: true }); setSaving(false); return; }
+
+      const res = await fetch('/api/bcl-merchants', {
+        method,
+        headers: { 'Content-Type': 'application/json', 'x-app-password': appPassword },
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) {
         setMessage({ text: data.error || 'Failed to save', error: true });
       } else {
-        setMaskedKey(data.bcl_api_key || '');
-        setBclKey('');
-        setAdminSecret('');
-        setMessage({ text: 'BCL API key saved successfully' });
-        setTimeout(() => onClose(), 1500);
+        setMessage({ text: editingId ? 'Merchant updated' : 'Merchant added' });
+        resetForm();
+        fetchMerchants();
       }
     } catch {
       setMessage({ text: 'Network error', error: true });
@@ -1189,35 +1228,58 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    setMessage(null);
+    try {
+      const res = await fetch('/api/bcl-merchants', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'x-app-password': appPassword },
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        setMessage({ text: d.error || 'Failed to delete', error: true });
+      } else {
+        setMessage({ text: 'Merchant removed' });
+        fetchMerchants();
+      }
+    } catch {
+      setMessage({ text: 'Network error', error: true });
+    }
+  };
+
+  const handleSetDefault = async (id: string) => {
+    setMessage(null);
+    try {
+      const m = merchants.find(x => x.id === id);
+      if (!m) return;
+      const res = await fetch('/api/bcl-merchants', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'x-app-password': appPassword },
+        body: JSON.stringify({ id, name: m.name, is_default: true }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        setMessage({ text: d.error || 'Failed', error: true });
+      } else {
+        fetchMerchants();
+      }
+    } catch {
+      setMessage({ text: 'Network error', error: true });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-5 w-5 animate-spin text-[var(--wa-text-secondary)]" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      <div>
-        <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider">
-          BCL API Key
-        </label>
-        {maskedKey && (
-          <p className="text-xs text-[var(--wa-text-secondary)] mt-1 font-mono bg-[var(--wa-hover)] px-2 py-1.5 rounded">
-            Current: {maskedKey}
-          </p>
-        )}
-        <div className="relative mt-2">
-          <input
-            type={showKey ? 'text' : 'password'}
-            value={bclKey}
-            onChange={(e) => setBclKey(e.target.value)}
-            placeholder="Enter new BCL API key"
-            className="w-full px-3 py-2 pr-9 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
-          />
-          <button
-            type="button"
-            onClick={() => setShowKey(!showKey)}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]"
-          >
-            {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </button>
-        </div>
-      </div>
-
+      {/* App password (always needed for mutations) */}
       {!appPasswordConfigured && (
         <p className="text-xs text-amber-400 bg-amber-500/10 px-3 py-2 rounded-lg">
           ⚠ Set <code className="font-mono bg-[var(--wa-hover)] px-1 rounded">APP_PASSWORD</code> in your environment to enable settings updates.
@@ -1233,8 +1295,8 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
             <input
               type={showPassword ? 'text' : 'password'}
               value={appPassword}
-              onChange={(e) => setAdminSecret(e.target.value)}
-              placeholder="Enter app password to confirm"
+              onChange={(e) => setAppPassword(e.target.value)}
+              placeholder="Enter app password"
               className="w-full px-3 py-2 pr-9 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
             />
             <button
@@ -1248,23 +1310,132 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
         </div>
       )}
 
+      {/* Merchant list */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider">
+            Merchants ({merchants.length})
+          </label>
+          {!showForm && (
+            <button
+              onClick={() => { resetForm(); setShowForm(true); }}
+              className="text-xs text-[var(--wa-green)] hover:underline flex items-center gap-1"
+            >
+              <Plus className="h-3 w-3" /> Add
+            </button>
+          )}
+        </div>
+
+        {merchants.length === 0 && !showForm && (
+          <p className="text-xs text-[var(--wa-text-secondary)] bg-[var(--wa-hover)] px-3 py-3 rounded-lg text-center">
+            No merchants configured. Add one to enable BCL customer lookup.
+          </p>
+        )}
+
+        <div className="space-y-2">
+          {merchants.map(m => (
+            <div key={m.id} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)]">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm font-medium text-[var(--wa-text-primary)] truncate">{m.name}</span>
+                  {m.isDefault && (
+                    <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-[var(--wa-green)]/15 text-[var(--wa-green)]">Default</span>
+                  )}
+                </div>
+                <p className="text-[11px] text-[var(--wa-text-secondary)] font-mono truncate">
+                  {m.apiKey} · {m.baseUrl}
+                </p>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {!m.isDefault && (
+                  <button
+                    onClick={() => handleSetDefault(m.id)}
+                    title="Set as default"
+                    className="h-7 w-7 flex items-center justify-center rounded text-[var(--wa-text-secondary)] hover:text-[var(--wa-green)] hover:bg-[var(--wa-hover)] transition-colors"
+                  >
+                    <CheckCheck className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                <button
+                  onClick={() => startEdit(m)}
+                  title="Edit"
+                  className="h-7 w-7 flex items-center justify-center rounded text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)] transition-colors"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={() => handleDelete(m.id)}
+                  title="Remove"
+                  className="h-7 w-7 flex items-center justify-center rounded text-[var(--wa-text-secondary)] hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Add / Edit form */}
+      {showForm && (
+        <div className="space-y-3 p-3 rounded-lg border border-[var(--wa-border)] bg-[var(--wa-hover)]">
+          <h4 className="text-xs font-semibold text-[var(--wa-text-primary)]">
+            {editingId ? 'Edit Merchant' : 'New Merchant'}
+          </h4>
+          <input
+            type="text"
+            value={formName}
+            onChange={(e) => setFormName(e.target.value)}
+            placeholder="Merchant name"
+            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+          />
+          <div className="relative">
+            <input
+              type={showFormKey ? 'text' : 'password'}
+              value={formKey}
+              onChange={(e) => setFormKey(e.target.value)}
+              placeholder={editingId ? 'New API key (leave empty to keep)' : 'BCL API key'}
+              className="w-full px-3 py-2 pr-9 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+            />
+            <button
+              type="button"
+              onClick={() => setShowFormKey(!showFormKey)}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]"
+            >
+              {showFormKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          <input
+            type="text"
+            value={formUrl}
+            onChange={(e) => setFormUrl(e.target.value)}
+            placeholder="Base URL (e.g. https://bcl.my/api)"
+            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={resetForm}>Cancel</Button>
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={saving || !formName || (!formKey && !editingId) || (!appPassword && appPasswordConfigured)}
+              className="bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] text-white gap-1"
+            >
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+              {editingId ? 'Update' : 'Add'}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {message && (
         <p className={cn("text-xs px-3 py-2 rounded-lg", message.error ? "text-red-400 bg-red-500/10" : "text-green-400 bg-green-500/10")}>
           {message.text}
         </p>
       )}
 
-      <div className="flex justify-end gap-2 pt-1">
+      <div className="flex justify-end pt-1">
         <Button variant="ghost" onClick={onClose} className="text-sm">
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSave}
-          disabled={saving || !bclKey || (!appPassword && appPasswordConfigured)}
-          className="bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] text-white text-sm gap-1.5"
-        >
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          Save
+          Close
         </Button>
       </div>
     </div>
