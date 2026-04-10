@@ -367,18 +367,24 @@ function LookupResultCard({ tx, onInsertText }: { tx: Transaction; onInsertText?
         </div>
 
         {(tx.payer_name || tx.payer_email || tx.payer_telephone_number) && (
-          <div className="space-y-0.5">
+          <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
             {tx.payer_name && (
-              <div className="flex items-center gap-2 min-w-0">
-                <User className="h-3.5 w-3.5 text-[var(--wa-text-secondary)] flex-shrink-0" />
-                <p className="text-xs font-medium text-[var(--wa-text-primary)] truncate">{tx.payer_name}</p>
-              </div>
+              <>
+                <span className="text-[var(--wa-text-secondary)]">Name</span>
+                <span className="text-[var(--wa-text-primary)] font-medium truncate">{tx.payer_name}</span>
+              </>
             )}
             {tx.payer_email && (
-              <p className="text-[11px] text-[var(--wa-text-secondary)] truncate pl-[22px]">{tx.payer_email}</p>
+              <>
+                <span className="text-[var(--wa-text-secondary)]">Email</span>
+                <span className="text-[var(--wa-text-primary)] truncate">{tx.payer_email}</span>
+              </>
             )}
             {tx.payer_telephone_number && (
-              <p className="text-[11px] text-[var(--wa-text-secondary)] truncate pl-[22px]">{tx.payer_telephone_number}</p>
+              <>
+                <span className="text-[var(--wa-text-secondary)]">Phone</span>
+                <span className="text-[var(--wa-text-primary)] truncate">{tx.payer_telephone_number}</span>
+              </>
             )}
           </div>
         )}
