@@ -48,7 +48,6 @@ function createDb() {
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
       api_key TEXT NOT NULL,
-      base_url TEXT NOT NULL DEFAULT 'https://bcl.my',
       is_default INTEGER DEFAULT 0,
       created_at INTEGER
     );
@@ -140,7 +139,7 @@ function createDb() {
       if (existing.cnt === 0) {
         const id = Math.random().toString(36).slice(2, 10);
         sqlite.prepare(
-          `INSERT INTO bcl_merchants (id, name, api_key, base_url, is_default, created_at) VALUES (?, 'Default', ?, 'https://bcl.my/api', 1, ?)`
+          `INSERT INTO bcl_merchants (id, name, api_key, is_default, created_at) VALUES (?, 'Default', ?, 1, ?)`
         ).run(id, row.value, Math.floor(Date.now() / 1000));
         sqlite.prepare(`DELETE FROM settings WHERE key = 'bcl_api_key'`).run();
       }

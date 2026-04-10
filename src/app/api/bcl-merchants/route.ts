@@ -17,7 +17,6 @@ export async function GET() {
       id: m.id,
       name: m.name,
       apiKey: maskKey(m.apiKey),
-      baseUrl: m.baseUrl,
       isDefault: m.isDefault,
     })),
   });
@@ -26,7 +25,7 @@ export async function GET() {
 // POST: add merchant
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  const { name, api_key, base_url } = body;
+  const { name, api_key } = body;
 
   if (!name?.trim() || !api_key?.trim()) {
     return NextResponse.json({ error: 'name and api_key are required' }, { status: 400 });
@@ -41,7 +40,6 @@ export async function POST(request: NextRequest) {
     id,
     name: name.trim(),
     apiKey: api_key.trim(),
-    baseUrl: (base_url || 'https://bcl.my').trim(),
     isDefault,
     createdAt: new Date(),
   }).run();
@@ -52,7 +50,7 @@ export async function POST(request: NextRequest) {
 // PUT: update merchant
 export async function PUT(request: NextRequest) {
   const body = await request.json();
-  const { id, name, api_key, base_url, is_default } = body;
+  const { id, name, api_key, is_default } = body;
 
   if (!id) {
     return NextResponse.json({ error: 'id is required' }, { status: 400 });
@@ -62,7 +60,6 @@ export async function PUT(request: NextRequest) {
   const updates: Record<string, unknown> = {};
   if (name?.trim()) updates.name = name.trim();
   if (api_key?.trim()) updates.apiKey = api_key.trim();
-  if (base_url !== undefined) updates.baseUrl = (base_url || 'https://bcl.my').trim();
   if (is_default === true) {
     db.update(schema.bclMerchants).set({ isDefault: false }).run();
     updates.isDefault = true;

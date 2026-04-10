@@ -677,7 +677,6 @@ type BclMerchantInfo = {
   id: string;
   name: string;
   apiKey: string;
-  baseUrl: string;
   isDefault: boolean | null;
 };
 

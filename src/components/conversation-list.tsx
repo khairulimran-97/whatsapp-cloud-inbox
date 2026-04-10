@@ -1144,7 +1144,6 @@ type BclMerchant = {
   id: string;
   name: string;
   apiKey: string;
-  baseUrl: string;
   isDefault: boolean | null;
 };
 
@@ -1157,7 +1156,6 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formName, setFormName] = useState('');
   const [formKey, setFormKey] = useState('');
-  const [formUrl, setFormUrl] = useState('https://bcl.my/api');
   const [showFormKey, setShowFormKey] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -1177,7 +1175,6 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
     setEditingId(null);
     setFormName('');
     setFormKey('');
-    setFormUrl('https://bcl.my/api');
     setShowFormKey(false);
   };
 
@@ -1185,7 +1182,6 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
     setEditingId(m.id);
     setFormName(m.name);
     setFormKey('');
-    setFormUrl(m.baseUrl || 'https://bcl.my/api');
     setShowForm(true);
   };
 
@@ -1195,7 +1191,7 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
     setMessage(null);
     try {
       const method = editingId ? 'PUT' : 'POST';
-      const body: Record<string, string> = { name: formName.trim(), base_url: formUrl.trim() };
+      const body: Record<string, string> = { name: formName.trim() };
       if (editingId) body.id = editingId;
       if (formKey) body.api_key = formKey;
       else if (!editingId) { setMessage({ text: 'API key is required', error: true }); setSaving(false); return; }
@@ -1304,7 +1300,7 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
                   )}
                 </div>
                 <p className="text-[11px] text-[var(--wa-text-secondary)] font-mono truncate">
-                  {m.apiKey} · {m.baseUrl}
+                  {m.apiKey}
                 </p>
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
@@ -1366,13 +1362,6 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
               {showFormKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
-          <input
-            type="text"
-            value={formUrl}
-            onChange={(e) => setFormUrl(e.target.value)}
-            placeholder="Base URL (e.g. https://bcl.my/api)"
-            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
-          />
           <div className="flex justify-end gap-2">
             <Button variant="ghost" size="sm" onClick={resetForm}>Cancel</Button>
             <Button

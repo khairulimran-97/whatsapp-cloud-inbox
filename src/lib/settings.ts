@@ -21,15 +21,10 @@ export function getBclMonitorKey(): string {
   return process.env.BCL_MONITOR_KEY || '';
 }
 
-export function getBclBaseUrl(): string {
-  return process.env.BCL_BASE_URL || 'https://bcl.my';
-}
-
 export type BclMerchant = {
   id: string;
   name: string;
   apiKey: string;
-  baseUrl: string;
   isDefault: boolean | null;
 };
 
@@ -43,18 +38,20 @@ export function getBclMerchant(id: string): BclMerchant | undefined {
   return db.select().from(schema.bclMerchants).where(eq(schema.bclMerchants.id, id)).get();
 }
 
-/** Get API key and base URL for a merchant. Falls back to legacy single-key settings. */
+const BCL_BASE_URL = 'https://bcl.my/api';
+
+/** Get API key for a merchant. Falls back to legacy single-key settings. */
 export function getBclCredentials(merchantId?: string | null): { apiKey: string; baseUrl: string; merchantName?: string } | null {
   if (merchantId) {
     const merchant = getBclMerchant(merchantId);
     if (merchant) {
-      return { apiKey: merchant.apiKey, baseUrl: merchant.baseUrl, merchantName: merchant.name };
+      return { apiKey: merchant.apiKey, baseUrl: BCL_BASE_URL, merchantName: merchant.name };
     }
   }
   // Fallback: legacy single key
   const apiKey = getBclApiKey();
   if (apiKey) {
-    return { apiKey, baseUrl: getBclBaseUrl() };
+    return { apiKey, baseUrl: BCL_BASE_URL };
   }
   return null;
 }

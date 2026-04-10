@@ -31,7 +31,6 @@ export const bclMerchants = sqliteTable('bcl_merchants', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   apiKey: text('api_key').notNull(),
-  baseUrl: text('base_url').notNull().default('https://bcl.my'),
   isDefault: integer('is_default', { mode: 'boolean' }).default(false),
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 });
