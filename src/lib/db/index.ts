@@ -132,6 +132,21 @@ function createDb() {
     sqlite.prepare(`INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES ('seed_complete', 'false', ?)`).run(Math.floor(Date.now() / 1000));
   } catch { /* column already exists */ }
 
+  // Migration: move legacy bcl_api_key from settings → bcl_merchants
+  try {
+    const row = sqlite.prepare(`SELECT value FROM settings WHERE key = 'bcl_api_key'`).get() as { value: string } | undefined;
+    if (row?.value) {
+      const existing = sqlite.prepare(`SELECT COUNT(*) as cnt FROM bcl_merchants`).get() as { cnt: number };
+      if (existing.cnt === 0) {
+        const id = Math.random().toString(36).slice(2, 10);
+        sqlite.prepare(
+          `INSERT INTO bcl_merchants (id, name, api_key, base_url, is_default, created_at) VALUES (?, 'Default', ?, 'https://bcl.my/api', 1, ?)`
+        ).run(id, row.value, Math.floor(Date.now() / 1000));
+        sqlite.prepare(`DELETE FROM settings WHERE key = 'bcl_api_key'`).run();
+      }
+    }
+  } catch { /* ignore */ }
+
   // Run cleanup on startup
   cleanupOldData(sqlite);
 

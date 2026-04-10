@@ -3,13 +3,6 @@ import { getDb, schema } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 
-function verifyAdmin(request: NextRequest): boolean {
-  const secret = process.env.APP_PASSWORD;
-  if (!secret) return false;
-  const provided = request.headers.get('x-app-password');
-  return provided === secret;
-}
-
 function maskKey(key: string): string {
   if (!key) return '';
   return `${'•'.repeat(Math.max(0, key.length - 8))}${key.slice(-8)}`;
@@ -32,10 +25,6 @@ export async function GET() {
 
 // POST: add merchant
 export async function POST(request: NextRequest) {
-  if (!verifyAdmin(request)) {
-    return NextResponse.json({ error: 'Invalid app password' }, { status: 401 });
-  }
-
   const body = await request.json();
   const { name, api_key, base_url } = body;
 
@@ -62,10 +51,6 @@ export async function POST(request: NextRequest) {
 
 // PUT: update merchant
 export async function PUT(request: NextRequest) {
-  if (!verifyAdmin(request)) {
-    return NextResponse.json({ error: 'Invalid app password' }, { status: 401 });
-  }
-
   const body = await request.json();
   const { id, name, api_key, base_url, is_default } = body;
 
@@ -79,7 +64,6 @@ export async function PUT(request: NextRequest) {
   if (api_key?.trim()) updates.apiKey = api_key.trim();
   if (base_url !== undefined) updates.baseUrl = (base_url || 'https://bcl.my').trim();
   if (is_default === true) {
-    // Unset all others first
     db.update(schema.bclMerchants).set({ isDefault: false }).run();
     updates.isDefault = true;
   }
@@ -93,11 +77,9 @@ export async function PUT(request: NextRequest) {
 
 // DELETE: remove merchant
 export async function DELETE(request: NextRequest) {
-  if (!verifyAdmin(request)) {
-    return NextResponse.json({ error: 'Invalid app password' }, { status: 401 });
-  }
+  const body = await request.json();
+  const { id } = body;
 
-  const id = request.nextUrl.searchParams.get('id');
   if (!id) {
     return NextResponse.json({ error: 'id is required' }, { status: 400 });
   }

@@ -1151,9 +1151,6 @@ type BclMerchant = {
 function BclSettingsTab({ onClose }: { onClose: () => void }) {
   const [merchants, setMerchants] = useState<BclMerchant[]>([]);
   const [loading, setLoading] = useState(true);
-  const [appPassword, setAppPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [appPasswordConfigured, setAppPasswordConfigured] = useState(true);
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
   // Form state
   const [showForm, setShowForm] = useState(false);
@@ -1166,14 +1163,9 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
 
   const fetchMerchants = useCallback(async () => {
     try {
-      const [mRes, sRes] = await Promise.all([
-        fetch('/api/bcl-merchants'),
-        fetch('/api/settings'),
-      ]);
-      const mData = await mRes.json();
-      const sData = await sRes.json();
-      setMerchants(mData.merchants || []);
-      setAppPasswordConfigured(sData.app_password_configured !== false);
+      const res = await fetch('/api/bcl-merchants');
+      const data = await res.json();
+      setMerchants(data.merchants || []);
     } catch { /* ignore */ }
     finally { setLoading(false); }
   }, []);
@@ -1210,7 +1202,7 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
 
       const res = await fetch('/api/bcl-merchants', {
         method,
-        headers: { 'Content-Type': 'application/json', 'x-app-password': appPassword },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
       const data = await res.json();
@@ -1233,7 +1225,7 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
     try {
       const res = await fetch('/api/bcl-merchants', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json', 'x-app-password': appPassword },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
       });
       if (!res.ok) {
@@ -1255,7 +1247,7 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
       if (!m) return;
       const res = await fetch('/api/bcl-merchants', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'x-app-password': appPassword },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, name: m.name, is_default: true }),
       });
       if (!res.ok) {
@@ -1279,37 +1271,6 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="space-y-4">
-      {/* App password (always needed for mutations) */}
-      {!appPasswordConfigured && (
-        <p className="text-xs text-amber-400 bg-amber-500/10 px-3 py-2 rounded-lg">
-          ⚠ Set <code className="font-mono bg-[var(--wa-hover)] px-1 rounded">APP_PASSWORD</code> in your environment to enable settings updates.
-        </p>
-      )}
-
-      {appPasswordConfigured && (
-        <div>
-          <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider">
-            App Password
-          </label>
-          <div className="relative mt-1.5">
-            <input
-              type={showPassword ? 'text' : 'password'}
-              value={appPassword}
-              onChange={(e) => setAppPassword(e.target.value)}
-              placeholder="Enter app password"
-              className="w-full px-3 py-2 pr-9 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]"
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Merchant list */}
       <div>
         <div className="flex items-center justify-between mb-2">
@@ -1417,7 +1378,7 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
             <Button
               size="sm"
               onClick={handleSave}
-              disabled={saving || !formName || (!formKey && !editingId) || (!appPassword && appPasswordConfigured)}
+              disabled={saving || !formName || (!formKey && !editingId)}
               className="bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] text-white gap-1"
             >
               {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
