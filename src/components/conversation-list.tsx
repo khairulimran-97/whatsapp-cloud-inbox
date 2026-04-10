@@ -1320,7 +1320,7 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
                     {!m.isDefault && (
                       <button
                         onClick={() => handleSetDefault(m.id)}
-                        className="text-[10px] font-medium px-2 py-1 rounded-md text-[var(--wa-text-secondary)]/50 hover:text-blue-400 hover:bg-blue-500/10 transition-colors mr-0.5"
+                        className="text-[10px] font-medium px-2 py-1 rounded-md text-blue-400/50 hover:text-blue-400 hover:bg-blue-500/10 transition-colors mr-0.5"
                       >
                         Set Default
                       </button>
