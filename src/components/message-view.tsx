@@ -1974,7 +1974,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                         key={t.id}
                         className="group rounded-xl border border-black/10 dark:border-white/10 bg-white dark:bg-white/[0.04] hover:border-emerald-500/30 hover:bg-emerald-50 dark:hover:bg-emerald-500/[0.06] transition-all duration-200 overflow-hidden"
                       >
-                        {/* Header */}
+                        {/* Header with inline action */}
                         <div className="flex items-center gap-2.5 px-3.5 pt-3 pb-1.5">
                           <div className="h-7 w-7 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
                             <MessageSquareQuote className="h-3.5 w-3.5 text-emerald-500" />
@@ -1983,13 +1983,6 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                             <h4 className="text-[13px] font-semibold text-[var(--wa-text-primary)] truncate">{t.title}</h4>
                             <span className="text-[9px] uppercase tracking-wider text-[var(--wa-text-secondary)]/60 font-medium">{t.category || 'General'}</span>
                           </div>
-                        </div>
-                        {/* Body */}
-                        <div className="px-3.5 pb-2.5">
-                          <p className="text-[11.5px] text-[var(--wa-text-secondary)] whitespace-pre-wrap line-clamp-3 leading-[1.6]">{t.body}</p>
-                        </div>
-                        {/* Action */}
-                        <div className="flex justify-end px-3 pb-2.5">
                           <button
                             onClick={() => {
                               setMessageInput(prev => prev ? prev + '\n' + t.body : t.body);
@@ -2002,11 +1995,15 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                                 }
                               });
                             }}
-                            className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-4 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+                            className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1 rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0"
                           >
                             <Send className="h-3 w-3" />
                             Use
                           </button>
+                        </div>
+                        {/* Body */}
+                        <div className="px-3.5 pb-3">
+                          <p className="text-[11.5px] text-[var(--wa-text-secondary)] whitespace-pre-wrap line-clamp-3 leading-[1.6] pl-[38px]">{t.body}</p>
                         </div>
                       </div>
                     ))}
