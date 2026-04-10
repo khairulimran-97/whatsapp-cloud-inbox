@@ -1673,7 +1673,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
 
             {/* Workflow execution banner */}
             {workflowExecution && (
-              <div className="px-2 py-1.5 bg-amber-50 dark:bg-amber-950/40">
+              <div className="px-2 py-2.5 bg-amber-50 dark:bg-amber-950/40">
                 <div className="px-2.5 py-1">
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
