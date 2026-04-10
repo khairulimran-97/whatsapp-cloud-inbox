@@ -150,12 +150,21 @@ function CopyButton({ text, title = 'Copy' }: { text: string; title?: string }) 
 }
 
 function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
+  const [show, setShow] = useState(false);
+
   return (
-    <span className="relative group/tip">
+    <span
+      className="relative inline-block max-w-full cursor-pointer"
+      onClick={() => setShow(v => !v)}
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
       {children}
-      <span className="pointer-events-none absolute left-0 bottom-full mb-1 z-50 hidden group-hover/tip:block max-w-[280px] px-2 py-1 text-[11px] text-white bg-black/85 dark:bg-white/90 dark:text-black rounded-md shadow-lg whitespace-normal break-words leading-snug">
-        {text}
-      </span>
+      {show && (
+        <span className="pointer-events-none absolute left-0 top-full mt-1 z-[100] max-w-[280px] px-2 py-1 text-[11px] text-white bg-gray-900 dark:bg-gray-100 dark:text-gray-900 rounded-md shadow-lg whitespace-normal break-words leading-snug">
+          {text}
+        </span>
+      )}
     </span>
   );
 }
@@ -260,9 +269,11 @@ function ContentAccessItem({ content, onInsertText }: { content: ProtectedConten
       <div className="flex items-center gap-2">
         <ShieldCheck className="h-3.5 w-3.5 text-green-400 flex-shrink-0" />
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-[var(--wa-text-primary)] leading-snug truncate" title={content.title}>
-            {content.title}
-          </p>
+          <Tooltip text={content.title}>
+            <p className="text-xs font-medium text-[var(--wa-text-primary)] leading-snug truncate">
+              {content.title}
+            </p>
+          </Tooltip>
           {content.granted_at && (
             <p className="text-[10px] text-[var(--wa-text-secondary)]">
               {formatDateTime(content.granted_at)}
@@ -314,8 +325,8 @@ function TransactionCard({ tx, onInsertText }: { tx: Transaction; onInsertText?:
   const isPaid = tx.status === 'success' || tx.status === 'completed' || tx.is_paid;
 
   return (
-    <div className="rounded-xl border border-black/10 dark:border-white/15 bg-[var(--wa-hover)] overflow-hidden">
-      <div className={`h-[3px] ${isPaid ? 'bg-green-500' : tx.status === 'pending' ? 'bg-amber-500' : 'bg-red-500/60'}`} />
+    <div className="rounded-xl border border-black/10 dark:border-white/15 bg-[var(--wa-hover)]">
+      <div className={`h-[3px] rounded-t-xl ${isPaid ? 'bg-green-500' : tx.status === 'pending' ? 'bg-amber-500' : 'bg-red-500/60'}`} />
       <div className="p-3 space-y-2">
         {/* Order number + amount */}
         <div className="flex items-center justify-between">
