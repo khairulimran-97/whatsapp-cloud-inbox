@@ -226,9 +226,9 @@ export default function PPVSchedulePage() {
           {/* Tabs */}
           <div className="flex -mb-px">
             {([
-              { key: 'active' as const, label: activeLabel, count: activeCount },
-              { key: 'schedule' as const, label: 'Schedule', count: scheduleMatches.length },
-              { key: 'completed' as const, label: 'Completed', count: completedMatches.length },
+              { key: 'active' as const, label: activeLabel, count: activeCount, color: 'bg-blue-500/15 text-blue-600 dark:text-blue-400', activeColor: 'bg-blue-500/20 text-blue-600 dark:text-blue-400' },
+              { key: 'schedule' as const, label: 'Schedule', count: scheduleMatches.length, color: 'bg-amber-500/15 text-amber-600 dark:text-amber-400', activeColor: 'bg-amber-500/20 text-amber-600 dark:text-amber-400' },
+              { key: 'completed' as const, label: 'Completed', count: completedMatches.length, color: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400', activeColor: 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' },
             ]).map(f => (
               <button key={f.key} onClick={() => setFilterTime(f.key)}
                 className={cn(
@@ -240,9 +240,7 @@ export default function PPVSchedulePage() {
                 {f.label}
                 <span className={cn(
                   "ml-1.5 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-semibold",
-                  filterTime === f.key
-                    ? "bg-[var(--wa-green)]/15 text-[var(--wa-green)]"
-                    : "bg-[var(--wa-hover)] text-[var(--wa-text-secondary)]"
+                  filterTime === f.key ? f.activeColor : f.color
                 )}>{f.count}</span>
               </button>
             ))}
