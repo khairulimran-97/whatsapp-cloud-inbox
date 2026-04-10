@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, forwardRef, useImperativeHandle, useCallback, type ReactNode } from 'react';
 import { format, isValid, isToday, isYesterday } from 'date-fns';
-import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save, Plus, Pencil, Trash2, MessageSquareText, CloudDownload, TriangleAlert, RefreshCw, Database, ExternalLink, CalendarDays } from 'lucide-react';
+import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save, Plus, Pencil, Trash2, MessageSquareText, CloudDownload, TriangleAlert, RefreshCw, Database, ExternalLink, CalendarDays, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAutoPolling } from '@/hooks/use-auto-polling';
 import { useTheme } from '@/hooks/use-theme';
@@ -200,7 +200,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
   const [showPushDialog, setShowPushDialog] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
-  const [settingsDefaultTab, setSettingsDefaultTab] = useState<'bcl' | 'templates' | 'data' | undefined>(undefined);
+  const [showQuickReply, setShowQuickReply] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const pageRef = useRef(1);
@@ -875,21 +875,21 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       {/* Bottom action bar */}
       <div className="flex items-center border-t border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)] flex-shrink-0 safe-area-bottom">
         <button
-          onClick={() => { setSettingsDefaultTab('templates'); setShowSettings(true); }}
+          onClick={() => setShowQuickReply(true)}
           className="flex-1 flex flex-col items-center gap-0.5 py-2 text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-border-strong)]/20 transition-colors"
         >
           <MessageSquareText className="h-4 w-4" />
-          <span className="text-[10px]">Templates</span>
+          <span className="text-[10px]">Quick Reply</span>
         </button>
         <button
-          onClick={() => { setSettingsDefaultTab(undefined); setShowSchedule(true); }}
+          onClick={() => setShowSchedule(true)}
           className="flex-1 flex flex-col items-center gap-0.5 py-2 text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-border-strong)]/20 transition-colors"
         >
           <CalendarDays className="h-4 w-4" />
           <span className="text-[10px]">PPV Schedule</span>
         </button>
         <button
-          onClick={() => { setSettingsDefaultTab(undefined); setShowSettings(true); }}
+          onClick={() => setShowSettings(true)}
           className="flex-1 flex flex-col items-center gap-0.5 py-2 text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-border-strong)]/20 transition-colors"
         >
           <Settings className="h-4 w-4" />
@@ -897,29 +897,26 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
         </button>
       </div>
 
-      {/* PPV Schedule Modal (dummy) */}
-      <Dialog open={showSchedule} onOpenChange={setShowSchedule}>
-        <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-auto">
+      {/* Quick Reply Dialog */}
+      <Dialog open={showQuickReply} onOpenChange={setShowQuickReply}>
+        <DialogContent className="sm:max-w-[550px] max-h-[85vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>PPV Schedule</DialogTitle>
+            <DialogTitle className="text-lg">Quick Reply</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            {[
-              { title: 'Liga Super: JDT vs Selangor', date: 'Apr 12, 2026 · 9:00 PM', status: 'Upcoming' },
-              { title: 'Liga Super: KL City vs Terengganu', date: 'Apr 14, 2026 · 9:00 PM', status: 'Upcoming' },
-              { title: 'Piala FA: Kedah vs Pahang', date: 'Apr 16, 2026 · 8:45 PM', status: 'Upcoming' },
-              { title: 'Liga Super: Sabah vs JDT', date: 'Apr 19, 2026 · 9:00 PM', status: 'Upcoming' },
-            ].map((match, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-[var(--wa-hover)] border border-[var(--wa-border)]">
-                <CalendarDays className="h-5 w-5 text-[var(--wa-green)] flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-medium text-[var(--wa-text-primary)] truncate">{match.title}</p>
-                  <p className="text-[11px] text-[var(--wa-text-secondary)]">{match.date}</p>
-                </div>
-                <span className="text-[10px] font-medium text-[var(--wa-green)] bg-[var(--wa-green)]/10 px-2 py-0.5 rounded-full flex-shrink-0">{match.status}</span>
-              </div>
-            ))}
-            <p className="text-[11px] text-[var(--wa-text-secondary)] text-center pt-2">Schedule data is for preview only</p>
+          <div className="flex-1 min-h-0 overflow-auto">
+            <ReplyTemplatesTab onClose={() => setShowQuickReply(false)} />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* PPV Schedule Dialog */}
+      <Dialog open={showSchedule} onOpenChange={setShowSchedule}>
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-lg">PPV Schedule</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 min-h-0 overflow-auto">
+            <PPVScheduleTab />
           </div>
         </DialogContent>
       </Dialog>
@@ -1081,7 +1078,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
           <DialogHeader>
             <DialogTitle className="text-lg">Settings</DialogTitle>
           </DialogHeader>
-          <SettingsDialog onClose={() => setShowSettings(false)} defaultTab={settingsDefaultTab} />
+          <SettingsDialog onClose={() => setShowSettings(false)} />
         </DialogContent>
       </Dialog>
     </div>
@@ -1098,8 +1095,8 @@ type ReplyTemplate = {
   created_at: string;
 };
 
-function SettingsDialog({ onClose, defaultTab }: { onClose: () => void; defaultTab?: 'bcl' | 'templates' | 'data' }) {
-  const [tab, setTab] = useState<'bcl' | 'templates' | 'data'>(defaultTab || 'bcl');
+function SettingsDialog({ onClose }: { onClose: () => void }) {
+  const [tab, setTab] = useState<'bcl' | 'data'>('bcl');
 
   return (
     <div className="flex flex-col min-h-0 flex-1">
@@ -1116,17 +1113,6 @@ function SettingsDialog({ onClose, defaultTab }: { onClose: () => void; defaultT
           BCL API
         </button>
         <button
-          onClick={() => setTab('templates')}
-          className={cn(
-            "flex-1 py-2 text-sm font-medium transition-colors border-b-2 -mb-px",
-            tab === 'templates'
-              ? "border-[var(--wa-green)] text-[var(--wa-green)]"
-              : "border-transparent text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]"
-          )}
-        >
-          Templates
-        </button>
-        <button
           onClick={() => setTab('data')}
           className={cn(
             "flex-1 py-2 text-sm font-medium transition-colors border-b-2 -mb-px",
@@ -1138,7 +1124,7 @@ function SettingsDialog({ onClose, defaultTab }: { onClose: () => void; defaultT
           Data
         </button>
       </div>
-      {tab === 'bcl' ? <BclSettingsTab onClose={onClose} /> : tab === 'templates' ? <ReplyTemplatesTab onClose={onClose} /> : <DataTab />}
+      {tab === 'bcl' ? <BclSettingsTab onClose={onClose} /> : <DataTab />}
     </div>
   );
 }
@@ -1616,6 +1602,414 @@ function DataTab() {
         <p className={cn("text-xs px-3 py-2 rounded-lg", message.error ? "text-red-400 bg-red-500/10" : "text-green-400 bg-green-500/10")}>
           {message.text}
         </p>
+      )}
+    </div>
+  );
+}
+
+interface PPVSchedule {
+  id: string;
+  matchDatetime: string;
+  matchDetails: string;
+  category: string;
+  status: string;
+  bclAccount: string;
+  pic: string;
+  remark: string;
+}
+
+const PPV_CATEGORIES = ['Liga Super', 'Piala FA', 'Piala Malaysia', 'ACL', 'Friendly', 'Other'];
+const PPV_STATUSES = ['upcoming', 'live', 'completed', 'cancelled'];
+
+function PPVScheduleTab() {
+  const [schedules, setSchedules] = useState<PPVSchedule[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<PPVSchedule | null>(null);
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterTime, setFilterTime] = useState<'today' | 'next' | 'all'>('today');
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
+
+  // Form fields
+  const [matchDatetime, setMatchDatetime] = useState('');
+  const [matchDetails, setMatchDetails] = useState('');
+  const [category, setCategory] = useState('Liga Super');
+  const [status, setStatus] = useState('upcoming');
+  const [bclAccount, setBclAccount] = useState('');
+  const [pic, setPic] = useState('');
+  const [remark, setRemark] = useState('');
+
+  const fetchSchedules = useCallback(async () => {
+    try {
+      const res = await fetch('/api/ppv-schedules');
+      const data = await res.json();
+      setSchedules(data.schedules || []);
+    } catch { /* ignore */ }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { fetchSchedules(); }, [fetchSchedules]);
+
+  const resetForm = () => {
+    setMatchDatetime('');
+    setMatchDetails('');
+    setCategory('Liga Super');
+    setStatus('upcoming');
+    setBclAccount('');
+    setPic('');
+    setRemark('');
+    setEditing(null);
+    setShowForm(false);
+    setMessage(null);
+  };
+
+  const openEdit = (s: PPVSchedule) => {
+    setEditing(s);
+    const dt = new Date(s.matchDatetime);
+    const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    setMatchDatetime(local);
+    setMatchDetails(s.matchDetails);
+    setCategory(s.category);
+    setStatus(s.status);
+    setBclAccount(s.bclAccount || '');
+    setPic(s.pic || '');
+    setRemark(s.remark || '');
+    setShowForm(true);
+    setMessage(null);
+  };
+
+  const handleSave = async () => {
+    if (!matchDatetime || !matchDetails) {
+      setMessage({ text: 'Date/time and match details are required', error: true });
+      return;
+    }
+    setSaving(true);
+    setMessage(null);
+    try {
+      const isEdit = !!editing;
+      const res = await fetch('/api/ppv-schedules', {
+        method: isEdit ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-app-password': localStorage.getItem('app_password') || '',
+        },
+        body: JSON.stringify({
+          ...(isEdit && { id: editing.id }),
+          matchDatetime: new Date(matchDatetime).toISOString(),
+          matchDetails,
+          category,
+          status,
+          bclAccount,
+          pic,
+          remark,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage({ text: data.error || 'Failed to save', error: true });
+      } else {
+        setMessage({ text: isEdit ? 'Schedule updated' : 'Schedule added' });
+        await fetchSchedules();
+        setTimeout(resetForm, 600);
+      }
+    } catch {
+      setMessage({ text: 'Network error', error: true });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleMarkComplete = async (s: PPVSchedule) => {
+    try {
+      await fetch('/api/ppv-schedules', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-app-password': localStorage.getItem('app_password') || '',
+        },
+        body: JSON.stringify({ id: s.id, status: 'completed' }),
+      });
+      await fetchSchedules();
+    } catch { /* ignore */ }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this schedule?')) return;
+    try {
+      await fetch(`/api/ppv-schedules?id=${id}`, {
+        method: 'DELETE',
+        headers: { 'x-app-password': localStorage.getItem('app_password') || '' },
+      });
+      await fetchSchedules();
+    } catch { /* ignore */ }
+  };
+
+  const allCategories = [...new Set(schedules.map(s => s.category))];
+
+  // Time-based filtering
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayEnd = new Date(todayStart.getTime() + 86400000);
+
+  const timeFiltered = schedules.filter(s => {
+    const dt = new Date(s.matchDatetime);
+    if (filterTime === 'today') return dt >= todayStart && dt < todayEnd;
+    if (filterTime === 'next') return dt >= todayStart && s.status !== 'completed' && s.status !== 'cancelled';
+    return true;
+  });
+
+  const filtered = filterCategory === 'all' ? timeFiltered : timeFiltered.filter(s => s.category === filterCategory);
+
+  const todayCount = schedules.filter(s => { const dt = new Date(s.matchDatetime); return dt >= todayStart && dt < todayEnd; }).length;
+  const nextCount = schedules.filter(s => { const dt = new Date(s.matchDatetime); return dt >= todayStart && s.status !== 'completed' && s.status !== 'cancelled'; }).length;
+
+  const statusColor = (s: string) => {
+    switch (s) {
+      case 'upcoming': return 'text-blue-400 bg-blue-500/10';
+      case 'live': return 'text-red-400 bg-red-500/10';
+      case 'completed': return 'text-[var(--wa-green)] bg-[var(--wa-green)]/10';
+      case 'cancelled': return 'text-[var(--wa-text-secondary)] bg-[var(--wa-text-secondary)]/10';
+      default: return 'text-[var(--wa-text-secondary)] bg-[var(--wa-text-secondary)]/10';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-5 w-5 animate-spin text-[var(--wa-text-secondary)]" />
+      </div>
+    );
+  }
+
+  if (showForm) {
+    return (
+      <div className="space-y-3">
+        <h4 className="text-sm font-medium text-[var(--wa-text-primary)]">
+          {editing ? 'Edit Schedule' : 'New Schedule'}
+        </h4>
+        <div>
+          <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider">Date & Time</label>
+          <input
+            type="datetime-local"
+            value={matchDatetime}
+            onChange={(e) => setMatchDatetime(e.target.value)}
+            className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+          />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider">Match Details</label>
+          <input
+            value={matchDetails}
+            onChange={(e) => setMatchDetails(e.target.value)}
+            placeholder="e.g. JDT vs Selangor"
+            className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider">Category</label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+            >
+              {PPV_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider">Status</label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+            >
+              {PPV_STATUSES.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+            </select>
+          </div>
+        </div>
+        <div>
+          <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider">BCL Account</label>
+          <input
+            value={bclAccount}
+            onChange={(e) => setBclAccount(e.target.value)}
+            placeholder="Optional"
+            className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+          />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider">PIC (Person In Charge)</label>
+          <input
+            value={pic}
+            onChange={(e) => setPic(e.target.value)}
+            placeholder="Optional"
+            className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+          />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider">Remark</label>
+          <textarea
+            value={remark}
+            onChange={(e) => setRemark(e.target.value)}
+            placeholder="Optional notes"
+            rows={2}
+            className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50 resize-none"
+          />
+        </div>
+        <div className="flex gap-2 pt-1">
+          <button
+            onClick={resetForm}
+            className="flex-1 px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] text-[var(--wa-text-secondary)] hover:bg-[var(--wa-hover)]"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving || !matchDatetime || !matchDetails}
+            className="flex-1 px-3 py-2 text-sm rounded-lg bg-[var(--wa-green)] text-white hover:bg-[var(--wa-green)]/90 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            {editing ? 'Update' : 'Add'}
+          </button>
+        </div>
+        {message && (
+          <p className={cn("text-xs text-center", message.error ? "text-red-400" : "text-[var(--wa-green)]")}>
+            {message.text}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* Tab filter bar */}
+      <div className="flex items-center border-b border-[var(--wa-border)]">
+        {([
+          { key: 'today' as const, label: 'Today', count: todayCount },
+          { key: 'next' as const, label: 'Upcoming', count: nextCount },
+          { key: 'all' as const, label: 'All', count: schedules.length },
+        ]).map(f => (
+          <button
+            key={f.key}
+            onClick={() => setFilterTime(f.key)}
+            className={cn(
+              "flex-1 py-2.5 text-xs font-medium transition-colors border-b-2 -mb-px text-center",
+              filterTime === f.key
+                ? "border-[var(--wa-green)] text-[var(--wa-green)]"
+                : "border-transparent text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]"
+            )}
+          >
+            {f.label} <span className="opacity-60">({f.count})</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Category + Add row */}
+      <div className="flex items-center gap-2 pt-2">
+        <div className="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto">
+          {allCategories.length > 1 && (
+            <>
+              <button
+                onClick={() => setFilterCategory('all')}
+                className={cn(
+                  "px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors whitespace-nowrap flex-shrink-0",
+                  filterCategory === 'all'
+                    ? "bg-[var(--wa-green)]/15 text-[var(--wa-green)]"
+                    : "text-[var(--wa-text-secondary)] hover:bg-[var(--wa-hover)]"
+                )}
+              >
+                All
+              </button>
+              {allCategories.map(c => (
+                <button
+                  key={c}
+                  onClick={() => setFilterCategory(filterCategory === c ? 'all' : c)}
+                  className={cn(
+                    "px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors whitespace-nowrap flex-shrink-0",
+                    filterCategory === c
+                      ? "bg-[var(--wa-green)]/15 text-[var(--wa-green)]"
+                      : "text-[var(--wa-text-secondary)] hover:bg-[var(--wa-hover)]"
+                  )}
+                >
+                  {c}
+                </button>
+              ))}
+            </>
+          )}
+        </div>
+        <button
+          onClick={() => { resetForm(); setShowForm(true); }}
+          className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--wa-green)] text-white hover:bg-[var(--wa-green)]/90 flex-shrink-0"
+        >
+          <Plus className="h-3.5 w-3.5" /> Add
+        </button>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="text-center py-8">
+          <CalendarDays className="h-8 w-8 mx-auto mb-2 text-[var(--wa-text-secondary)]" />
+          <p className="text-sm text-[var(--wa-text-secondary)]">No schedules found</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {filtered.map((s) => {
+            const dt = new Date(s.matchDatetime);
+            const dateStr = dt.toLocaleDateString('en-MY', { month: 'short', day: 'numeric', year: 'numeric' });
+            const timeStr = dt.toLocaleTimeString('en-MY', { hour: '2-digit', minute: '2-digit' });
+            return (
+              <div key={s.id} className="p-3 rounded-lg bg-[var(--wa-hover)] border border-[var(--wa-border)]">
+                <div className="flex items-start gap-2">
+                  <CalendarDays className="h-4 w-4 text-[var(--wa-green)] flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-[13px] font-medium text-[var(--wa-text-primary)]">{s.matchDetails}</p>
+                      <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0", statusColor(s.status))}>
+                        {s.status.charAt(0).toUpperCase() + s.status.slice(1)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <span className="text-[11px] text-[var(--wa-text-secondary)]">{dateStr} · {timeStr}</span>
+                      <span className="text-[10px] text-[var(--wa-text-secondary)] bg-[var(--wa-search-bg)] px-1.5 py-0.5 rounded">{s.category}</span>
+                    </div>
+                    {s.bclAccount && (
+                      <p className="text-[11px] text-[var(--wa-text-secondary)] mt-0.5">BCL: {s.bclAccount}</p>
+                    )}
+                    {s.pic && (
+                      <p className="text-[11px] text-[var(--wa-text-secondary)] mt-0.5">PIC: {s.pic}</p>
+                    )}
+                    {s.remark && (
+                      <p className="text-[11px] text-[var(--wa-text-secondary)] mt-0.5 italic">{s.remark}</p>
+                    )}
+                  </div>
+                </div>
+                {/* Actions */}
+                <div className="flex items-center gap-1 mt-2 pt-2 border-t border-[var(--wa-border)]">
+                  {s.status !== 'completed' && (
+                    <button
+                      onClick={() => handleMarkComplete(s)}
+                      className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded text-[var(--wa-green)] hover:bg-[var(--wa-green)]/10"
+                    >
+                      <Check className="h-3 w-3" /> Complete
+                    </button>
+                  )}
+                  <button
+                    onClick={() => openEdit(s)}
+                    className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded text-[var(--wa-text-secondary)] hover:bg-[var(--wa-hover)]"
+                  >
+                    <Pencil className="h-3 w-3" /> Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(s.id)}
+                    className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded text-red-400 hover:bg-red-500/10 ml-auto"
+                  >
+                    <Trash2 className="h-3 w-3" /> Delete
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );

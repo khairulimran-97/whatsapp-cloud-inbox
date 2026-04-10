@@ -27,6 +27,19 @@ export const pushSubscriptions = sqliteTable('push_subscriptions', {
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 });
 
+export const ppvSchedules = sqliteTable('ppv_schedules', {
+  id: text('id').primaryKey(),
+  matchDatetime: integer('match_datetime', { mode: 'timestamp' }).notNull(),
+  matchDetails: text('match_details').notNull(),
+  category: text('category').notNull().default('Liga Super'),
+  status: text('status').notNull().default('upcoming'),
+  bclAccount: text('bcl_account').default(''),
+  pic: text('pic').default(''),
+  remark: text('remark').default(''),
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+});
+
 // --- Conversation & message cache tables ---
 
 export const contacts = sqliteTable('contacts', {
