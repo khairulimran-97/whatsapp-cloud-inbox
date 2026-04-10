@@ -376,8 +376,10 @@ export default function PPVSchedulePage() {
                                   <Clock className="h-3.5 w-3.5 opacity-50" />
                                   <span>{timeStr}</span>
                                   <span className="opacity-30">·</span>
-                                  <Trophy className="h-3.5 w-3.5 opacity-50" />
-                                  <span>{s.category}</span>
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--wa-green)]/10 text-[var(--wa-green)] font-medium">
+                                    <Trophy className="h-3 w-3" />
+                                    {s.category}
+                                  </span>
                                   {s.bclAccount && (
                                     <>
                                       <span className="opacity-30">·</span>
