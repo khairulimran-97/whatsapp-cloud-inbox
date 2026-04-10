@@ -1674,7 +1674,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
       <div className="border-t border-[var(--wa-border-strong)] safe-area-bottom">
             {/* Workflow execution banner */}
             {workflowExecution && (
-              <div className="px-[5px] py-2 border-b border-[var(--wa-border)]">
+              <div className="px-[5px] py-2">
                 <div className="flex flex-col gap-2 px-3 py-2 bg-amber-500/[0.06] dark:bg-amber-500/10 rounded-lg border border-amber-500/15 dark:border-amber-500/20">
                   <div className="flex items-center gap-2">
                     <Zap className="h-4 w-4 text-amber-500 dark:text-amber-400 flex-shrink-0" />
