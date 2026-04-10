@@ -471,27 +471,26 @@ function MerchantSelector({ merchants, selected, onChange }: { merchants: BclMer
   if (merchants.length <= 1) return null;
   return (
     <div className="px-4 py-2 border-b border-[var(--wa-border)] bg-[var(--wa-panel-bg)]">
-      <div className="flex items-center gap-1.5 mb-1.5">
-        <Store className="h-3 w-3 text-[var(--wa-text-secondary)]" />
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)]">Merchant</span>
-      </div>
-      <div className="flex gap-1.5 flex-wrap">
-        {merchants.map(m => {
-          const isActive = m.id === selected;
-          return (
-            <button
-              key={m.id}
-              onClick={() => onChange(m.id)}
-              className={`text-[11px] font-medium px-3 py-1.5 rounded-full transition-all ${
-                isActive
-                  ? 'bg-[var(--wa-green)] text-white shadow-sm'
-                  : 'bg-[var(--wa-hover)] text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-search-bg)]'
-              }`}
-            >
-              {m.name}
-            </button>
-          );
-        })}
+      <div className="flex items-center gap-2">
+        <Store className="h-3 w-3 text-[var(--wa-text-secondary)] flex-shrink-0" />
+        <div className="flex gap-1 flex-wrap flex-1 bg-black/[0.04] dark:bg-white/[0.06] rounded-lg p-1">
+          {merchants.map(m => {
+            const isActive = m.id === selected;
+            return (
+              <button
+                key={m.id}
+                onClick={() => onChange(m.id)}
+                className={`text-[11px] font-medium px-3 py-1 rounded-md transition-all flex-1 min-w-0 truncate ${
+                  isActive
+                    ? 'bg-[var(--wa-green)] text-white shadow-sm'
+                    : 'text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
+                }`}
+              >
+                {m.name}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
