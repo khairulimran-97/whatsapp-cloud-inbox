@@ -914,7 +914,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
 
       {/* Quick Reply Dialog */}
       <Dialog open={showQuickReply} onOpenChange={setShowQuickReply}>
-        <DialogContent className="sm:max-w-[600px] max-w-[calc(100%-1rem)] max-h-[90vh] flex flex-col rounded-2xl p-0 gap-0" showCloseButton={false}>
+        <DialogContent className="sm:max-w-[600px] max-w-[calc(100%-1rem)] max-h-[95vh] h-[80vh] flex flex-col rounded-2xl p-0 gap-0" showCloseButton={false}>
           <DialogHeader className="px-4 sm:px-5 pt-4 sm:pt-5 pb-3 flex-shrink-0 border-b border-[var(--wa-border)]">
             <div className="flex items-start sm:items-center justify-between gap-2 sm:gap-3 flex-col sm:flex-row">
               <div>
