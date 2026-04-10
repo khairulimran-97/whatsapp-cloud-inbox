@@ -429,7 +429,7 @@ export default function Home() {
         className="hidden md:flex w-1 flex-shrink-0 cursor-col-resize items-center justify-center hover:bg-[var(--wa-green)]/20 active:bg-[var(--wa-green)]/30 transition-colors group z-10 -ml-1"
         onMouseDown={(e) => handleResizeStart('list', e)}
       >
-        <div className="w-[2px] h-8 rounded-full bg-[var(--wa-border)] group-hover:bg-[var(--wa-green)]/60 group-active:bg-[var(--wa-green)] transition-colors" />
+        <div className="w-[2px] h-8 rounded-full bg-transparent group-hover:bg-[var(--wa-green)]/60 group-active:bg-[var(--wa-green)] transition-colors" />
       </div>
       <MessageView
         ref={messageViewRef}
