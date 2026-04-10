@@ -48,7 +48,7 @@ export function PwaInstallBanner() {
   if (!show) return null;
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-lg bg-[#25d366] px-4 py-3 text-white shadow-lg max-w-sm w-[calc(100%-2rem)]">
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-lg bg-[#2ecc71] px-4 py-3 text-white shadow-lg max-w-sm w-[calc(100%-2rem)]">
       <Download className="h-5 w-5 shrink-0" />
       <div className="flex-1 text-sm">
         <p className="font-semibold">Install PPV Support</p>
@@ -56,7 +56,7 @@ export function PwaInstallBanner() {
       </div>
       <button
         onClick={handleInstall}
-        className="rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-[#25d366] hover:bg-white/90"
+        className="rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-[#2ecc71] hover:bg-white/90"
       >
         Install
       </button>

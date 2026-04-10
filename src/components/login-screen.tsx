@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Lock, Eye, EyeOff, MessageCircle } from 'lucide-react';
+import { Lock, Eye, EyeOff } from 'lucide-react';
 
 const AUTH_KEY = 'app-authenticated';
 
@@ -59,13 +59,11 @@ export function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
   };
 
   return (
-    <div className="h-dvh flex items-center justify-center bg-[#111b21] px-4">
+    <div className="h-dvh flex items-center justify-center bg-[#0a0a0a] px-4">
       <div className="w-full max-w-sm">
         {/* Logo / Header */}
         <div className="text-center mb-8">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#25d366]">
-            <MessageCircle className="h-8 w-8 text-white" />
-          </div>
+          <img src="/icon-192.png" alt="PPV Support" className="mx-auto mb-4 h-20 w-20 rounded-2xl shadow-lg" />
           <h1 className="text-2xl font-bold text-white">PPV Support</h1>
           <p className="mt-1 text-sm text-[#8696a0]">Enter password to continue</p>
         </div>
@@ -80,7 +78,7 @@ export function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
               onChange={(e) => { setPassword(e.target.value); setError(''); }}
               placeholder="Password"
               autoFocus
-              className="w-full rounded-lg bg-[#202c33] py-3 pl-10 pr-10 text-sm text-white placeholder-[#8696a0] outline-none ring-1 ring-[#2a3942] focus:ring-[#25d366] transition-colors"
+              className="w-full rounded-lg bg-[#1a1a1a] py-3 pl-10 pr-10 text-sm text-white placeholder-[#8696a0] outline-none ring-1 ring-[#333] focus:ring-[#2ecc71] transition-colors"
             />
             <button
               type="button"
@@ -98,7 +96,7 @@ export function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
           <button
             type="submit"
             disabled={loading || !password.trim()}
-            className="w-full rounded-lg bg-[#25d366] py-3 text-sm font-semibold text-white hover:bg-[#1ebe57] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full rounded-lg bg-[#2ecc71] py-3 text-sm font-semibold text-white hover:bg-[#27ae60] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? 'Verifying...' : 'Enter'}
           </button>

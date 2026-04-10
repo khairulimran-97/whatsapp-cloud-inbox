@@ -7,12 +7,20 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#25d366",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+    { media: "(prefers-color-scheme: light)", color: "#2ecc71" },
+  ],
 };
 
 export const metadata: Metadata = {
-  title: "WhatsApp inbox",
-  description: "A simple WhatsApp inbox built with Next.js",
+  title: "PPV Support",
+  description: "PPV Live Streaming Customer Support Inbox",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "PPV Support",
+  },
 };
 
 export default function RootLayout({
@@ -24,9 +32,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('whatsapp-inbox-theme');if(t==='light')return;document.documentElement.classList.add('dark')}catch(e){}})()`,
