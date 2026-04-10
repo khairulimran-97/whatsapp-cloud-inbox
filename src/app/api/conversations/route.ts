@@ -170,30 +170,20 @@ function searchConversationsInDb(query: string, page = 1): { data: GroupedConver
     const pattern = `%${query}%`;
     // Strip leading 0 for local→international phone matching
     const stripped = query.replace(/^0+/, '');
-    const altPattern = stripped !== query ? `%${stripped}%` : null;
+    const altPattern = stripped !== query ? `%${stripped}%` : pattern;
 
     // Step 1: Find all unique matching phone numbers via raw SQL UNION
-    const stmt = altPattern
-      ? rawDb.prepare(`
-          SELECT DISTINCT phone FROM (
-            SELECT phone FROM conversations WHERE phone LIKE ?1 OR phone LIKE ?2
-            UNION
-            SELECT phone FROM contacts WHERE name LIKE ?1 OR phone LIKE ?1 OR phone LIKE ?2
-            UNION
-            SELECT phone FROM messages WHERE content LIKE ?1 GROUP BY phone
-          ) ORDER BY phone
-        `)
-      : rawDb.prepare(`
-          SELECT DISTINCT phone FROM (
-            SELECT phone FROM conversations WHERE phone LIKE ?1
-            UNION
-            SELECT phone FROM contacts WHERE name LIKE ?1 OR phone LIKE ?1
-            UNION
-            SELECT phone FROM messages WHERE content LIKE ?1 GROUP BY phone
-          ) ORDER BY phone
-        `);
+    const stmt = rawDb.prepare(`
+      SELECT DISTINCT phone FROM (
+        SELECT phone FROM conversations WHERE phone LIKE @pattern OR phone LIKE @alt
+        UNION
+        SELECT phone FROM contacts WHERE name LIKE @pattern OR phone LIKE @pattern OR phone LIKE @alt
+        UNION
+        SELECT phone FROM messages WHERE content LIKE @pattern GROUP BY phone
+      ) ORDER BY phone
+    `);
 
-    const matchingPhones = (altPattern ? stmt.all(pattern, altPattern) : stmt.all(pattern)) as { phone: string }[];
+    const matchingPhones = stmt.all({ pattern, alt: altPattern }) as { phone: string }[];
     if (matchingPhones.length === 0) return { data: [], hasMore: false };
 
     const allPhones = matchingPhones.map(r => r.phone);
