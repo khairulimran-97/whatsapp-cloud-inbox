@@ -1755,17 +1755,25 @@ function PPVScheduleTab() {
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const todayEnd = new Date(todayStart.getTime() + 86400000);
 
+  // Find next upcoming date (first future date with active matches)
+  const nextDate = schedules
+    .filter(s => new Date(s.matchDatetime) >= todayEnd && s.status !== 'completed' && s.status !== 'cancelled')
+    .map(s => { const d = new Date(s.matchDatetime); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); })
+    .sort((a, b) => a - b)[0];
+  const nextDayEnd = nextDate ? nextDate + 86400000 : 0;
+
   const timeFiltered = schedules.filter(s => {
     const dt = new Date(s.matchDatetime);
     if (filterTime === 'today') return dt >= todayStart && dt < todayEnd;
-    if (filterTime === 'next') return dt >= todayStart && s.status !== 'completed' && s.status !== 'cancelled';
+    if (filterTime === 'next') return nextDate ? (dt.getTime() >= nextDate && dt.getTime() < nextDayEnd) : false;
     return true;
   });
 
   const filtered = filterCategory === 'all' ? timeFiltered : timeFiltered.filter(s => s.category === filterCategory);
 
   const todayCount = schedules.filter(s => { const dt = new Date(s.matchDatetime); return dt >= todayStart && dt < todayEnd; }).length;
-  const nextCount = schedules.filter(s => { const dt = new Date(s.matchDatetime); return dt >= todayStart && s.status !== 'completed' && s.status !== 'cancelled'; }).length;
+  const nextCount = nextDate ? schedules.filter(s => { const t = new Date(s.matchDatetime).getTime(); return t >= nextDate && t < nextDayEnd; }).length : 0;
+  const nextLabel = nextDate ? new Date(nextDate).toLocaleDateString('en-MY', { day: 'numeric', month: 'short' }) : 'Next';
 
   const statusColor = (s: string) => {
     switch (s) {
@@ -1893,7 +1901,7 @@ function PPVScheduleTab() {
       <div className="flex items-center border-b border-[var(--wa-border)]">
         {([
           { key: 'today' as const, label: 'Today', count: todayCount },
-          { key: 'next' as const, label: 'Upcoming', count: nextCount },
+          { key: 'next' as const, label: nextLabel, count: nextCount },
           { key: 'all' as const, label: 'All', count: schedules.length },
         ]).map(f => (
           <button
