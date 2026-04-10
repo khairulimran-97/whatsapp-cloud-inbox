@@ -925,75 +925,91 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
 
       {/* Business Profile Modal */}
       <Dialog open={showProfile} onOpenChange={setShowProfile}>
-        <DialogContent className="sm:max-w-[400px] rounded-2xl p-0 overflow-hidden">
-          {/* Header with avatar */}
-          <div className="bg-[var(--wa-green)] px-6 pt-8 pb-6 text-center">
-            <Avatar className="h-20 w-20 mx-auto mb-3 ring-4 ring-white/20">
-              {profile?.profilePictureUrl && <AvatarImage src={profile.profilePictureUrl} alt="Business" />}
-              <AvatarFallback className="bg-white/20 text-white text-2xl font-semibold">
-                {profile?.verifiedName ? profile.verifiedName.slice(0, 2).toUpperCase() : 'WA'}
-              </AvatarFallback>
-            </Avatar>
-            <DialogHeader>
-              <DialogTitle className="text-white text-lg font-semibold">
-                {profile?.verifiedName || 'Business Account'}
-              </DialogTitle>
-              <DialogDescription className="sr-only">Business profile details</DialogDescription>
-            </DialogHeader>
-            {profile?.displayPhoneNumber && (
-              <p className="text-white/80 text-sm mt-1">{profile.displayPhoneNumber}</p>
-            )}
+        <DialogContent className="sm:max-w-[420px] rounded-2xl p-0 overflow-hidden gap-0">
+          {/* Header with gradient bg */}
+          <div className="relative bg-gradient-to-br from-[var(--wa-green)] to-emerald-600 px-6 pt-10 pb-8 text-center">
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIvPjwvc3ZnPg==')] opacity-60" />
+            <div className="relative">
+              <Avatar className="h-[88px] w-[88px] mx-auto mb-4 ring-4 ring-white/25 shadow-lg">
+                {profile?.profilePictureUrl && <AvatarImage src={profile.profilePictureUrl} alt="Business" />}
+                <AvatarFallback className="bg-white/20 text-white text-3xl font-bold">
+                  {profile?.verifiedName ? profile.verifiedName.slice(0, 2).toUpperCase() : 'WA'}
+                </AvatarFallback>
+              </Avatar>
+              <DialogHeader>
+                <DialogTitle className="text-white text-xl font-bold tracking-tight">
+                  {profile?.verifiedName || 'Business Account'}
+                </DialogTitle>
+                <DialogDescription className="sr-only">Business profile details</DialogDescription>
+              </DialogHeader>
+              {profile?.displayPhoneNumber && (
+                <p className="text-white/80 text-sm mt-1.5 font-medium">{profile.displayPhoneNumber}</p>
+              )}
+              {profile?.vertical && (
+                <span className="inline-block mt-2.5 px-3 py-0.5 rounded-full bg-white/15 text-white/90 text-[11px] font-medium capitalize">{profile.vertical}</span>
+              )}
+            </div>
           </div>
 
-          {/* Details */}
-          <div className="px-6 py-4 space-y-3">
+          {/* Details in cards */}
+          <div className="px-5 py-5 space-y-2.5 max-h-[50vh] overflow-y-auto">
             {profile?.about && (
-              <div className="flex items-start gap-3">
-                <Info className="h-4 w-4 text-[var(--wa-text-secondary)] mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-[11px] text-[var(--wa-text-secondary)] uppercase tracking-wide font-medium">About</p>
-                  <p className="text-[14px] text-[var(--wa-text-primary)]">{profile.about}</p>
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/5 dark:border-white/5">
+                <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                  <Info className="h-4 w-4 text-blue-500" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] text-[var(--wa-text-secondary)] uppercase tracking-wider font-semibold">About</p>
+                  <p className="text-[13px] text-[var(--wa-text-primary)] mt-0.5 leading-relaxed">{profile.about}</p>
                 </div>
               </div>
             )}
 
             {profile?.displayPhoneNumber && (
-              <div className="flex items-start gap-3">
-                <Phone className="h-4 w-4 text-[var(--wa-text-secondary)] mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-[11px] text-[var(--wa-text-secondary)] uppercase tracking-wide font-medium">Phone</p>
-                  <p className="text-[14px] text-[var(--wa-text-primary)]">{profile.displayPhoneNumber}</p>
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/5 dark:border-white/5">
+                <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                  <Phone className="h-4 w-4 text-emerald-500" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] text-[var(--wa-text-secondary)] uppercase tracking-wider font-semibold">Phone</p>
+                  <p className="text-[13px] text-[var(--wa-text-primary)] mt-0.5">{profile.displayPhoneNumber}</p>
                 </div>
               </div>
             )}
 
             {profile?.address && (
-              <div className="flex items-start gap-3">
-                <MapPin className="h-4 w-4 text-[var(--wa-text-secondary)] mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-[11px] text-[var(--wa-text-secondary)] uppercase tracking-wide font-medium">Address</p>
-                  <p className="text-[14px] text-[var(--wa-text-primary)]">{profile.address}</p>
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/5 dark:border-white/5">
+                <div className="h-8 w-8 rounded-lg bg-red-500/10 flex items-center justify-center flex-shrink-0">
+                  <MapPin className="h-4 w-4 text-red-500" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] text-[var(--wa-text-secondary)] uppercase tracking-wider font-semibold">Address</p>
+                  <p className="text-[13px] text-[var(--wa-text-primary)] mt-0.5 leading-relaxed">{profile.address}</p>
                 </div>
               </div>
             )}
 
             {profile?.email && (
-              <div className="flex items-start gap-3">
-                <Mail className="h-4 w-4 text-[var(--wa-text-secondary)] mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-[11px] text-[var(--wa-text-secondary)] uppercase tracking-wide font-medium">Email</p>
-                  <p className="text-[14px] text-[var(--wa-text-primary)]">{profile.email}</p>
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/5 dark:border-white/5">
+                <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                  <Mail className="h-4 w-4 text-amber-500" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] text-[var(--wa-text-secondary)] uppercase tracking-wider font-semibold">Email</p>
+                  <p className="text-[13px] text-[var(--wa-text-primary)] mt-0.5">{profile.email}</p>
                 </div>
               </div>
             )}
 
             {profile?.websites && profile.websites.length > 0 && (
-              <div className="flex items-start gap-3">
-                <Globe className="h-4 w-4 text-[var(--wa-text-secondary)] mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-[11px] text-[var(--wa-text-secondary)] uppercase tracking-wide font-medium">Website</p>
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/5 dark:border-white/5">
+                <div className="h-8 w-8 rounded-lg bg-violet-500/10 flex items-center justify-center flex-shrink-0">
+                  <Globe className="h-4 w-4 text-violet-500" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] text-[var(--wa-text-secondary)] uppercase tracking-wider font-semibold">Website</p>
                   {profile.websites.map((url, i) => (
-                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-[14px] text-[var(--wa-green)] hover:underline block">
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-[13px] text-[var(--wa-green)] hover:underline block mt-0.5 truncate">
                       {url}
                     </a>
                   ))}
@@ -1002,29 +1018,21 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
             )}
 
             {profile?.description && (
-              <div className="flex items-start gap-3">
-                <Info className="h-4 w-4 text-[var(--wa-text-secondary)] mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-[11px] text-[var(--wa-text-secondary)] uppercase tracking-wide font-medium">Description</p>
-                  <p className="text-[14px] text-[var(--wa-text-primary)]">{profile.description}</p>
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/5 dark:border-white/5">
+                <div className="h-8 w-8 rounded-lg bg-cyan-500/10 flex items-center justify-center flex-shrink-0">
+                  <Info className="h-4 w-4 text-cyan-500" />
                 </div>
-              </div>
-            )}
-
-            {profile?.vertical && (
-              <div className="flex items-start gap-3">
-                <Info className="h-4 w-4 text-[var(--wa-text-secondary)] mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-[11px] text-[var(--wa-text-secondary)] uppercase tracking-wide font-medium">Category</p>
-                  <p className="text-[14px] text-[var(--wa-text-primary)] capitalize">{profile.vertical}</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] text-[var(--wa-text-secondary)] uppercase tracking-wider font-semibold">Description</p>
+                  <p className="text-[13px] text-[var(--wa-text-primary)] mt-0.5 leading-relaxed">{profile.description}</p>
                 </div>
               </div>
             )}
 
             {profile?.phoneNumberId && (
-              <div className="pt-2 border-t border-[var(--wa-border)]">
-                <p className="text-[11px] text-[var(--wa-text-secondary)]">
-                  Phone Number ID: <span className="font-mono">{profile.phoneNumberId}</span>
+              <div className="pt-2 mt-1 border-t border-[var(--wa-border)]">
+                <p className="text-[11px] text-[var(--wa-text-secondary)]/60 text-center">
+                  ID: <span className="font-mono">{profile.phoneNumberId}</span>
                 </p>
               </div>
             )}
