@@ -4,6 +4,7 @@ import { ppvSchedules } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
 
 function checkAuth(req: NextRequest): boolean {
+  if (!process.env.APP_PASSWORD) return true;
   const pw = req.headers.get('x-app-password');
   return pw === process.env.APP_PASSWORD;
 }

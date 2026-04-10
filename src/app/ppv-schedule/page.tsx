@@ -90,7 +90,7 @@ export default function PPVSchedulePage() {
       const isEdit = !!editing;
       const res = await fetch('/api/ppv-schedules', {
         method: isEdit ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-app-password': localStorage.getItem('app_password') || '' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...(isEdit && { id: editing.id }),
           matchDatetime: new Date(matchDatetime).toISOString(),
@@ -108,7 +108,7 @@ export default function PPVSchedulePage() {
     try {
       await fetch('/api/ppv-schedules', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'x-app-password': localStorage.getItem('app_password') || '' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: s.id, status: 'completed' }),
       });
       await fetchSchedules();
@@ -118,9 +118,7 @@ export default function PPVSchedulePage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this schedule?')) return;
     try {
-      await fetch(`/api/ppv-schedules?id=${id}`, {
-        method: 'DELETE', headers: { 'x-app-password': localStorage.getItem('app_password') || '' },
-      });
+      await fetch(`/api/ppv-schedules?id=${id}`, { method: 'DELETE' });
       await fetchSchedules();
     } catch { /* ignore */ }
   };
@@ -337,21 +335,24 @@ export default function PPVSchedulePage() {
                               <Trophy className="h-3 w-3 opacity-60" />
                               {s.category}
                             </span>
+                            {s.bclAccount && (
+                              <>
+                                <span className="text-[var(--wa-border)]">·</span>
+                                <a href={`https://${s.bclAccount.replace(/^https?:\/\//, '')}`} target="_blank" rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-[11px] text-[var(--wa-green)] bg-[var(--wa-hover)] px-2 py-0.5 rounded-md hover:underline ml-auto">
+                                  <CreditCard className="h-3 w-3 opacity-60" />{s.bclAccount}
+                                </a>
+                              </>
+                            )}
                           </div>
 
                           {/* Meta row */}
-                          {(s.pic || s.bclAccount || s.remark) && (
+                          {(s.pic || s.remark) && (
                             <div className="flex items-center gap-2 mt-2 flex-wrap">
                               {s.pic && (
                                 <span className="inline-flex items-center gap-1 text-[11px] text-[var(--wa-text-secondary)] bg-[var(--wa-hover)] px-2 py-0.5 rounded-md">
                                   <User className="h-3 w-3 opacity-60" />{s.pic}
                                 </span>
-                              )}
-                              {s.bclAccount && (
-                                <a href={`https://${s.bclAccount.replace(/^https?:\/\//, '')}`} target="_blank" rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 text-[11px] text-[var(--wa-green)] bg-[var(--wa-hover)] px-2 py-0.5 rounded-md hover:underline">
-                                  <CreditCard className="h-3 w-3 opacity-60" />{s.bclAccount}
-                                </a>
                               )}
                               {s.remark && (
                                 <span className="text-[11px] text-[var(--wa-text-secondary)] italic">{s.remark}</span>
