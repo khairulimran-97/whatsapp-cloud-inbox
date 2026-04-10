@@ -13,7 +13,7 @@ A WhatsApp Web-style customer support inbox built with Next.js 15 for the WhatsA
 - **Media support** — Send/receive images, videos, documents, audio with lightbox viewer
 - **Message reactions** — React to messages with emojis
 - **Read receipts** — Delivery status indicators (sent, delivered, read, failed)
-- **24-hour window** — Auto-enforces WhatsApp messaging policy (template-only outside window)
+- **24-hour window** — Auto-enforces WhatsApp messaging policy with frosted-glass status bar
 
 ### Conversations
 - **Server-side search** — Search across conversations and messages with highlighted results
@@ -28,19 +28,20 @@ A WhatsApp Web-style customer support inbox built with Next.js 15 for the WhatsA
 - **Unread badges** — Numeric count badges on conversation sidebar
 
 ### Customer Support
-- **CS reply templates** — Admin-managed quick reply templates with categories
+- **CS reply templates** — Quick reply templates with color-coded category badges, full CRUD management
+- **Multi-merchant BCL** — Manage multiple BCL.my merchant API keys with segmented selector
 - **BCL customer sidebar** — Customer info, transactions, and protected content from BCL.my API
 - **Kapso workflow integration** — Trigger and monitor Kapso platform workflows per conversation
 
 ### Admin
 - **Database viewer** — Built-in `/admin/db` page with token-based access (TablePlus-inspired UI)
 - **Webhook logs** — Full webhook event logging with payload inspection
-- **Settings panel** — In-app configuration for BCL API, templates, data management
+- **Settings panel** — In-app configuration for BCL merchants, templates, data management
 
 ### App
 - **PWA installable** — Add to home screen with custom icon and standalone display
 - **Dark mode** — Full dark theme with WhatsApp-style CSS custom properties
-- **Mobile responsive** — Slide panel navigation for mobile screens
+- **Mobile responsive** — Slide panel navigation, responsive modals with backdrop blur
 - **Password protection** — Simple password gate with localStorage persistence
 - **Docker support** — Multi-stage Dockerfile with standalone output (~238MB image)
 
@@ -63,15 +64,18 @@ Fallback: Browser → Adaptive Polling → Kapso API → Messages
 | `src/app/page.tsx` | Main orchestrator — state, unread counts, realtime events, auth |
 | `src/components/message-view.tsx` | Chat view — bubbles, input, media, templates, search highlight |
 | `src/components/conversation-list.tsx` | Sidebar — conversations, settings, search, unread badges |
-| `src/components/customer-sidebar.tsx` | BCL customer panel (inline desktop, slideover mobile) |
+| `src/components/customer-sidebar.tsx` | BCL customer panel — multi-merchant selector, orders lookup |
+| `src/components/template-selector-dialog.tsx` | WhatsApp template message picker with parameter input |
 | `src/components/login-screen.tsx` | Password login with PPV branding |
 | `src/app/api/webhooks/kapso/route.ts` | Webhook receiver + cache sync + unread + push |
 | `src/app/api/events/route.ts` | SSE streaming for real-time browser updates |
 | `src/app/api/messages/batch/route.ts` | Batch messages with 8s server-side cache |
 | `src/app/api/conversations/route.ts` | Conversations with server-side search (SQLite + API) |
+| `src/app/api/bcl-merchants/route.ts` | BCL merchant CRUD API (multi-merchant support) |
 | `src/app/api/admin/db/route.ts` | Token-protected database viewer API |
 | `src/app/admin/db/page.tsx` | Database viewer UI (TablePlus-inspired) |
 | `src/lib/db/` | SQLite database — Drizzle ORM schema + singleton connection |
+| `src/lib/settings.ts` | App settings + BCL credential management |
 | `src/lib/event-bus.ts` | In-memory pub/sub (Symbol.for pattern for Turbopack) |
 | `src/lib/kapso-platform.ts` | Kapso Platform API client (workflows, executions) |
 
@@ -119,7 +123,7 @@ Edit `.env`:
 | `VAPID_PRIVATE_KEY` | ❌ | VAPID private key for Web Push |
 | `APP_PASSWORD` | ❌ | Password to access the app (default: `Webimpian1111`) |
 | `NEXT_PUBLIC_APP_URL` | ❌ | Public URL of the app (for PWA and push) |
-| `BCL_API_KEY` | ❌ | BCL.my API key for customer lookup |
+| `BCL_API_KEY` | ❌ | Legacy BCL.my API key (auto-migrated to multi-merchant on first run) |
 
 ### 4. Generate VAPID Keys (for Web Push)
 
@@ -290,6 +294,8 @@ All data is stored in SQLite at `data/app.db` (WAL mode, auto-created on first r
 | `unread_counts` | Unread counts per phone (atomic increment) |
 | `settings` | Key-value config store |
 | `reply_templates` | CS quick reply templates with categories |
+| `bcl_merchants` | BCL.my merchant API keys (multi-merchant) |
+| `ppv_schedules` | PPV event schedules |
 | `push_subscriptions` | Web Push subscription endpoints |
 | `webhook_logs` | Webhook event history with full payloads |
 
