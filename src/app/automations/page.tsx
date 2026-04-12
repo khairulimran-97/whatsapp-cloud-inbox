@@ -807,8 +807,9 @@ function ExecutionCard({ exec }: { exec: Execution }) {
           <span className="text-[10px] text-[var(--wa-text-secondary)] font-mono ml-auto">{exec.duration}</span>
         )}
       </div>
-      <div className="text-[10.5px] text-[var(--wa-text-secondary)]">
-        {timeAgo(exec.started_at)} · {formatTime(exec.started_at)}
+      <div className="flex items-center justify-between text-[10.5px] text-[var(--wa-text-secondary)]">
+        <span>#{exec.execution_id}</span>
+        <span>{timeAgo(exec.started_at)} · {formatTime(exec.started_at)}</span>
       </div>
       {isFailed && exec.error_message && (
         <div className="mt-1.5 text-[10px] text-red-600 dark:text-red-400 bg-red-500/10 rounded px-1.5 py-1">
