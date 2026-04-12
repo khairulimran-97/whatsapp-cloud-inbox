@@ -2,10 +2,9 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  ArrowLeft, Sun, Moon, Zap, ChevronRight, Play, CheckCircle2,
+  ArrowLeft, Sun, Moon, Zap, ChevronRight, CheckCircle2,
   XCircle, Clock, Activity, RefreshCw, Loader2, Store, ChevronDown,
-  ChevronUp, AlertTriangle, Hash, Calendar, Timer, TrendingUp,
-  CircleDot, BarChart3, Search,
+  CircleDot, BarChart3, Search, TrendingUp, Calendar, Hash, Timer,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -571,6 +570,17 @@ export default function AutomationsPage() {
                   )}
                 </div>
 
+                {/* Table header */}
+                {executions.length > 0 && (
+                  <div className="grid grid-cols-[auto_60px_1fr_70px_50px] sm:grid-cols-[auto_70px_1fr_100px_60px] gap-x-3 px-4 py-1.5 border-b border-[var(--wa-border)] bg-[var(--wa-panel-header)]/50 text-[10px] font-semibold text-[var(--wa-text-secondary)] uppercase tracking-wider sticky top-[37px] z-10">
+                    <span className="w-5" />
+                    <span>Status</span>
+                    <span>Time</span>
+                    <span>Duration</span>
+                    <span className="text-right">ID</span>
+                  </div>
+                )}
+
                 {execLoading && executions.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 gap-2">
                     <Loader2 className="h-6 w-6 animate-spin text-amber-500/50" />
@@ -586,8 +596,8 @@ export default function AutomationsPage() {
                   </div>
                 ) : (
                   <>
-                    {executions.map((exec, i) => (
-                      <ExecutionRow key={exec.execution_id} exec={exec} index={i} />
+                    {executions.map((exec) => (
+                      <ExecutionRow key={exec.execution_id} exec={exec} />
                     ))}
 
                     {execMeta && execMeta.current_page < execMeta.last_page && (
@@ -672,97 +682,50 @@ function StatCard({
   );
 }
 
-function ExecutionRow({ exec, index }: { exec: Execution; index: number }) {
-  const [expanded, setExpanded] = useState(false);
+function ExecutionRow({ exec }: { exec: Execution }) {
   const isCompleted = exec.status === 'completed';
   const isFailed = exec.status === 'failed';
 
   return (
     <div className={cn(
-      'border-b border-[var(--wa-border)] transition-colors',
-      expanded && 'bg-[var(--wa-hover)]/50'
+      'grid grid-cols-[auto_60px_1fr_70px_50px] sm:grid-cols-[auto_70px_1fr_100px_60px] gap-x-3 px-4 py-2 border-b border-[var(--wa-border)] items-center text-[11.5px] hover:bg-[var(--wa-hover)]/50 transition-colors',
+      isFailed && 'bg-red-500/3'
     )}>
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full text-left px-4 py-3 hover:bg-[var(--wa-hover)] transition-colors"
-      >
-        <div className="flex items-center gap-3">
-          <div className={cn(
-            'h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0',
-            isCompleted && 'bg-emerald-500/10',
-            isFailed && 'bg-red-500/10',
-            !isCompleted && !isFailed && 'bg-amber-500/10'
-          )}>
-            {isCompleted ? (
-              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-            ) : isFailed ? (
-              <XCircle className="h-4 w-4 text-red-500" />
-            ) : (
-              <Loader2 className="h-4 w-4 text-amber-500 animate-spin" />
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-[12.5px] font-semibold text-[var(--wa-text-secondary)]">#{exec.execution_id}</span>
-              <span className={cn(
-                'text-[9px] px-1.5 py-[2px] rounded-full font-semibold uppercase tracking-wider',
-                isCompleted && 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-                isFailed && 'bg-red-500/10 text-red-600 dark:text-red-400',
-                !isCompleted && !isFailed && 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-              )}>
-                {exec.status}
-              </span>
-              {exec.duration && (
-                <span className="text-[10px] text-[var(--wa-text-secondary)] flex items-center gap-0.5 ml-auto mr-2">
-                  <Timer className="h-2.5 w-2.5" />
-                  {exec.duration}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1 mt-0.5 text-[11px] text-[var(--wa-text-secondary)]">
-              <Clock className="h-2.5 w-2.5" />
-              <span>{timeAgo(exec.started_at)}</span>
-              <span className="mx-1 opacity-30">·</span>
-              <span>{formatTime(exec.started_at)}</span>
-            </div>
-          </div>
-          <ChevronDown className={cn(
-            'h-3.5 w-3.5 text-[var(--wa-text-secondary)]/50 flex-shrink-0 transition-transform duration-200',
-            expanded && 'rotate-180'
-          )} />
-        </div>
-      </button>
+      {/* Status icon */}
+      <div className="w-5 flex justify-center">
+        {isCompleted ? (
+          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+        ) : isFailed ? (
+          <XCircle className="h-3.5 w-3.5 text-red-500" />
+        ) : (
+          <Loader2 className="h-3.5 w-3.5 text-amber-500 animate-spin" />
+        )}
+      </div>
 
-      {expanded && (
-        <div className="px-4 pb-3 pl-[60px]">
-          <div className="rounded-lg bg-[var(--wa-panel-header)] border border-[var(--wa-border)] p-3 text-[11px] space-y-2">
-            <DetailRow icon={<CircleDot className="h-3 w-3" />} label="Trigger" value={exec.trigger_type_label} />
-            <DetailRow icon={<Play className="h-3 w-3" />} label="Started" value={formatDateTime(exec.started_at)} />
-            {exec.completed_at && (
-              <DetailRow icon={<CheckCircle2 className="h-3 w-3" />} label="Completed" value={formatDateTime(exec.completed_at)} />
-            )}
-            {exec.duration && (
-              <DetailRow icon={<Timer className="h-3 w-3" />} label="Duration" value={exec.duration} />
-            )}
-            {exec.error_message && (
-              <div className="flex items-start gap-2 pt-1 border-t border-[var(--wa-border)]">
-                <AlertTriangle className="h-3 w-3 text-red-500 flex-shrink-0 mt-0.5" />
-                <span className="text-red-500 dark:text-red-400 break-words">{exec.error_message}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+      {/* Status label */}
+      <span className={cn(
+        'text-[10px] font-semibold uppercase tracking-wider truncate',
+        isCompleted && 'text-emerald-600 dark:text-emerald-400',
+        isFailed && 'text-red-600 dark:text-red-400',
+        !isCompleted && !isFailed && 'text-amber-600 dark:text-amber-400'
+      )}>
+        {exec.status}
+      </span>
 
-function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return (
-    <div className="flex items-center gap-2 text-[var(--wa-text-secondary)]">
-      <span className="opacity-50">{icon}</span>
-      <span className="w-20 flex-shrink-0 font-medium">{label}</span>
-      <span className="text-[var(--wa-text-primary)]">{value}</span>
+      {/* Time */}
+      <span className="text-[var(--wa-text-secondary)] truncate">
+        {timeAgo(exec.started_at)} · {formatTime(exec.started_at)}
+      </span>
+
+      {/* Duration */}
+      <span className="text-[var(--wa-text-secondary)] font-mono text-[10.5px]">
+        {exec.duration || '—'}
+      </span>
+
+      {/* ID */}
+      <span className="text-[var(--wa-text-secondary)]/60 text-right text-[10px] font-mono">
+        {exec.execution_id}
+      </span>
     </div>
   );
 }
