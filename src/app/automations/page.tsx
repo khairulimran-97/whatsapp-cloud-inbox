@@ -570,14 +570,7 @@ export default function AutomationsPage() {
                   )}
                 </div>
 
-                {/* Table header */}
-                {executions.length > 0 && (
-                  <div className="grid grid-cols-[auto_1fr_60px] gap-x-3 px-4 py-1.5 border-b border-[var(--wa-border)] bg-[var(--wa-panel-header)]/50 text-[10px] font-semibold text-[var(--wa-text-secondary)] uppercase tracking-wider sticky top-[37px] z-10">
-                    <span className="w-5" />
-                    <span>Time</span>
-                    <span className="text-right">Duration</span>
-                  </div>
-                )}
+                {/* Execution cards grid */}
 
                 {execLoading && executions.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 gap-2">
@@ -594,9 +587,11 @@ export default function AutomationsPage() {
                   </div>
                 ) : (
                   <>
-                    {executions.map((exec) => (
-                      <ExecutionRow key={exec.execution_id} exec={exec} />
-                    ))}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 p-3">
+                      {executions.map((exec) => (
+                        <ExecutionCard key={exec.execution_id} exec={exec} />
+                      ))}
+                    </div>
 
                     {execMeta && execMeta.current_page < execMeta.last_page && (
                       <button
@@ -680,35 +675,40 @@ function StatCard({
   );
 }
 
-function ExecutionRow({ exec }: { exec: Execution }) {
+function ExecutionCard({ exec }: { exec: Execution }) {
   const isCompleted = exec.status === 'completed';
   const isFailed = exec.status === 'failed';
 
   return (
     <div className={cn(
-      'grid grid-cols-[auto_1fr_60px] gap-x-3 px-4 py-2 border-b border-[var(--wa-border)] items-center text-[11.5px] hover:bg-[var(--wa-hover)]/50 transition-colors',
-      isFailed && 'bg-red-500/3'
+      'rounded-lg border border-[var(--wa-border)] p-2.5 text-[11px] transition-colors',
+      isCompleted && 'bg-emerald-500/5',
+      isFailed && 'bg-red-500/5 border-red-500/20',
+      !isCompleted && !isFailed && 'bg-amber-500/5'
     )}>
-      {/* Status icon */}
-      <div className="w-5 flex justify-center">
+      <div className="flex items-center gap-1.5 mb-1.5">
         {isCompleted ? (
-          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+          <CheckCircle2 className="h-3 w-3 text-emerald-500 flex-shrink-0" />
         ) : isFailed ? (
-          <XCircle className="h-3.5 w-3.5 text-red-500" />
+          <XCircle className="h-3 w-3 text-red-500 flex-shrink-0" />
         ) : (
-          <Loader2 className="h-3.5 w-3.5 text-amber-500 animate-spin" />
+          <Loader2 className="h-3 w-3 text-amber-500 animate-spin flex-shrink-0" />
+        )}
+        <span className={cn(
+          'text-[10px] font-semibold uppercase',
+          isCompleted && 'text-emerald-600 dark:text-emerald-400',
+          isFailed && 'text-red-600 dark:text-red-400',
+          !isCompleted && !isFailed && 'text-amber-600 dark:text-amber-400'
+        )}>
+          {exec.status}
+        </span>
+        {exec.duration && (
+          <span className="text-[10px] text-[var(--wa-text-secondary)] font-mono ml-auto">{exec.duration}</span>
         )}
       </div>
-
-      {/* Time */}
-      <span className="text-[var(--wa-text-secondary)] truncate">
+      <div className="text-[10.5px] text-[var(--wa-text-secondary)]">
         {timeAgo(exec.started_at)} · {formatTime(exec.started_at)}
-      </span>
-
-      {/* Duration */}
-      <span className="text-[var(--wa-text-secondary)] text-right font-mono text-[10.5px]">
-        {exec.duration || '—'}
-      </span>
+      </div>
     </div>
   );
 }
