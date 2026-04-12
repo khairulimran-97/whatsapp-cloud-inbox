@@ -1494,6 +1494,8 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                       
                       if (!hasMediaContent) return null;
                       
+                      const mediaType = (md?.type as string) || '';
+                      
                       return (
                       <div className={cn('overflow-hidden rounded-[5px]', message.content && message.content !== '[Image attached]' || message.caption ? 'mb-[3px]' : '')}>
                         {message.messageType === 'sticker' ? (
@@ -1502,20 +1504,20 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                             alt="Sticker"
                             className="max-w-[150px] max-h-[150px] h-auto"
                           />
-                        ) : (md?.contentType as string)?.startsWith('image/') || message.messageType === 'image' ? (
+                        ) : (md?.contentType as string)?.startsWith('image/') || message.messageType === 'image' || mediaType === 'image' ? (
                           <LazyImage
                             src={mediaUrl}
                             alt="Media"
                             className="rounded-[5px] max-w-full h-auto max-h-[250px] object-cover cursor-pointer"
                             onClick={() => setLightboxUrl(mediaUrl)}
                           />
-                        ) : (md?.contentType as string)?.startsWith('video/') || message.messageType === 'video' ? (
+                        ) : (md?.contentType as string)?.startsWith('video/') || message.messageType === 'video' || mediaType === 'video' ? (
                           <video
                             src={mediaUrl}
                             controls
                             className="rounded-[5px] max-w-full h-auto max-h-[250px]"
                           />
-                        ) : (md?.contentType as string)?.startsWith('audio/') || message.messageType === 'audio' ? (
+                        ) : (md?.contentType as string)?.startsWith('audio/') || message.messageType === 'audio' || mediaType === 'audio' ? (
                           <div className="px-2 pt-2">
                             <audio src={mediaUrl} controls className="w-full max-w-[280px]" />
                           </div>
