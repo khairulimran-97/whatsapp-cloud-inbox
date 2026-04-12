@@ -136,7 +136,14 @@ function getAvatarInitials(contactName?: string, phoneNumber?: string): string {
   return '??';
 }
 
-function getMessageTypeIcon(type?: string): string {
+function getMessageTypeIcon(type?: string, content?: string): string {
+  // Template messages may contain media indicated by prefix
+  if (type === 'template' && content) {
+    if (content.startsWith('[Image]')) return '📷 ';
+    if (content.startsWith('[Video]')) return '📹 ';
+    if (content.startsWith('[Document]')) return '📄 ';
+    return '📋 ';
+  }
   switch (type) {
     case 'image': return '📷 ';
     case 'video': return '📹 ';
@@ -148,6 +155,14 @@ function getMessageTypeIcon(type?: string): string {
     case 'template': return '📋 ';
     default: return '';
   }
+}
+
+function cleanPreviewContent(content: string, type?: string): string {
+  if (type === 'template') {
+    // Strip media prefix tags like [Image], [Video], [Document]
+    return content.replace(/^\[(Image|Video|Document)\]\s*\n*/, '');
+  }
+  return content;
 }
 
 type Props = {
@@ -823,10 +838,10 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
                           {conversation.lastMessage.direction === 'outbound' && (
                             <CheckCheck className="inline h-[15px] w-[15px] text-[var(--wa-read-check)] align-text-bottom mr-0.5" />
                           )}
-                          {getMessageTypeIcon(conversation.lastMessage.type)}
+                          {getMessageTypeIcon(conversation.lastMessage.type, conversation.lastMessage.content)}
                           {searchQuery
-                            ? highlightMatch(conversation.lastMessage.content, searchQuery)
-                            : conversation.lastMessage.content}
+                            ? highlightMatch(cleanPreviewContent(conversation.lastMessage.content, conversation.lastMessage.type), searchQuery)
+                            : cleanPreviewContent(conversation.lastMessage.content, conversation.lastMessage.type)}
                         </>
                       ) : (
                         <span className="italic">No messages</span>
