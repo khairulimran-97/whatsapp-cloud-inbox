@@ -1547,6 +1547,17 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                       </p>
                     )}
 
+                    {/* Template body text (shown below media for template messages with [Image]/[Video]/[Document] prefix) */}
+                    {message.messageType === 'template' && message.hasMedia && message.content && (() => {
+                      const bodyText = message.content.replace(/^\[(Image|Video|Document)\]\s*\n*/, '');
+                      if (!bodyText) return null;
+                      return (
+                        <p className="text-[14.2px] leading-[19px] break-words overflow-wrap-anywhere whitespace-pre-wrap px-[6px] pb-[2px]">
+                          {highlightText(bodyText, searchHighlight)}
+                        </p>
+                      );
+                    })()}
+
                     {message.content && !message.hasMedia && !(message.metadata?.mediaId && message.messageType) && message.content !== '[Image attached]' && (
                       <p className="text-[14.2px] leading-[19px] break-words overflow-wrap-anywhere whitespace-pre-wrap">
                         {highlightText(message.content, searchHighlight)}
