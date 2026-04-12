@@ -1476,7 +1476,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                         ? (message.direction === 'outbound' ? 'rounded-[7.5px] rounded-tr-0' : 'rounded-[7.5px] rounded-tl-0')
                         : 'rounded-[7.5px]',
                       'shadow-[0_1px_0.5px_rgba(11,20,26,0.13)]',
-                      message.hasMedia || message.metadata?.mediaId ? 'p-[3px]' : 'px-[9px] pt-[6px] pb-[8px]',
+                      message.hasMedia || message.metadata?.mediaId ? 'p-[3px] max-w-[330px]' : 'px-[9px] pt-[6px] pb-[8px]',
                       messageSearchQuery && messageSearchResults.some(r => r.id === message.id) && (
                         messageSearchResults[searchMatchIndex]?.id === message.id
                           ? 'ring-2 ring-yellow-400/80 shadow-[0_0_8px_rgba(250,204,21,0.4)]'
