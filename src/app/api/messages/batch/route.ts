@@ -113,6 +113,13 @@ function transformMessage(msg: MetaMessage, conversationId: string): Transformed
         contentType: messageTypeData?.mimeType ?? kapsoMediaData.contentType,
         byteSize: kapsoMediaData.byteSize
       }
+    : mediaId
+    ? {
+        mediaId,
+        type: msg.type,
+        contentType: messageTypeData?.mimeType ?? kapsoMediaData.contentType,
+        filename: document?.filename ?? messageTypeData?.filename ?? kapsoMediaData.filename,
+      }
     : undefined;
 
   const kapsoContent = normaliseKapsoContent(kapsoExtensions?.content);
@@ -267,7 +274,17 @@ function loadMessagesFromDb(conversationIds: string[]): TransformedMessage[] {
       messageType: row.messageType,
       caption: row.caption ?? undefined,
       errorDetails: row.errorJson ? JSON.parse(row.errorJson) : undefined,
-      metadata: row.metadataJson ? JSON.parse(row.metadataJson) : { mediaId: undefined },
+      metadata: (() => {
+        if (!row.metadataJson) return { mediaId: undefined };
+        const parsed = JSON.parse(row.metadataJson);
+        // Extract mediaId from nested media objects if not at top level
+        if (!parsed.mediaId) {
+          for (const key of ['sticker', 'image', 'video', 'audio', 'document']) {
+            if (parsed[key]?.id) { parsed.mediaId = parsed[key].id; break; }
+          }
+        }
+        return parsed;
+      })(),
     }));
   } catch (e) {
     console.error('[Messages] Failed to load from SQLite:', e);
