@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, forwardRef, useImperativeHandle, useCallback, type ReactNode } from 'react';
 import { format, isValid, isToday, isYesterday } from 'date-fns';
-import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save, Plus, Pencil, Trash2, MessageSquareText, CloudDownload, TriangleAlert, RefreshCw, Database, ExternalLink, CalendarDays, ChevronRight, Store } from 'lucide-react';
+import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save, Plus, Pencil, Trash2, MessageSquareText, CloudDownload, TriangleAlert, RefreshCw, Database, ExternalLink, CalendarDays, ChevronRight, Store, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAutoPolling } from '@/hooks/use-auto-polling';
 import { useTheme } from '@/hooks/use-theme';
@@ -904,8 +904,15 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
           <span className="text-[10px]">PPV Schedule</span>
         </button>
         <button
-          onClick={() => setShowSettings(true)}
+          onClick={() => window.open('/automations', '_blank')}
           className="flex-1 flex flex-col items-center gap-0.5 py-3 sm:pt-[14px] sm:pb-[13px] text-amber-500 dark:text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 hover:bg-amber-500/10 transition-colors"
+        >
+          <Zap className="h-4 w-4" />
+          <span className="text-[10px]">Automation</span>
+        </button>
+        <button
+          onClick={() => setShowSettings(true)}
+          className="flex-1 flex flex-col items-center gap-0.5 py-3 sm:pt-[14px] sm:pb-[13px] text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-500/10 transition-colors"
         >
           <Settings className="h-4 w-4" />
           <span className="text-[10px]">Settings</span>

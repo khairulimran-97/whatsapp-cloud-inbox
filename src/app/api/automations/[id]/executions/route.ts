@@ -1,0 +1,25 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getBclCredentials } from '@/lib/settings';
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const merchantId = request.nextUrl.searchParams.get('merchant_id');
+  const page = request.nextUrl.searchParams.get('page') || '1';
+
+  const creds = getBclCredentials(merchantId);
+  if (!creds) return NextResponse.json({ configured: false, data: [] });
+
+  try {
+    const res = await fetch(`${creds.baseUrl}/api/automations/${id}/executions?page=${page}`, {
+      headers: { Authorization: `Bearer ${creds.apiKey}` },
+    });
+    if (!res.ok) return NextResponse.json({ configured: true, data: [], error: 'API error' }, { status: res.status });
+    const json = await res.json();
+    return NextResponse.json({ configured: true, data: json.data || [], meta: json.meta });
+  } catch {
+    return NextResponse.json({ configured: true, data: [], error: 'Failed to fetch' }, { status: 500 });
+  }
+}
