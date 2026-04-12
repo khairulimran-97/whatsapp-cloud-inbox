@@ -572,12 +572,10 @@ export default function AutomationsPage() {
 
                 {/* Table header */}
                 {executions.length > 0 && (
-                  <div className="grid grid-cols-[auto_60px_1fr_70px_50px] sm:grid-cols-[auto_70px_1fr_100px_60px] gap-x-3 px-4 py-1.5 border-b border-[var(--wa-border)] bg-[var(--wa-panel-header)]/50 text-[10px] font-semibold text-[var(--wa-text-secondary)] uppercase tracking-wider sticky top-[37px] z-10">
+                  <div className="grid grid-cols-[auto_1fr_60px] gap-x-3 px-4 py-1.5 border-b border-[var(--wa-border)] bg-[var(--wa-panel-header)]/50 text-[10px] font-semibold text-[var(--wa-text-secondary)] uppercase tracking-wider sticky top-[37px] z-10">
                     <span className="w-5" />
-                    <span>Status</span>
                     <span>Time</span>
-                    <span>Duration</span>
-                    <span className="text-right">ID</span>
+                    <span className="text-right">Duration</span>
                   </div>
                 )}
 
@@ -688,7 +686,7 @@ function ExecutionRow({ exec }: { exec: Execution }) {
 
   return (
     <div className={cn(
-      'grid grid-cols-[auto_60px_1fr_70px_50px] sm:grid-cols-[auto_70px_1fr_100px_60px] gap-x-3 px-4 py-2 border-b border-[var(--wa-border)] items-center text-[11.5px] hover:bg-[var(--wa-hover)]/50 transition-colors',
+      'grid grid-cols-[auto_1fr_60px] gap-x-3 px-4 py-2 border-b border-[var(--wa-border)] items-center text-[11.5px] hover:bg-[var(--wa-hover)]/50 transition-colors',
       isFailed && 'bg-red-500/3'
     )}>
       {/* Status icon */}
@@ -702,29 +700,14 @@ function ExecutionRow({ exec }: { exec: Execution }) {
         )}
       </div>
 
-      {/* Status label */}
-      <span className={cn(
-        'text-[10px] font-semibold uppercase tracking-wider truncate',
-        isCompleted && 'text-emerald-600 dark:text-emerald-400',
-        isFailed && 'text-red-600 dark:text-red-400',
-        !isCompleted && !isFailed && 'text-amber-600 dark:text-amber-400'
-      )}>
-        {exec.status}
-      </span>
-
       {/* Time */}
       <span className="text-[var(--wa-text-secondary)] truncate">
         {timeAgo(exec.started_at)} · {formatTime(exec.started_at)}
       </span>
 
       {/* Duration */}
-      <span className="text-[var(--wa-text-secondary)] font-mono text-[10.5px]">
+      <span className="text-[var(--wa-text-secondary)] text-right font-mono text-[10.5px]">
         {exec.duration || '—'}
-      </span>
-
-      {/* ID */}
-      <span className="text-[var(--wa-text-secondary)]/60 text-right text-[10px] font-mono">
-        {exec.execution_id}
       </span>
     </div>
   );

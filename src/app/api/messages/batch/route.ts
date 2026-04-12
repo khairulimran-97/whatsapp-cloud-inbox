@@ -30,7 +30,7 @@ type TransformedMessage = {
   status?: string;
   phoneNumber?: string;
   hasMedia: boolean;
-  mediaData?: { url: string; filename?: string; contentType?: string; byteSize?: number };
+  mediaData?: { url?: string; mediaId?: string; type?: string; filename?: string; contentType?: string; byteSize?: number };
   reactionEmoji?: string;
   reactedToMessageId?: string;
   filename?: string;
