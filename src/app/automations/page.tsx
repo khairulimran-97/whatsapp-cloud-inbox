@@ -99,6 +99,7 @@ export default function AutomationsPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [executions, setExecutions] = useState<Execution[]>([]);
   const [execMeta, setExecMeta] = useState<ExecMeta | null>(null);
+  const [searchingAll, setSearchingAll] = useState(false);
   const [execLoading, setExecLoading] = useState(false);
   const [statsLoading, setStatsLoading] = useState(false);
   const [isDark, setIsDark] = useState(true);
@@ -182,6 +183,29 @@ export default function AutomationsPage() {
     } catch { /* ignore */ }
     setExecLoading(false);
   }, [execMeta, execLoading, selectedId, selectedMerchantId]);
+
+  // Load all remaining pages to find filtered results
+  const loadAllPages = useCallback(async () => {
+    if (!execMeta || execMeta.current_page >= execMeta.last_page || searchingAll) return;
+    setSearchingAll(true);
+    const merchantParam = selectedMerchantId ? `&merchant_id=${selectedMerchantId}` : '';
+    let page = execMeta.current_page + 1;
+    const lastPage = execMeta.last_page;
+    let allNew: Execution[] = [];
+    let latestMeta = execMeta;
+    while (page <= lastPage) {
+      try {
+        const res = await fetch(`/api/automations/${selectedId}/executions?page=${page}${merchantParam}`);
+        const json = await res.json();
+        allNew = [...allNew, ...(json.data || [])];
+        latestMeta = json.meta || latestMeta;
+      } catch { break; }
+      page++;
+    }
+    setExecutions(prev => [...prev, ...allNew]);
+    setExecMeta(latestMeta);
+    setSearchingAll(false);
+  }, [execMeta, searchingAll, selectedId, selectedMerchantId]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -614,18 +638,41 @@ export default function AutomationsPage() {
                   </div>
                 ) : (() => {
                   const filtered = executions.filter(e => !statusFilter || e.status === statusFilter);
+                  const hasMorePages = execMeta && execMeta.current_page < execMeta.last_page;
                   return filtered.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 text-[var(--wa-text-secondary)]">
                       <div className="h-14 w-14 rounded-2xl bg-[var(--wa-hover)] flex items-center justify-center mb-3">
                         <Activity className="h-7 w-7 opacity-30" />
                       </div>
-                      <p className="text-[12px] font-medium">No {statusFilter} executions found</p>
-                      <p className="text-[11px] mt-0.5">
-                        {statusFilter === 'failed' ? 'All loaded executions completed successfully' : 'Try loading more pages'}
-                      </p>
+                      {hasMorePages ? (
+                        <>
+                          <p className="text-[12px] font-medium">No {statusFilter} in loaded pages</p>
+                          <p className="text-[11px] mt-0.5">
+                            Only page {execMeta!.current_page} of {execMeta!.last_page} loaded
+                          </p>
+                          <button
+                            onClick={loadAllPages}
+                            disabled={searchingAll}
+                            className="mt-3 text-[11px] text-amber-600 dark:text-amber-400 hover:underline inline-flex items-center gap-1.5 font-semibold"
+                          >
+                            {searchingAll ? (
+                              <><Loader2 className="h-3 w-3 animate-spin" /> Searching all pages...</>
+                            ) : (
+                              <>Search all {execMeta!.last_page} pages</>
+                            )}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-[12px] font-medium">No {statusFilter} executions</p>
+                          <p className="text-[11px] mt-0.5">
+                            {statusFilter === 'failed' ? 'All executions completed successfully' : 'None found across all pages'}
+                          </p>
+                        </>
+                      )}
                       <button
                         onClick={() => setStatusFilter(null)}
-                        className="mt-3 text-[11px] text-amber-600 dark:text-amber-400 hover:underline"
+                        className="mt-2 text-[11px] text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:underline"
                       >
                         Clear filter
                       </button>
@@ -731,6 +778,7 @@ function StatCard({
 function ExecutionCard({ exec }: { exec: Execution }) {
   const isCompleted = exec.status === 'completed';
   const isFailed = exec.status === 'failed';
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <div className={cn(
@@ -763,8 +811,14 @@ function ExecutionCard({ exec }: { exec: Execution }) {
         {timeAgo(exec.started_at)} · {formatTime(exec.started_at)}
       </div>
       {isFailed && exec.error_message && (
-        <div className="mt-1.5 text-[10px] text-red-600 dark:text-red-400 bg-red-500/10 rounded px-1.5 py-1 line-clamp-2">
-          {exec.error_message}
+        <div className="mt-1.5 text-[10px] text-red-600 dark:text-red-400 bg-red-500/10 rounded px-1.5 py-1">
+          <div className={expanded ? '' : 'line-clamp-2'}>{exec.error_message}</div>
+          <button
+            onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+            className="mt-0.5 text-[9px] font-semibold text-red-500 hover:text-red-700 dark:hover:text-red-300 underline"
+          >
+            {expanded ? 'Show less' : 'View more'}
+          </button>
         </div>
       )}
     </div>
