@@ -277,10 +277,14 @@ function loadMessagesFromDb(conversationIds: string[]): TransformedMessage[] {
       metadata: (() => {
         if (!row.metadataJson) return { mediaId: undefined };
         const parsed = JSON.parse(row.metadataJson);
-        // Extract mediaId from nested media objects if not at top level
+        // Extract mediaId and mediaUrl from nested media objects if not at top level
         if (!parsed.mediaId) {
           for (const key of ['sticker', 'image', 'video', 'audio', 'document']) {
-            if (parsed[key]?.id) { parsed.mediaId = parsed[key].id; break; }
+            if (parsed[key]?.id) {
+              parsed.mediaId = parsed[key].id;
+              if (parsed[key]?.link) parsed.mediaUrl = parsed[key].link;
+              break;
+            }
           }
         }
         return parsed;

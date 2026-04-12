@@ -1489,6 +1489,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                       const md = message.mediaData as Record<string, unknown> | undefined;
                       const mediaUrl = md?.url as string | undefined 
                         || (md?.mediaId ? `/api/media/${md.mediaId}` : undefined)
+                        || (message.metadata?.mediaUrl as string | undefined)
                         || (message.metadata?.mediaId ? `/api/media/${message.metadata.mediaId}` : undefined);
                       const hasMediaContent = message.hasMedia && mediaUrl;
                       
