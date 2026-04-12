@@ -107,6 +107,7 @@ export default function AutomationsPage() {
   const [showDetail, setShowDetail] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMerchant, setFilterMerchant] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -144,6 +145,7 @@ export default function AutomationsPage() {
     setStats(null);
     setExecutions([]);
     setExecMeta(null);
+    setStatusFilter(null);
 
     const merchantParam = auto.merchantId ? `&merchant_id=${auto.merchantId}` : '';
     setStatsLoading(true);
@@ -242,7 +244,7 @@ export default function AutomationsPage() {
   return (
     <div className="h-dvh flex flex-col bg-[var(--wa-bg)] text-[var(--wa-text-primary)]">
       {/* Header */}
-      <header className="flex items-center gap-3 px-4 h-[56px] bg-[var(--wa-panel-header)] border-b border-[var(--wa-border-strong)] flex-shrink-0 safe-area-top">
+      <header className="flex items-center gap-3 px-4 h-[56px] bg-[var(--wa-panel-header)] border-b border-slate-200 dark:border-[var(--wa-border-strong)] flex-shrink-0 safe-area-top">
         <Link
           href="/"
           className="h-9 w-9 flex items-center justify-center rounded-lg text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
@@ -279,11 +281,11 @@ export default function AutomationsPage() {
       <div className="flex-1 min-h-0 flex flex-col md:flex-row">
         {/* List panel */}
         <div className={cn(
-          'md:w-[380px] lg:w-[420px] md:border-r md:border-[var(--wa-border-strong)] flex flex-col overflow-hidden',
+          'md:w-[380px] lg:w-[420px] md:border-r md:border-slate-200 md:dark:border-[var(--wa-border-strong)] flex flex-col overflow-hidden',
           showDetail && 'hidden md:flex'
         )}>
           {/* Search + filter bar */}
-          <div className="px-3 py-2.5 border-b border-[var(--wa-border)] flex-shrink-0 space-y-2">
+          <div className="px-3 py-2.5 border-b border-slate-200 dark:border-[var(--wa-border)] flex-shrink-0 space-y-2">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--wa-text-secondary)]" />
               <input
@@ -339,7 +341,7 @@ export default function AutomationsPage() {
               groupKeys.map(groupName => (
                 <div key={groupName}>
                   {groupKeys.length > 1 && (
-                    <div className="px-4 py-2 bg-[var(--wa-panel-header)]/80 backdrop-blur-sm border-b border-[var(--wa-border)] sticky top-0 z-10">
+                    <div className="px-4 py-2 bg-[var(--wa-panel-header)]/80 backdrop-blur-sm border-b border-slate-200 dark:border-[var(--wa-border)] sticky top-0 z-10">
                       <div className="flex items-center gap-2">
                         <Store className="h-3.5 w-3.5 text-amber-500" />
                         <span className="text-[11px] font-semibold text-[var(--wa-text-secondary)] uppercase tracking-wider">{groupName}</span>
@@ -355,7 +357,7 @@ export default function AutomationsPage() {
                         key={`${auto.id}-${auto.merchantId}`}
                         onClick={() => selectAutomation(auto)}
                         className={cn(
-                          'w-full text-left px-4 py-3 border-b border-[var(--wa-border)] transition-all duration-150',
+                          'w-full text-left px-4 py-3 border-b border-slate-200 dark:border-[var(--wa-border)] transition-all duration-150',
                           isSelected
                             ? 'bg-amber-500/8 dark:bg-amber-500/10 border-l-2 border-l-amber-500'
                             : 'hover:bg-[var(--wa-hover)] border-l-2 border-l-transparent'
@@ -432,7 +434,7 @@ export default function AutomationsPage() {
           ) : (
             <>
               {/* Detail header */}
-              <div className="px-4 py-3.5 bg-[var(--wa-panel-header)] border-b border-[var(--wa-border-strong)] flex-shrink-0">
+              <div className="px-4 py-3.5 bg-[var(--wa-panel-header)] border-b border-slate-200 dark:border-[var(--wa-border-strong)] flex-shrink-0">
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setShowDetail(false)}
@@ -477,11 +479,11 @@ export default function AutomationsPage() {
               </div>
 
               {/* Stats section */}
-              <div className="px-4 py-3.5 border-b border-[var(--wa-border)] flex-shrink-0">
+              <div className="px-4 py-3.5 border-b border-slate-200 dark:border-[var(--wa-border)] flex-shrink-0">
                 {statsLoading ? (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     {[1,2,3,4].map(i => (
-                      <div key={i} className="rounded-xl p-3 bg-[var(--wa-panel-header)] border border-[var(--wa-border)] animate-pulse">
+                      <div key={i} className="rounded-xl p-3 bg-[var(--wa-panel-header)] border border-slate-200 dark:border-[var(--wa-border)] animate-pulse">
                         <div className="h-3 w-12 bg-[var(--wa-hover)] rounded mb-2" />
                         <div className="h-6 w-16 bg-[var(--wa-hover)] rounded" />
                       </div>
@@ -494,6 +496,8 @@ export default function AutomationsPage() {
                       value={(stats?.total_executions ?? selectedAuto.execution_count).toLocaleString()}
                       icon={<BarChart3 className="h-4 w-4" />}
                       color="blue"
+                      active={statusFilter === null}
+                      onClick={() => setStatusFilter(null)}
                     />
                     <StatCard
                       label="Completed"
@@ -501,6 +505,8 @@ export default function AutomationsPage() {
                       icon={<CheckCircle2 className="h-4 w-4" />}
                       color="emerald"
                       subtext={successRate !== null ? `${successRate}%` : undefined}
+                      active={statusFilter === 'completed'}
+                      onClick={() => setStatusFilter(statusFilter === 'completed' ? null : 'completed')}
                     />
                     <StatCard
                       label="Failed"
@@ -508,6 +514,8 @@ export default function AutomationsPage() {
                       icon={<XCircle className="h-4 w-4" />}
                       color="red"
                       alert={(stats?.by_status?.failed || 0) > 0}
+                      active={statusFilter === 'failed'}
+                      onClick={() => setStatusFilter(statusFilter === 'failed' ? null : 'failed')}
                     />
                     <StatCard
                       label="Last Run"
@@ -539,7 +547,7 @@ export default function AutomationsPage() {
               </div>
 
               {/* Automation metadata */}
-              <div className="px-4 py-2.5 border-b border-[var(--wa-border)] flex-shrink-0">
+              <div className="px-4 py-2.5 border-b border-slate-200 dark:border-[var(--wa-border)] flex-shrink-0">
                 <div className="flex items-center gap-4 text-[11px] text-[var(--wa-text-secondary)] flex-wrap">
                   <span className="flex items-center gap-1.5">
                     <Store className="h-3 w-3 text-[var(--wa-text-secondary)]/60" />
@@ -558,14 +566,33 @@ export default function AutomationsPage() {
 
               {/* Executions list */}
               <div className="flex-1 overflow-auto">
-                <div className="px-4 py-2.5 bg-[var(--wa-panel-header)]/80 backdrop-blur-sm border-b border-[var(--wa-border)] sticky top-0 z-10 flex items-center justify-between">
+                <div className="px-4 py-2.5 bg-[var(--wa-panel-header)]/80 backdrop-blur-sm border-b border-slate-200 dark:border-[var(--wa-border)] sticky top-0 z-10 flex items-center justify-between">
                   <span className="text-[11px] font-semibold text-[var(--wa-text-secondary)] uppercase tracking-wider flex items-center gap-1.5">
                     <Activity className="h-3 w-3" />
                     Execution History
+                    {statusFilter && (
+                      <button
+                        onClick={() => setStatusFilter(null)}
+                        className={cn(
+                          'ml-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold normal-case tracking-normal',
+                          statusFilter === 'failed'
+                            ? 'bg-red-500/15 text-red-600 dark:text-red-400'
+                            : statusFilter === 'completed'
+                              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                              : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                        )}
+                      >
+                        {statusFilter}
+                        <XCircle className="h-3 w-3" />
+                      </button>
+                    )}
                   </span>
                   {execMeta && (
                     <span className="text-[10px] bg-[var(--wa-hover)] text-[var(--wa-text-secondary)] px-2 py-0.5 rounded-full">
-                      {execMeta.total.toLocaleString()} total
+                      {statusFilter
+                        ? `${executions.filter(e => e.status === statusFilter).length} of ${execMeta.total.toLocaleString()}`
+                        : `${execMeta.total.toLocaleString()} total`
+                      }
                     </span>
                   )}
                 </div>
@@ -585,13 +612,31 @@ export default function AutomationsPage() {
                     <p className="text-[12px] font-medium">No executions yet</p>
                     <p className="text-[11px] mt-0.5">This automation hasn&apos;t been triggered</p>
                   </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 p-3">
-                      {executions.map((exec) => (
-                        <ExecutionCard key={exec.execution_id} exec={exec} />
-                      ))}
+                ) : (() => {
+                  const filtered = executions.filter(e => !statusFilter || e.status === statusFilter);
+                  return filtered.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-[var(--wa-text-secondary)]">
+                      <div className="h-14 w-14 rounded-2xl bg-[var(--wa-hover)] flex items-center justify-center mb-3">
+                        <Activity className="h-7 w-7 opacity-30" />
+                      </div>
+                      <p className="text-[12px] font-medium">No {statusFilter} executions found</p>
+                      <p className="text-[11px] mt-0.5">
+                        {statusFilter === 'failed' ? 'All loaded executions completed successfully' : 'Try loading more pages'}
+                      </p>
+                      <button
+                        onClick={() => setStatusFilter(null)}
+                        className="mt-3 text-[11px] text-amber-600 dark:text-amber-400 hover:underline"
+                      >
+                        Clear filter
+                      </button>
                     </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 p-3">
+                        {filtered.map((exec) => (
+                          <ExecutionCard key={exec.execution_id} exec={exec} />
+                        ))}
+                      </div>
 
                     {execMeta && execMeta.current_page < execMeta.last_page && (
                       <button
@@ -608,7 +653,8 @@ export default function AutomationsPage() {
                       </button>
                     )}
                   </>
-                )}
+                  );
+                })()}
               </div>
             </>
           )}
@@ -645,24 +691,31 @@ function FilterPill({ active, onClick, children, count }: {
 }
 
 function StatCard({
-  label, value, icon, color, subtext, alert,
+  label, value, icon, color, subtext, alert, active, onClick,
 }: {
-  label: string; value: string; icon: React.ReactNode; color: string; subtext?: string; alert?: boolean;
+  label: string; value: string; icon: React.ReactNode; color: string; subtext?: string; alert?: boolean; active?: boolean; onClick?: () => void;
 }) {
-  const colorMap: Record<string, { bg: string; iconColor: string; valueBold?: string }> = {
-    blue: { bg: 'bg-blue-500/8', iconColor: 'text-blue-500' },
-    emerald: { bg: 'bg-emerald-500/8', iconColor: 'text-emerald-500' },
-    red: { bg: 'bg-red-500/8', iconColor: 'text-red-500', valueBold: 'text-red-500' },
-    amber: { bg: 'bg-amber-500/8', iconColor: 'text-amber-500' },
+  const colorMap: Record<string, { bg: string; iconColor: string; valueBold?: string; activeBorder: string }> = {
+    blue: { bg: 'bg-blue-500/8', iconColor: 'text-blue-500', activeBorder: 'ring-blue-500/40' },
+    emerald: { bg: 'bg-emerald-500/8', iconColor: 'text-emerald-500', activeBorder: 'ring-emerald-500/40' },
+    red: { bg: 'bg-red-500/8', iconColor: 'text-red-500', valueBold: 'text-red-500', activeBorder: 'ring-red-500/40' },
+    amber: { bg: 'bg-amber-500/8', iconColor: 'text-amber-500', activeBorder: 'ring-amber-500/40' },
   };
   const c = colorMap[color] || colorMap.blue;
 
+  const Wrapper = onClick ? 'button' : 'div';
+
   return (
-    <div className={cn(
-      'rounded-xl p-3 border transition-colors',
-      c.bg,
-      alert ? 'border-red-500/30' : 'border-transparent'
-    )}>
+    <Wrapper
+      onClick={onClick}
+      className={cn(
+        'rounded-xl p-3 border transition-all text-left',
+        c.bg,
+        alert ? 'border-red-500/30' : 'border-slate-200 dark:border-transparent',
+        onClick && 'cursor-pointer hover:scale-[1.02] active:scale-[0.98]',
+        active && `ring-2 ${c.activeBorder}`
+      )}
+    >
       <div className="flex items-center gap-1.5 mb-1.5">
         <span className={c.iconColor}>{icon}</span>
         <span className="text-[10px] text-[var(--wa-text-secondary)] font-medium uppercase tracking-wider">{label}</span>
@@ -671,7 +724,7 @@ function StatCard({
         <span className={cn('text-[20px] font-bold leading-none', alert && c.valueBold)}>{value}</span>
         {subtext && <span className="text-[10px] text-[var(--wa-text-secondary)] font-medium">{subtext}</span>}
       </div>
-    </div>
+    </Wrapper>
   );
 }
 
@@ -681,10 +734,10 @@ function ExecutionCard({ exec }: { exec: Execution }) {
 
   return (
     <div className={cn(
-      'rounded-lg border border-[var(--wa-border)] p-2.5 text-[11px] transition-colors',
-      isCompleted && 'bg-emerald-500/5',
-      isFailed && 'bg-red-500/5 border-red-500/20',
-      !isCompleted && !isFailed && 'bg-amber-500/5'
+      'rounded-lg border p-2.5 text-[11px] transition-colors',
+      isCompleted && 'bg-emerald-500/5 border-emerald-200 dark:border-emerald-500/20',
+      isFailed && 'bg-red-500/5 border-red-300 dark:border-red-500/20',
+      !isCompleted && !isFailed && 'bg-amber-500/5 border-amber-200 dark:border-amber-500/20'
     )}>
       <div className="flex items-center gap-1.5 mb-1.5">
         {isCompleted ? (
@@ -709,6 +762,11 @@ function ExecutionCard({ exec }: { exec: Execution }) {
       <div className="text-[10.5px] text-[var(--wa-text-secondary)]">
         {timeAgo(exec.started_at)} · {formatTime(exec.started_at)}
       </div>
+      {isFailed && exec.error_message && (
+        <div className="mt-1.5 text-[10px] text-red-600 dark:text-red-400 bg-red-500/10 rounded px-1.5 py-1 line-clamp-2">
+          {exec.error_message}
+        </div>
+      )}
     </div>
   );
 }
