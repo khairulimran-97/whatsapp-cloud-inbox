@@ -288,13 +288,10 @@
     transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1), opacity 200ms ease;
     will-change: transform, opacity;
     position: absolute;
-    top: 0;
+    top: env(safe-area-inset-top, 0px);
     left: 0;
     right: 0;
-    bottom: 0;
-    /* Prevent content from being pushed behind safe areas */
-    padding-top: env(safe-area-inset-top, 0px);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    bottom: env(safe-area-inset-bottom, 0px);
   }
   .panel-slide-left {
     transform: translateX(-100%);
