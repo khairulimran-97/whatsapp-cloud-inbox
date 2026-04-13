@@ -1605,18 +1605,20 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
             </div>
           )}
           {/* Webhook instructions */}
-          <div className="rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] p-3 space-y-2">
-            <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider block">Webhook Setup</label>
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 space-y-2">
+            <label className="text-xs font-semibold text-amber-400 uppercase tracking-wider flex items-center gap-1.5 block">
+              <Info className="h-3.5 w-3.5" /> Webhook Setup
+            </label>
             <div>
               <span className="text-xs text-[var(--wa-text-secondary)] block mb-1">Webhook URL</span>
               <div className="flex items-center gap-1.5">
-                <code className="flex-1 text-xs text-[var(--wa-text-primary)] bg-[var(--wa-hover)] px-2 py-1 rounded font-mono truncate">
+                <code className="flex-1 text-xs text-[var(--wa-text-primary)] bg-[var(--wa-bg)] px-2.5 py-1.5 rounded font-mono truncate border border-[var(--wa-border)]">
                   {typeof window !== 'undefined' ? window.location.origin : ''}/api/webhooks/kapso
                 </code>
                 <button
                   type="button"
                   onClick={() => navigator.clipboard.writeText(`${window.location.origin}/api/webhooks/kapso`)}
-                  className="shrink-0 text-xs px-2 py-1 rounded bg-[var(--wa-green)]/10 text-[var(--wa-green)] hover:bg-[var(--wa-green)]/20 transition-colors"
+                  className="shrink-0 text-xs font-medium px-2.5 py-1.5 rounded bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 transition-colors"
                 >
                   Copy
                 </button>
@@ -1626,13 +1628,13 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
               <div>
                 <span className="text-xs text-[var(--wa-text-secondary)] block mb-1">Secret Key</span>
                 <div className="flex items-center gap-1.5">
-                  <code className="flex-1 text-xs text-[var(--wa-text-primary)] bg-[var(--wa-hover)] px-2 py-1 rounded font-mono truncate">
+                  <code className="flex-1 text-xs text-[var(--wa-text-primary)] bg-[var(--wa-bg)] px-2.5 py-1.5 rounded font-mono truncate border border-[var(--wa-border)]">
                     {webhookSecret}
                   </code>
                   <button
                     type="button"
                     onClick={() => navigator.clipboard.writeText(webhookSecret)}
-                    className="shrink-0 text-xs px-2 py-1 rounded bg-[var(--wa-green)]/10 text-[var(--wa-green)] hover:bg-[var(--wa-green)]/20 transition-colors"
+                    className="shrink-0 text-xs font-medium px-2.5 py-1.5 rounded bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 transition-colors"
                   >
                     Copy
                   </button>
@@ -1640,8 +1642,8 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
               </div>
             )}
             {!webhookSecret && (
-              <p className="text-xs text-[var(--wa-text-secondary)]/70 leading-relaxed">
-                No secret key configured. Set <code className="text-[var(--wa-text-primary)] bg-[var(--wa-hover)] px-1 rounded">KAPSO_WEBHOOK_SECRET</code> in your env to enable signature verification.
+              <p className="text-xs text-amber-400/70 leading-relaxed">
+                No secret key configured. Set <code className="text-amber-300 bg-amber-500/10 px-1 rounded">KAPSO_WEBHOOK_SECRET</code> in your env to enable signature verification.
               </p>
             )}
           </div>
