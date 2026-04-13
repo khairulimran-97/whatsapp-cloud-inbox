@@ -1200,7 +1200,7 @@ function SettingsDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="flex flex-col min-h-0 flex-1">
-      <div className="flex gap-1 px-4 sm:px-5 py-3 border-b border-[var(--wa-border)]">
+      <div className="flex gap-1 px-3 py-3 border-b border-[var(--wa-border)]">
         {tabs.map(t => {
           const Icon = t.icon;
           const active = tab === t.key;
@@ -1209,20 +1209,19 @@ function SettingsDialog({ onClose }: { onClose: () => void }) {
               key={t.key}
               onClick={() => setTab(t.key)}
               className={cn(
-                "flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all",
+                "flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium transition-all",
                 active
                   ? "bg-[var(--wa-green)]/15 text-[var(--wa-green)]"
                   : "text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)]"
               )}
             >
               <Icon className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">{t.label}</span>
-              <span className="sm:hidden">{t.key === 'profiles' ? 'Profiles' : t.key === 'bcl' ? 'BCL' : 'Data'}</span>
+              {t.label}
             </button>
           );
         })}
       </div>
-      <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4 min-h-0">
+      <div className="flex-1 overflow-y-auto px-3 py-4 min-h-0">
         {tab === 'profiles' ? <WaProfilesTab onClose={onClose} /> : tab === 'bcl' ? <BclSettingsTab onClose={onClose} /> : <DataTab />}
       </div>
     </div>
@@ -1523,7 +1522,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
               className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
             />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2">
             <div>
               <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">Phone Number ID <span className="text-red-400">*</span></label>
               <input
@@ -2227,7 +2226,7 @@ function DataTab() {
   return (
     <div className="space-y-4">
       {dbStats && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2">
           {[
             { label: 'Conversations', value: dbStats.conversations, color: 'text-emerald-400' },
             { label: 'Messages', value: dbStats.messages, color: 'text-blue-400' },
