@@ -1595,7 +1595,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
                             "h-4 w-4 rounded border flex items-center justify-center shrink-0 transition-colors",
                             linked
                               ? "bg-emerald-500 border-emerald-500"
-                              : "border-[var(--wa-border)] bg-transparent"
+                              : "border-[var(--wa-text-secondary)] bg-transparent"
                           )}>
                             {linked && <Check className="h-3 w-3 text-white" />}
                           </div>
