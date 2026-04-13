@@ -173,8 +173,8 @@ function createDb() {
       if (phoneNumberId && wabaId && kapsoApiKey) {
         const id = Math.random().toString(36).slice(2, 10);
         sqlite.prepare(
-          `INSERT INTO wa_profiles (id, label, phone_number_id, waba_id, kapso_api_key, is_default, created_at) VALUES (?, 'Default', ?, ?, ?, 1, ?)`
-        ).run(id, phoneNumberId, wabaId, kapsoApiKey, Math.floor(Date.now() / 1000));
+          `INSERT INTO wa_profiles (id, label, phone_number_id, waba_id, kapso_api_key, is_default, synced, last_synced_at, created_at) VALUES (?, 'Default', ?, ?, ?, 1, 1, ?, ?)`
+        ).run(id, phoneNumberId, wabaId, kapsoApiKey, Math.floor(Date.now() / 1000), Math.floor(Date.now() / 1000));
         console.log('[DB Migration] Migrated WABA from .env to wa_profiles');
       }
     }
