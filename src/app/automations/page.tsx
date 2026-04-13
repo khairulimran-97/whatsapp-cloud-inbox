@@ -238,6 +238,13 @@ export default function AutomationsPage() {
     return list;
   }, [automations, filterMerchant]);
 
+  // Auto-select if only one automation
+  useEffect(() => {
+    if (filteredAutomations.length === 1 && !showDetail) {
+      selectAutomation(filteredAutomations[0]);
+    }
+  }, [filteredAutomations, showDetail, selectAutomation]);
+
   // Group by merchant
   const grouped = useMemo(() => {
     const map: Record<string, Automation[]> = {};
