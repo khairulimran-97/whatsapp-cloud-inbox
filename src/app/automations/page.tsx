@@ -106,7 +106,6 @@ export default function AutomationsPage() {
   const [mounted, setMounted] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [filterMerchant, setFilterMerchant] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
@@ -236,16 +235,8 @@ export default function AutomationsPage() {
     if (filterMerchant) {
       list = list.filter(a => (a.merchantName || a.team_name || 'Default') === filterMerchant);
     }
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(a =>
-        a.name.toLowerCase().includes(q) ||
-        a.trigger_type_label.toLowerCase().includes(q) ||
-        a.team_name.toLowerCase().includes(q)
-      );
-    }
     return list;
-  }, [automations, filterMerchant, searchQuery]);
+  }, [automations, filterMerchant]);
 
   // Group by merchant
   const grouped = useMemo(() => {
@@ -300,24 +291,6 @@ export default function AutomationsPage() {
           'md:w-[380px] lg:w-[420px] md:border-r md:border-slate-200 md:dark:border-[var(--wa-border-strong)] flex flex-col overflow-hidden',
           showDetail && 'hidden md:flex'
         )}>
-          {/* Search + filter bar */}
-          <div className="px-3 py-2 border-b border-slate-200 dark:border-[var(--wa-border)] flex-shrink-0">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--wa-text-secondary)]" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search automations..."
-                className="w-full h-8 pl-8 pr-3 text-[12.5px] rounded-lg bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] outline-none border border-transparent focus:border-[var(--wa-green)]/30 transition-colors"
-              />
-              {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]">
-                  <XCircle className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
-          </div>
 
           {/* Automation list */}
           <div className="flex-1 overflow-auto">
@@ -333,7 +306,7 @@ export default function AutomationsPage() {
                 </div>
                 <p className="text-sm font-medium">No automations found</p>
                 <p className="text-[11px] mt-1 text-center px-8">
-                  {searchQuery ? 'Try a different search term' : 'Configure BCL merchants in Settings to get started'}
+                  Configure BCL merchants in Settings to get started
                 </p>
               </div>
             ) : (
@@ -419,8 +392,8 @@ export default function AutomationsPage() {
           {/* Bottom bar — merchant switcher + actions */}
           <div className="flex-shrink-0 border-t border-slate-200 dark:border-[var(--wa-border)] bg-[var(--wa-panel-header)]">
             {merchantNames.length > 1 && (
-              <div className="px-2 pt-2 pb-1.5">
-                <p className="px-1.5 mb-1.5 text-[9px] font-semibold text-[var(--wa-text-secondary)] uppercase tracking-wider">Merchant</p>
+              <div className="px-2 pt-2.5 pb-1.5">
+                <p className="px-1.5 mb-1.5 text-[10px] font-semibold text-[var(--wa-text-secondary)] uppercase tracking-wider">Merchant</p>
                 <div className="flex flex-col gap-0.5">
                   {merchantNames.map(name => {
                     const count = automations.filter(a => (a.merchantName || a.team_name || 'Default') === name).length;
@@ -430,16 +403,16 @@ export default function AutomationsPage() {
                         key={name}
                         onClick={() => setFilterMerchant(name)}
                         className={cn(
-                          'w-full text-left px-2.5 py-1.5 text-[11px] rounded-lg flex items-center gap-2 transition-all',
+                          'w-full text-left px-2.5 py-2 text-[13px] rounded-lg flex items-center gap-2.5 transition-all',
                           isActive
                             ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium'
                             : 'text-[var(--wa-text-secondary)] hover:bg-[var(--wa-hover)]'
                         )}
                       >
-                        <Store className={cn('h-3.5 w-3.5 flex-shrink-0', isActive ? 'text-amber-500' : 'opacity-50')} />
+                        <Store className={cn('h-4 w-4 flex-shrink-0', isActive ? 'text-amber-500' : 'opacity-50')} />
                         <span className="flex-1 truncate">{name}</span>
                         <span className={cn(
-                          'min-w-[20px] text-center text-[10px] px-1.5 py-0.5 rounded-full',
+                          'min-w-[22px] text-center text-[11px] px-1.5 py-0.5 rounded-full',
                           isActive
                             ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 font-medium'
                             : 'bg-black/5 dark:bg-white/5 opacity-60'
@@ -451,22 +424,22 @@ export default function AutomationsPage() {
               </div>
             )}
             <div className={cn(
-              'flex gap-1 px-2 py-1.5',
+              'flex gap-1.5 px-2 py-2',
               merchantNames.length > 1 && 'border-t border-slate-200/60 dark:border-[var(--wa-border)]'
             )}>
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-colors disabled:opacity-40 font-medium"
+                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-[13px] rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-colors disabled:opacity-40 font-medium"
               >
-                <RefreshCw className={cn('h-3.5 w-3.5', refreshing && 'animate-spin')} />
+                <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
                 Refresh
               </button>
               <button
                 onClick={toggleTheme}
-                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 transition-colors font-medium"
+                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-[13px] rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 transition-colors font-medium"
               >
-                {isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                 {isDark ? 'Light' : 'Dark'}
               </button>
             </div>
@@ -590,24 +563,6 @@ export default function AutomationsPage() {
                   </div>
                 )}
 
-                {/* Success rate bar */}
-                {stats && stats.total_executions > 0 && (
-                  <div className="mt-3">
-                    <div className="flex items-center justify-between text-[10px] text-[var(--wa-text-secondary)] mb-1.5">
-                      <span className="flex items-center gap-1"><TrendingUp className="h-3 w-3" /> Success Rate</span>
-                      <span className="font-semibold">{successRate}%</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-[var(--wa-hover)] overflow-hidden">
-                      <div
-                        className={cn(
-                          'h-full rounded-full transition-all duration-500',
-                          successRate! >= 95 ? 'bg-emerald-500' : successRate! >= 80 ? 'bg-amber-500' : 'bg-red-500'
-                        )}
-                        style={{ width: `${successRate}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Automation metadata */}
