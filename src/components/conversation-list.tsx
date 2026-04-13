@@ -697,7 +697,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
               </div>
             </div>
           </div>
-          <SettingsDialog onClose={() => setShowSettings(false)} />
+          <SettingsDialog onClose={() => setShowSettings(false)} profileId={profileId} />
         </>
       ) : (
         <>
@@ -1266,7 +1266,7 @@ type ReplyTemplate = {
   created_at: string;
 };
 
-function SettingsDialog({ onClose }: { onClose: () => void }) {
+function SettingsDialog({ onClose, profileId }: { onClose: () => void; profileId?: string | null }) {
   const [tab, setTab] = useState<'profiles' | 'bcl' | 'data'>('profiles');
 
   const tabs = [
@@ -1299,7 +1299,7 @@ function SettingsDialog({ onClose }: { onClose: () => void }) {
         })}
       </div>
       <div className="flex-1 overflow-y-auto px-3 py-4 min-h-0">
-        {tab === 'profiles' ? <WaProfilesTab onClose={onClose} /> : tab === 'bcl' ? <BclSettingsTab onClose={onClose} /> : <DataTab />}
+        {tab === 'profiles' ? <WaProfilesTab onClose={onClose} /> : tab === 'bcl' ? <BclSettingsTab onClose={onClose} /> : <DataTab profileId={profileId} />}
       </div>
     </div>
   );
@@ -2268,23 +2268,25 @@ function ReplyTemplatesTab({ onClose, addTrigger, onCountChange }: { onClose: ()
   );
 }
 
-function DataTab() {
+function DataTab({ profileId }: { profileId?: string | null }) {
   const [syncing, setSyncing] = useState(false);
   const [dbStats, setDbStats] = useState<{ conversations: number; messages: number; contacts: number } | null>(null);
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
 
   useEffect(() => {
-    fetch('/api/db-status')
+    const params = profileId ? `?profileId=${profileId}` : '';
+    fetch(`/api/db-status${params}`)
       .then(r => r.json())
       .then(data => setDbStats({ conversations: data.conversations, messages: data.messages, contacts: data.contacts }))
       .catch(() => {});
-  }, []);
+  }, [profileId]);
 
   const handleResync = async () => {
     setSyncing(true);
     setMessage(null);
     try {
-      const res = await fetch('/api/conversations', { method: 'POST' });
+      const params = profileId ? `?profileId=${profileId}` : '';
+      const res = await fetch(`/api/conversations${params}`, { method: 'POST' });
       const data = await res.json();
       if (res.ok) {
         setMessage({ text: data.message || 'Resync triggered successfully' });
