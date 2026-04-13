@@ -1577,7 +1577,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
                   <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 text-[var(--wa-text-secondary)] transition-transform", bclDropdownOpen && "rotate-180")} />
                 </button>
                 {bclDropdownOpen && (
-                  <div className="absolute z-50 mt-1 w-full rounded-lg border border-[var(--wa-border)] bg-[var(--wa-deeper-bg)] shadow-lg overflow-hidden">
+                  <div className="absolute z-50 mt-1 w-full rounded-lg border border-[var(--wa-border)] bg-[var(--wa-panel-bg)] shadow-lg overflow-hidden">
                     {bclMerchants.map(m => {
                       const linked = formBclIds.includes(m.id);
                       return (
