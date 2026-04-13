@@ -107,7 +107,7 @@ export default function AutomationsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterMerchant, setFilterMerchant] = useState<string>('all');
+  const [filterMerchant, setFilterMerchant] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
   useEffect(() => {
@@ -223,10 +223,17 @@ export default function AutomationsPage() {
     return Array.from(names);
   }, [automations]);
 
+  // Default to first merchant on load
+  useEffect(() => {
+    if (merchantNames.length > 0 && !filterMerchant) {
+      setFilterMerchant(merchantNames[0]);
+    }
+  }, [merchantNames, filterMerchant]);
+
   // Filter and search
   const filteredAutomations = useMemo(() => {
     let list = automations;
-    if (filterMerchant !== 'all') {
+    if (filterMerchant) {
       list = list.filter(a => (a.merchantName || a.team_name || 'Default') === filterMerchant);
     }
     if (searchQuery.trim()) {
@@ -281,9 +288,26 @@ export default function AutomationsPage() {
             BCL Automations
           </h1>
           <p className="text-[11px] text-[var(--wa-text-secondary)] truncate">
-            {activeCount} active · {totalRuns.toLocaleString()} total runs · {merchantNames.length} merchant{merchantNames.length !== 1 ? 's' : ''}
+            {activeCount} active · {totalRuns.toLocaleString()} total runs
           </p>
         </div>
+        {/* Merchant dropdown */}
+        {merchantNames.length > 1 && (
+          <div className="relative">
+            <select
+              value={filterMerchant}
+              onChange={e => setFilterMerchant(e.target.value)}
+              className="appearance-none h-8 pl-2.5 pr-7 text-[11px] font-medium rounded-lg bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] border border-slate-200 dark:border-[var(--wa-border)] outline-none focus:border-amber-500/40 cursor-pointer transition-colors"
+            >
+              {merchantNames.map(name => (
+                <option key={name} value={name}>
+                  {name} ({automations.filter(a => (a.merchantName || a.team_name || 'Default') === name).length})
+                </option>
+              ))}
+            </select>
+            <Store className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-[var(--wa-text-secondary)] pointer-events-none" />
+          </div>
+        )}
         <button
           onClick={handleRefresh}
           disabled={refreshing}
@@ -309,7 +333,7 @@ export default function AutomationsPage() {
           showDetail && 'hidden md:flex'
         )}>
           {/* Search + filter bar */}
-          <div className="px-3 py-2.5 border-b border-slate-200 dark:border-[var(--wa-border)] flex-shrink-0 space-y-2">
+          <div className="px-3 py-2 border-b border-slate-200 dark:border-[var(--wa-border)] flex-shrink-0">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--wa-text-secondary)]" />
               <input
@@ -325,23 +349,6 @@ export default function AutomationsPage() {
                 </button>
               )}
             </div>
-            {merchantNames.length > 1 && (
-              <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none">
-                <FilterPill active={filterMerchant === 'all'} onClick={() => setFilterMerchant('all')} count={automations.length}>
-                  All
-                </FilterPill>
-                {merchantNames.map(name => (
-                  <FilterPill
-                    key={name}
-                    active={filterMerchant === name}
-                    onClick={() => setFilterMerchant(name)}
-                    count={automations.filter(a => (a.merchantName || a.team_name || 'Default') === name).length}
-                  >
-                    {name}
-                  </FilterPill>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Automation list */}
@@ -458,8 +465,8 @@ export default function AutomationsPage() {
           ) : (
             <>
               {/* Detail header */}
-              <div className="px-4 py-3.5 bg-[var(--wa-panel-header)] border-b border-slate-200 dark:border-[var(--wa-border-strong)] flex-shrink-0">
-                <div className="flex items-center gap-3">
+              <div className="px-3 sm:px-4 py-3 bg-[var(--wa-panel-header)] border-b border-slate-200 dark:border-[var(--wa-border-strong)] flex-shrink-0">
+                <div className="flex items-center gap-2.5">
                   <button
                     onClick={() => setShowDetail(false)}
                     className="md:hidden h-8 w-8 flex items-center justify-center rounded-lg text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-black/5 dark:hover:bg-white/10"
@@ -467,14 +474,14 @@ export default function AutomationsPage() {
                     <ArrowLeft className="h-4.5 w-4.5" />
                   </button>
                   <div className={cn(
-                    'h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0',
+                    'h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0',
                     (TRIGGER_COLORS[selectedAuto.trigger_type] || DEFAULT_TRIGGER_COLOR).bg
                   )}>
-                    <Zap className={cn('h-4.5 w-4.5', (TRIGGER_COLORS[selectedAuto.trigger_type] || DEFAULT_TRIGGER_COLOR).icon)} />
+                    <Zap className={cn('h-4 w-4', (TRIGGER_COLORS[selectedAuto.trigger_type] || DEFAULT_TRIGGER_COLOR).icon)} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h2 className="text-[14px] font-semibold truncate">{selectedAuto.name}</h2>
-                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <h2 className="text-[13px] font-semibold truncate">{selectedAuto.name}</h2>
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                       <span className={cn(
                         'text-[10px] px-1.5 py-0.5 rounded-md font-medium inline-flex items-center gap-1',
                         (TRIGGER_COLORS[selectedAuto.trigger_type] || DEFAULT_TRIGGER_COLOR).bg,
@@ -491,19 +498,30 @@ export default function AutomationsPage() {
                       )}>
                         {selectedAuto.is_active ? '● Active' : '○ Inactive'}
                       </span>
-                      {selectedAuto.merchantName && (
-                        <span className="text-[10px] text-[var(--wa-text-secondary)] flex items-center gap-1">
-                          <Store className="h-2.5 w-2.5" />
-                          {selectedAuto.merchantName}
-                        </span>
-                      )}
                     </div>
                   </div>
+                </div>
+                {/* Metadata inline */}
+                <div className="flex items-center gap-3 mt-2 ml-[44px] md:ml-[46px] text-[10px] text-[var(--wa-text-secondary)] flex-wrap">
+                  {selectedAuto.merchantName && (
+                    <span className="flex items-center gap-1">
+                      <Store className="h-2.5 w-2.5" />
+                      {selectedAuto.merchantName}
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-2.5 w-2.5" />
+                    {formatDate(selectedAuto.created_at)}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Hash className="h-2.5 w-2.5" />
+                    {selectedAuto.id}
+                  </span>
                 </div>
               </div>
 
               {/* Stats section */}
-              <div className="px-4 py-3.5 border-b border-slate-200 dark:border-[var(--wa-border)] flex-shrink-0">
+              <div className="px-3 sm:px-4 py-2.5 border-b border-slate-200 dark:border-[var(--wa-border)] flex-shrink-0">
                 {statsLoading ? (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     {[1,2,3,4].map(i => (
