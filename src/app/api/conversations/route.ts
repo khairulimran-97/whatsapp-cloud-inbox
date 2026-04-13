@@ -100,12 +100,15 @@ function isCacheInvalidated(profileCacheTimestamp: number): boolean {
 function isSeedComplete(profileId: string): boolean {
   try {
     const db = getDb();
+    // Check per-profile seed_complete flag
     const key = `seed_complete_${profileId}`;
     const row = db.select().from(schema.settings).where(eq(schema.settings.key, key)).get();
     if (row?.value === 'true') return true;
-    // Legacy: check global seed_complete for backward compatibility
-    const legacy = db.select().from(schema.settings).where(eq(schema.settings.key, 'seed_complete')).get();
-    return legacy?.value === 'true';
+    // Check wa_profiles.synced flag (set during migration or after sync)
+    const profile = db.select({ synced: schema.waProfiles.synced })
+      .from(schema.waProfiles).where(eq(schema.waProfiles.id, profileId)).get();
+    if (profile?.synced) return true;
+    return false;
   } catch { return false; }
 }
 
