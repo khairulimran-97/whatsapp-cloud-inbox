@@ -452,17 +452,24 @@ export default function Home() {
       {/* Profile switcher — only shown if 2+ profiles */}
       {profiles.length >= 2 && (
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50">
-          <select
-            value={activeProfileId ?? ''}
-            onChange={(e) => handleProfileSwitch(e.target.value)}
-            className="text-xs px-3 py-1.5 rounded-full border border-[var(--wa-border)] bg-[var(--wa-bg-deeper)] text-[var(--wa-text-primary)] shadow-md backdrop-blur-sm cursor-pointer outline-none focus:ring-1 focus:ring-[var(--wa-green)]"
-          >
-            {profiles.map(p => (
-              <option key={p.id} value={p.id}>
-                {p.label}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center gap-0.5 p-0.5 rounded-full border border-[var(--wa-border)] bg-[var(--wa-panel-bg)] shadow-lg backdrop-blur-sm">
+            {profiles.map(p => {
+              const active = p.id === activeProfileId;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => handleProfileSwitch(p.id)}
+                  className={`text-[11px] font-medium px-3 py-1 rounded-full transition-all whitespace-nowrap ${
+                    active
+                      ? 'bg-[var(--wa-green)] text-white shadow-sm'
+                      : 'text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)]'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
       <ConversationList
