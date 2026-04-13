@@ -80,6 +80,7 @@
   /* WhatsApp theme tokens */
   --wa-bg: #f0f2f5;
   --wa-panel-bg: #ffffff;
+  --wa-modal-bg: #ffffff;
   --wa-panel-header: #f0f2f5;
   --wa-text-primary: #111b21;
   --wa-text-secondary: #667781;
@@ -166,6 +167,7 @@
   /* WhatsApp dark theme tokens */
   --wa-bg: #0b141a;
   --wa-panel-bg: #111b21;
+  --wa-modal-bg: #121829;
   --wa-panel-header: #202c33;
   --wa-text-primary: #e9edef;
   --wa-text-secondary: #8696a0;
