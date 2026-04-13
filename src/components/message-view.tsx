@@ -2071,17 +2071,15 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
 
       </div>
 
-      {/* Overlay sidebar for smaller screens (fixed position, outside flex flow) */}
+      {/* Overlay sidebar for smaller screens (fixed position, no wrapper needed) */}
       {phoneNumber && (
-        <div className="xl:hidden">
-          <CustomerSidebar
-            phoneNumber={phoneNumber}
-            open={showCustomerSidebar}
-            onClose={() => setShowCustomerSidebar(false)}
-            onInsertText={(text) => setMessageInput(prev => prev ? prev + '\n' + text : text)}
-            allowedMerchantIds={profileBclMerchantIds}
-          />
-        </div>
+        <CustomerSidebar
+          phoneNumber={phoneNumber}
+          open={showCustomerSidebar}
+          onClose={() => setShowCustomerSidebar(false)}
+          onInsertText={(text) => setMessageInput(prev => prev ? prev + '\n' + text : text)}
+          allowedMerchantIds={profileBclMerchantIds}
+        />
       )}
 
       {/* Inline sidebar for desktop (xl+) with resize handle */}
