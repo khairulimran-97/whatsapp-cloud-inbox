@@ -2071,8 +2071,8 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
 
       </div>
 
-      {/* Overlay sidebar for smaller screens (fixed position, no wrapper needed) */}
-      {phoneNumber && (
+      {/* Overlay sidebar for smaller screens — only mount when opened */}
+      {phoneNumber && showCustomerSidebar && (
         <CustomerSidebar
           phoneNumber={phoneNumber}
           open={showCustomerSidebar}
