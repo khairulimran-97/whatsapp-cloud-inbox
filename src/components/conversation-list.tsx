@@ -618,7 +618,6 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
         style={panelWidth ? { ['--panel-w' as string]: `${panelWidth}px` } : undefined}
       >
         <div className="px-4 pt-5 pb-3 border-b border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)]">
-          <div className="safe-area-top" />
           <div className="flex items-center justify-between mb-3">
             <Skeleton className="h-7 w-16" />
             <Skeleton className="h-10 w-10 rounded-full" />
@@ -703,7 +702,6 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
         <>
           {/* Settings inline panel */}
           <div className="px-4 pt-4 pb-3 border-b border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)]">
-            <div className="safe-area-top" />
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowSettings(false)}
@@ -722,7 +720,6 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       ) : (
         <>
       <div className="px-4 pt-5 pb-3 border-b border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)]">
-        <div className="safe-area-top" />
         <div className="flex items-center gap-3 mb-3">
           <div className="relative flex-1 min-w-0" ref={profileSwitcherRef}>
           <button
@@ -1043,7 +1040,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       </ScrollArea>
 
       {/* Bottom action bar */}
-      <div className="flex items-center border-t border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)] flex-shrink-0 safe-area-bottom divide-x divide-[var(--wa-border-strong)]">
+      <div className="flex items-center border-t border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)] flex-shrink-0 divide-x divide-[var(--wa-border-strong)]">
         <button
           onClick={() => setShowQuickReply(true)}
           className="flex-1 flex flex-col items-center gap-0.5 py-3 sm:pt-[14px] sm:pb-[13px] text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-blue-500/10 transition-colors"

@@ -1024,8 +1024,8 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
         "flex-1 flex flex-col chat-bg panel-slide",
         !isVisible ? "panel-slide-right" : "panel-slide-center"
       )}>
-        <div className="border-b border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)] safe-area-top">
-          <div className="flex items-center h-[60px] px-2 sm:px-3">
+        <div className="border-b border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)] shrink-0">
+          <div className="flex items-center min-h-[60px] px-2 sm:px-3">
             {onBack && (
               <button
                 onClick={onBack}
@@ -1071,9 +1071,8 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
     >
       {/* Main chat column */}
       <div className="flex-1 flex flex-col min-w-0">
-      <div className="border-b border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)] safe-area-top">
-        <div className="flex items-center h-[60px] px-2 sm:px-3">
-          {/* Back button — overlaps with avatar on mobile like WhatsApp */}
+      <div className="border-b border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)] shrink-0">
+        <div className="flex items-center min-h-[60px] px-2 sm:px-3">
           {onBack && (
             <button
               onClick={onBack}
@@ -1729,7 +1728,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
               </div>
             )}
 
-      <div className="border-t border-[var(--wa-border-strong)] safe-area-bottom">
+      <div className="border-t border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)] shrink-0">
 
             <div className="px-[5px] bg-[var(--wa-panel-header)]">
             {selectedFile && (
@@ -2070,21 +2069,18 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
         <Lightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />
       )}
 
-      {phoneNumber && (
-        <>
-          {/* Overlay sidebar for smaller screens */}
-          <div className="xl:hidden">
-            <CustomerSidebar
-              phoneNumber={phoneNumber}
-              open={showCustomerSidebar}
-              onClose={() => setShowCustomerSidebar(false)}
-              onInsertText={(text) => setMessageInput(prev => prev ? prev + '\n' + text : text)}
-              allowedMerchantIds={profileBclMerchantIds}
-            />
-          </div>
-        </>
-      )}
       </div>
+
+      {/* Overlay sidebar for smaller screens — only mount when opened */}
+      {phoneNumber && showCustomerSidebar && (
+        <CustomerSidebar
+          phoneNumber={phoneNumber}
+          open={showCustomerSidebar}
+          onClose={() => setShowCustomerSidebar(false)}
+          onInsertText={(text) => setMessageInput(prev => prev ? prev + '\n' + text : text)}
+          allowedMerchantIds={profileBclMerchantIds}
+        />
+      )}
 
       {/* Inline sidebar for desktop (xl+) with resize handle */}
       {phoneNumber && (

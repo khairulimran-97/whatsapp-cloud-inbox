@@ -802,6 +802,7 @@ export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, pa
         className={`fixed top-0 right-0 h-full z-[70] w-full sm:w-[420px] bg-[var(--wa-panel-bg)] border-l border-[var(--wa-border)] shadow-2xl transform transition-transform duration-300 ease-in-out ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         <div className="flex items-center justify-between h-[60px] px-4 border-b border-[var(--wa-border)] bg-[var(--wa-panel-bg)]">
           <h3 className="text-[15px] font-semibold text-[var(--wa-text-primary)]">

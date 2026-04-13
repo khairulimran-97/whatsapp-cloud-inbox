@@ -491,7 +491,7 @@ export default function Home() {
   }
 
   return (
-    <div className="h-dvh flex relative overflow-hidden">
+    <div className="h-dvh flex relative overflow-hidden bg-[var(--wa-panel-header)]">
       <PwaInstallBanner />
       <ConversationList
         ref={conversationListRef}
