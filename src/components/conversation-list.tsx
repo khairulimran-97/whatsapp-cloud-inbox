@@ -39,25 +39,23 @@ function highlightMatch(text: string, query: string): ReactNode {
   );
 }
 
-function copyText(text: string) {
+function copyText(text: string, buttonEl?: HTMLButtonElement | null) {
+  const showFeedback = () => {
+    if (!buttonEl) return;
+    const orig = buttonEl.textContent;
+    buttonEl.textContent = 'Copied!';
+    setTimeout(() => { buttonEl.textContent = orig; }, 1500);
+  };
+
+  // Try modern clipboard API first
   if (navigator.clipboard?.writeText) {
-    navigator.clipboard.writeText(text).catch(() => {
-      fallbackCopy(text);
+    navigator.clipboard.writeText(text).then(showFeedback).catch(() => {
+      // Fallback: use window.prompt so user can manually copy
+      window.prompt('Copy this value:', text);
     });
   } else {
-    fallbackCopy(text);
+    window.prompt('Copy this value:', text);
   }
-}
-function fallbackCopy(text: string) {
-  const ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.position = 'fixed';
-  ta.style.opacity = '0';
-  document.body.appendChild(ta);
-  ta.focus();
-  ta.select();
-  document.execCommand('copy');
-  document.body.removeChild(ta);
 }
 
 type ProfileData = {
@@ -1733,7 +1731,7 @@ function WaProfilesTab({ onClose, onProfilesChanged }: { onClose: () => void; on
                 </code>
                 <button
                   type="button"
-                  onClick={() => copyText(`${window.location.origin}/api/webhooks/kapso`)}
+                  onClick={(e) => copyText(`${window.location.origin}/api/webhooks/kapso`, e.currentTarget)}
                   className="shrink-0 text-xs font-medium px-2.5 py-1.5 rounded bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 transition-colors"
                 >
                   Copy
@@ -1749,7 +1747,7 @@ function WaProfilesTab({ onClose, onProfilesChanged }: { onClose: () => void; on
                   </code>
                   <button
                     type="button"
-                    onClick={() => copyText(webhookSecret)}
+                    onClick={(e) => copyText(webhookSecret, e.currentTarget)}
                     className="shrink-0 text-xs font-medium px-2.5 py-1.5 rounded bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 transition-colors"
                   >
                     Copy
