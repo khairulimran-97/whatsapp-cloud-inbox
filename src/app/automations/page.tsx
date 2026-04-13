@@ -5,7 +5,6 @@ import {
   ArrowLeft, Sun, Moon, Zap, ChevronRight, CheckCircle2,
   XCircle, Clock, Activity, RefreshCw, Loader2, Store, ChevronDown,
   CircleDot, BarChart3, Search, TrendingUp, Calendar, Hash,
-  Check,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -418,47 +417,57 @@ export default function AutomationsPage() {
           </div>
 
           {/* Bottom bar — merchant switcher + actions */}
-          <div className="flex-shrink-0 border-t border-slate-200 dark:border-[var(--wa-border)] bg-[var(--wa-panel-header)] px-2 py-2">
+          <div className="flex-shrink-0 border-t border-slate-200 dark:border-[var(--wa-border)] bg-[var(--wa-panel-header)]">
             {merchantNames.length > 1 && (
-              <>
-                <p className="px-1.5 mb-1 text-[9px] font-semibold text-[var(--wa-text-secondary)] uppercase tracking-wider">Merchant</p>
-                <div className="flex flex-col gap-0.5 mb-2">
-                  {merchantNames.map(name => (
-                    <button
-                      key={name}
-                      onClick={() => setFilterMerchant(name)}
-                      className={cn(
-                        'w-full text-left px-2 py-1.5 text-[11px] rounded-lg flex items-center gap-2 transition-colors',
-                        filterMerchant === name
-                          ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium'
-                          : 'text-[var(--wa-text-secondary)] hover:bg-[var(--wa-hover)]'
-                      )}
-                    >
-                      <Store className="h-3 w-3 flex-shrink-0" />
-                      <span className="flex-1 truncate">{name}</span>
-                      <span className="text-[10px] opacity-60">
-                        {automations.filter(a => (a.merchantName || a.team_name || 'Default') === name).length}
-                      </span>
-                      {filterMerchant === name && <Check className="h-3 w-3 text-amber-500 flex-shrink-0" />}
-                    </button>
-                  ))}
+              <div className="px-2 pt-2 pb-1.5">
+                <p className="px-1.5 mb-1.5 text-[9px] font-semibold text-[var(--wa-text-secondary)] uppercase tracking-wider">Merchant</p>
+                <div className="flex flex-col gap-0.5">
+                  {merchantNames.map(name => {
+                    const count = automations.filter(a => (a.merchantName || a.team_name || 'Default') === name).length;
+                    const isActive = filterMerchant === name;
+                    return (
+                      <button
+                        key={name}
+                        onClick={() => setFilterMerchant(name)}
+                        className={cn(
+                          'w-full text-left px-2.5 py-1.5 text-[11px] rounded-lg flex items-center gap-2 transition-all',
+                          isActive
+                            ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium'
+                            : 'text-[var(--wa-text-secondary)] hover:bg-[var(--wa-hover)]'
+                        )}
+                      >
+                        <Store className={cn('h-3.5 w-3.5 flex-shrink-0', isActive ? 'text-amber-500' : 'opacity-50')} />
+                        <span className="flex-1 truncate">{name}</span>
+                        <span className={cn(
+                          'min-w-[20px] text-center text-[10px] px-1.5 py-0.5 rounded-full',
+                          isActive
+                            ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 font-medium'
+                            : 'bg-black/5 dark:bg-white/5 opacity-60'
+                        )}>{count}</span>
+                      </button>
+                    );
+                  })}
                 </div>
-              </>
+              </div>
             )}
-            <div className="flex gap-1">
+            <div className={cn(
+              'flex gap-1 px-2 py-1.5',
+              merchantNames.length > 1 && 'border-t border-slate-200/60 dark:border-[var(--wa-border)]'
+            )}>
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] rounded-lg text-[var(--wa-text-secondary)] hover:bg-[var(--wa-hover)] transition-colors"
+                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] rounded-lg text-[var(--wa-text-secondary)] hover:bg-[var(--wa-hover)] hover:text-[var(--wa-text-primary)] transition-colors disabled:opacity-40"
               >
-                <RefreshCw className={cn('h-3 w-3', refreshing && 'animate-spin')} />
+                <RefreshCw className={cn('h-3.5 w-3.5', refreshing && 'animate-spin')} />
                 Refresh
               </button>
+              <div className="w-px bg-slate-200/60 dark:bg-[var(--wa-border)] my-1" />
               <button
                 onClick={toggleTheme}
-                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] rounded-lg text-[var(--wa-text-secondary)] hover:bg-[var(--wa-hover)] transition-colors"
+                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] rounded-lg text-[var(--wa-text-secondary)] hover:bg-[var(--wa-hover)] hover:text-[var(--wa-text-primary)] transition-colors"
               >
-                {isDark ? <Sun className="h-3 w-3" /> : <Moon className="h-3 w-3" />}
+                {isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
                 {isDark ? 'Light' : 'Dark'}
               </button>
             </div>
