@@ -1668,11 +1668,13 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
         </p>
       )}
 
-      <div className="flex justify-end pt-1">
-        <Button variant="ghost" onClick={onClose} className="text-sm">
-          Close
-        </Button>
-      </div>
+      {!showForm && (
+        <div className="flex justify-end pt-1">
+          <Button variant="ghost" onClick={onClose} className="text-sm">
+            Close
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
