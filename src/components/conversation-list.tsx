@@ -1472,7 +1472,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
                         ) : null;
                       })
                     ) : (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--wa-hover)] text-[var(--wa-text-secondary)]">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400">
                         All BCL Merchants
                       </span>
                     )}
