@@ -459,17 +459,17 @@ export default function AutomationsPage() {
 
               {/* Automation metadata */}
               <div className="px-4 py-2.5 border-b border-slate-200 dark:border-[var(--wa-border)] flex-shrink-0">
-                <div className="flex items-center gap-4 text-[11px] text-[var(--wa-text-secondary)] flex-wrap">
-                  <span className="flex items-center gap-1.5">
-                    <Store className="h-3 w-3 text-[var(--wa-text-secondary)]/60" />
+                <div className="flex items-center gap-4 text-[11px] flex-wrap">
+                  <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-medium">
+                    <Store className="h-3 w-3" />
                     {selectedAuto.team_name}
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <Calendar className="h-3 w-3 text-[var(--wa-text-secondary)]/60" />
+                  <span className="flex items-center gap-1.5 text-blue-600/70 dark:text-blue-400/70">
+                    <Calendar className="h-3 w-3" />
                     Created {formatDate(selectedAuto.created_at)}
                   </span>
-                  <span className="flex items-center gap-1.5">
-                    <Hash className="h-3 w-3 text-[var(--wa-text-secondary)]/60" />
+                  <span className="flex items-center gap-1.5 text-purple-600/70 dark:text-purple-400/70">
+                    <Hash className="h-3 w-3" />
                     ID: {selectedAuto.id}
                   </span>
                 </div>
