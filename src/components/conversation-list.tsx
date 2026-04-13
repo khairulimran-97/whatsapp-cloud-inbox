@@ -1430,12 +1430,12 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
               <div key={p.id} className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors ${
                 p.isDefault
                   ? 'border-emerald-500/30 bg-emerald-500/[0.06]'
-                  : 'border-indigo-500/20 bg-indigo-500/[0.04]'
+                  : 'border-[var(--wa-border)] bg-[var(--wa-hover)]'
               }`}>
                 <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  p.isDefault ? 'bg-emerald-500/15' : 'bg-indigo-500/10'
+                  p.isDefault ? 'bg-emerald-500/15' : 'bg-[var(--wa-active)]'
                 }`}>
-                  <Phone className={`h-3.5 w-3.5 ${p.isDefault ? 'text-emerald-400' : 'text-indigo-400'}`} />
+                  <Phone className={`h-3.5 w-3.5 ${p.isDefault ? 'text-emerald-400' : 'text-[var(--wa-text-secondary)]'}`} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
@@ -1833,12 +1833,12 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
               <div key={m.id} className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors ${
                 m.isDefault
                   ? 'border-blue-500/30 bg-blue-500/[0.06]'
-                  : 'border-indigo-500/20 bg-indigo-500/[0.04]'
+                  : 'border-[var(--wa-border)] bg-[var(--wa-hover)]'
               }`}>
                 <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  m.isDefault ? 'bg-blue-500/15' : 'bg-indigo-500/10'
+                  m.isDefault ? 'bg-blue-500/15' : 'bg-[var(--wa-active)]'
                 }`}>
-                  <Store className={`h-3.5 w-3.5 ${m.isDefault ? 'text-blue-400' : 'text-indigo-400'}`} />
+                  <Store className={`h-3.5 w-3.5 ${m.isDefault ? 'text-blue-400' : 'text-[var(--wa-text-secondary)]'}`} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
