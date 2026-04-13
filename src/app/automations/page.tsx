@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   ArrowLeft, Sun, Moon, Zap, CheckCircle2,
-  XCircle, Clock, Activity, RefreshCw, Loader2, Store, ChevronDown,
+  XCircle, Clock, Activity, Loader2, Store, ChevronDown,
   CircleDot, BarChart3, Search, Calendar, Hash,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -84,13 +84,13 @@ interface ExecMeta {
 }
 
 const TRIGGER_COLORS: Record<string, { bg: string; text: string; icon: string }> = {
-  transaction_success: { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', icon: 'text-emerald-500' },
-  transaction_failed: { bg: 'bg-red-500/10', text: 'text-red-600 dark:text-red-400', icon: 'text-red-500' },
-  payment_received: { bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400', icon: 'text-blue-500' },
-  customer_created: { bg: 'bg-purple-500/10', text: 'text-purple-600 dark:text-purple-400', icon: 'text-purple-500' },
-  order_created: { bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', icon: 'text-amber-500' },
+  transaction_success: { bg: 'bg-emerald-500/15', text: 'text-emerald-700 dark:text-emerald-400', icon: 'text-emerald-500' },
+  transaction_failed: { bg: 'bg-red-500/15', text: 'text-red-700 dark:text-red-400', icon: 'text-red-500' },
+  payment_received: { bg: 'bg-blue-500/15', text: 'text-blue-700 dark:text-blue-400', icon: 'text-blue-500' },
+  customer_created: { bg: 'bg-purple-500/15', text: 'text-purple-700 dark:text-purple-400', icon: 'text-purple-500' },
+  order_created: { bg: 'bg-amber-500/15', text: 'text-amber-700 dark:text-amber-400', icon: 'text-amber-500' },
 };
-const DEFAULT_TRIGGER_COLOR = { bg: 'bg-slate-500/10', text: 'text-slate-600 dark:text-slate-400', icon: 'text-slate-500' };
+const DEFAULT_TRIGGER_COLOR = { bg: 'bg-indigo-500/15', text: 'text-indigo-700 dark:text-indigo-400', icon: 'text-indigo-500' };
 
 export default function AutomationsPage() {
   const searchParams = useSearchParams();
@@ -112,7 +112,6 @@ export default function AutomationsPage() {
   const [statsLoading, setStatsLoading] = useState(false);
   const [isDark, setIsDark] = useState(true);
   const [mounted, setMounted] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const [filterMerchant, setFilterMerchant] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
@@ -137,7 +136,6 @@ export default function AutomationsPage() {
       setAutomations([]);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, []);
 
@@ -217,15 +215,6 @@ export default function AutomationsPage() {
     setSearchingAll(false);
   }, [execMeta, searchingAll, selectedId, selectedMerchantId]);
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchAutomations();
-    if (selectedId) {
-      const auto = automations.find(a => a.id === selectedId);
-      if (auto) selectAutomation(auto);
-    }
-  };
-
   // Unique merchant names for filter
   const merchantNames = useMemo(() => {
     const names = new Set<string>();
@@ -280,19 +269,21 @@ export default function AutomationsPage() {
   return (
     <div className="h-dvh flex flex-col bg-[var(--wa-bg)] text-[var(--wa-text-primary)]">
       {/* Header */}
-      <header className="flex items-center gap-3 px-4 h-[56px] bg-[var(--wa-panel-header)] border-b border-slate-200 dark:border-[var(--wa-border-strong)] flex-shrink-0 safe-area-top">
+      <header className="flex items-center gap-3 px-4 h-[56px] bg-gradient-to-r from-amber-500/5 via-transparent to-purple-500/5 dark:from-amber-500/10 dark:via-transparent dark:to-purple-500/10 border-b border-amber-200/50 dark:border-amber-500/20 flex-shrink-0 safe-area-top">
         <Link
           href="/"
-          className="h-9 w-9 flex items-center justify-center rounded-lg text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+          className="h-9 w-9 flex items-center justify-center rounded-xl text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 transition-colors"
         >
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <div className="flex-1 min-w-0">
-          <h1 className="text-[15px] font-semibold flex items-center gap-2">
-            <Zap className="h-4.5 w-4.5 text-amber-500" />
-            BCL Automations
+          <h1 className="text-[15px] font-bold flex items-center gap-2">
+            <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+              <Zap className="h-3.5 w-3.5 text-white" />
+            </div>
+            <span className="bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">BCL Automations</span>
           </h1>
-          <p className="text-[11px] text-[var(--wa-text-secondary)] truncate">
+          <p className="text-[11px] text-[var(--wa-text-secondary)] truncate ml-8">
             {activeCount} active · {totalRuns.toLocaleString()} total runs
           </p>
         </div>
@@ -302,26 +293,18 @@ export default function AutomationsPage() {
               <select
                 value={filterMerchant}
                 onChange={e => setFilterMerchant(e.target.value)}
-                className="appearance-none h-8 pl-2.5 pr-7 text-[12px] rounded-lg bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] border border-slate-200 dark:border-[var(--wa-border)] outline-none cursor-pointer font-medium"
+                className="appearance-none h-8 pl-2.5 pr-7 text-[12px] rounded-lg bg-white/60 dark:bg-white/5 text-[var(--wa-text-primary)] border border-amber-200 dark:border-amber-500/20 outline-none cursor-pointer font-medium"
               >
                 {merchantNames.map(name => (
                   <option key={name} value={name}>{name}</option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-[var(--wa-text-secondary)] pointer-events-none" />
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-amber-500 pointer-events-none" />
             </div>
           )}
           <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="h-8 w-8 flex items-center justify-center rounded-lg text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-black/5 dark:hover:bg-white/10 transition-colors disabled:opacity-40"
-            title="Refresh"
-          >
-            <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
-          </button>
-          <button
             onClick={toggleTheme}
-            className="h-8 w-8 flex items-center justify-center rounded-lg text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+            className="h-8 w-8 flex items-center justify-center rounded-xl text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 transition-colors"
             title={isDark ? 'Light mode' : 'Dark mode'}
           >
             {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -352,7 +335,7 @@ export default function AutomationsPage() {
             {selectedAuto && (
               <>
               {/* Detail header with automation dropdown */}
-              <div className="px-3 sm:px-4 py-3 bg-[var(--wa-panel-header)] border-b border-slate-200 dark:border-[var(--wa-border-strong)] flex-shrink-0">
+              <div className="px-3 sm:px-4 py-3 bg-gradient-to-r from-slate-50 to-white dark:from-white/[0.03] dark:to-transparent border-b border-slate-200 dark:border-[var(--wa-border-strong)] flex-shrink-0">
                 <div className="flex items-center gap-2.5">
                   <div className={cn(
                     'h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0',
@@ -646,10 +629,10 @@ function StatCard({
   label: string; value: string; icon: React.ReactNode; color: string; subtext?: string; alert?: boolean; active?: boolean; onClick?: () => void;
 }) {
   const colorMap: Record<string, { bg: string; iconColor: string; valueBold?: string; activeBorder: string }> = {
-    blue: { bg: 'bg-blue-500/8', iconColor: 'text-blue-500', activeBorder: 'ring-blue-500/40' },
-    emerald: { bg: 'bg-emerald-500/8', iconColor: 'text-emerald-500', activeBorder: 'ring-emerald-500/40' },
-    red: { bg: 'bg-red-500/8', iconColor: 'text-red-500', valueBold: 'text-red-500', activeBorder: 'ring-red-500/40' },
-    amber: { bg: 'bg-amber-500/8', iconColor: 'text-amber-500', activeBorder: 'ring-amber-500/40' },
+    blue: { bg: 'bg-gradient-to-br from-blue-500/10 to-indigo-500/10 dark:from-blue-500/15 dark:to-indigo-500/15', iconColor: 'text-blue-500', activeBorder: 'ring-blue-500/40' },
+    emerald: { bg: 'bg-gradient-to-br from-emerald-500/10 to-teal-500/10 dark:from-emerald-500/15 dark:to-teal-500/15', iconColor: 'text-emerald-500', activeBorder: 'ring-emerald-500/40' },
+    red: { bg: 'bg-gradient-to-br from-red-500/10 to-rose-500/10 dark:from-red-500/15 dark:to-rose-500/15', iconColor: 'text-red-500', valueBold: 'text-red-500', activeBorder: 'ring-red-500/40' },
+    amber: { bg: 'bg-gradient-to-br from-amber-500/10 to-orange-500/10 dark:from-amber-500/15 dark:to-orange-500/15', iconColor: 'text-amber-500', activeBorder: 'ring-amber-500/40' },
   };
   const c = colorMap[color] || colorMap.blue;
 
@@ -685,10 +668,10 @@ function ExecutionCard({ exec }: { exec: Execution }) {
 
   return (
     <div className={cn(
-      'rounded-lg border p-2.5 text-[11px] transition-colors',
-      isCompleted && 'bg-emerald-500/5 border-emerald-200 dark:border-emerald-500/20',
-      isFailed && 'bg-red-500/5 border-red-300 dark:border-red-500/20',
-      !isCompleted && !isFailed && 'bg-amber-500/5 border-amber-200 dark:border-amber-500/20'
+      'rounded-xl border p-2.5 text-[11px] transition-colors',
+      isCompleted && 'bg-gradient-to-br from-emerald-500/5 to-teal-500/5 border-emerald-300/50 dark:border-emerald-500/20',
+      isFailed && 'bg-gradient-to-br from-red-500/5 to-rose-500/5 border-red-300/50 dark:border-red-500/20',
+      !isCompleted && !isFailed && 'bg-gradient-to-br from-amber-500/5 to-orange-500/5 border-amber-300/50 dark:border-amber-500/20'
     )}>
       <div className="flex items-center gap-1.5 mb-1.5">
         {isCompleted ? (
