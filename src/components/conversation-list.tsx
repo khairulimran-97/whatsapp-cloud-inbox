@@ -177,6 +177,7 @@ type Props = {
   onToggleNotification?: () => Promise<void> | void;
   typingPhone?: string | null;
   panelWidth?: number;
+  profileId?: string | null;
 };
 
 export type ConversationListRef = {
@@ -195,7 +196,7 @@ export type ConversationListRef = {
 const PAGE_SIZE = 50;
 
 export const ConversationList = forwardRef<ConversationListRef, Props>(
-  ({ onSelectConversation, onConversationsUpdated, selectedConversationId, isHidden = false, unreadCounts = new Map(), pollInterval = 10000, notificationEnabled = false, notificationPermission = 'default', onToggleNotification, typingPhone, panelWidth }, ref) => {
+  ({ onSelectConversation, onConversationsUpdated, selectedConversationId, isHidden = false, unreadCounts = new Map(), pollInterval = 10000, notificationEnabled = false, notificationPermission = 'default', onToggleNotification, typingPhone, panelWidth, profileId }, ref) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [needsSync, setNeedsSync] = useState(false);
@@ -227,12 +228,32 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
   onConversationsUpdatedRef.current = onConversationsUpdated;
   const sentinelRef = useRef<HTMLDivElement>(null);
 
+  // Append profileId query param to API URLs
+  const withProfile = useCallback((url: string) => {
+    if (!profileId) return url;
+    const sep = url.includes('?') ? '&' : '?';
+    return `${url}${sep}profileId=${profileId}`;
+  }, [profileId]);
+
   useEffect(() => {
-    fetch('/api/profile')
+    fetch(withProfile('/api/profile'))
       .then(r => r.json())
       .then((data: ProfileData) => setProfile(data))
       .catch(() => {});
-  }, []);
+  }, [withProfile]);
+
+  // Reset state when profile changes
+  useEffect(() => {
+    setConversations([]);
+    setLoading(true);
+    setNeedsSync(false);
+    setAutoSync(false);
+    setHasMore(false);
+    pageRef.current = 1;
+    prevDataRef.current = '';
+    setSearchQuery('');
+    setSearchResults(null);
+  }, [profileId]);
 
   // Tick every 30s to refresh relative timestamps (e.g. "10m" → "11m")
   useEffect(() => {
@@ -256,7 +277,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
     setSearchPage(1);
     searchTimerRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/conversations?search=${encodeURIComponent(searchQuery.trim())}`);
+        const res = await fetch(withProfile(`/api/conversations?search=${encodeURIComponent(searchQuery.trim())}`));
         const data = await res.json();
         setSearchResults(data.data ?? []);
         setSearchHasMore(!!data.hasMore);
@@ -278,7 +299,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
     setLoadingMoreSearch(true);
     const nextPage = searchPage + 1;
     try {
-      const res = await fetch(`/api/conversations?search=${encodeURIComponent(searchQuery.trim())}&page=${nextPage}`);
+      const res = await fetch(withProfile(`/api/conversations?search=${encodeURIComponent(searchQuery.trim())}&page=${nextPage}`));
       const data = await res.json();
       const newResults: Conversation[] = data.data ?? [];
       setSearchResults(prev => {
@@ -297,7 +318,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
 
   const fetchConversations = useCallback(async () => {
     try {
-      const response = await fetch('/api/conversations');
+      const response = await fetch(withProfile('/api/conversations'));
       const data = await response.json();
 
       // API says SQLite needs sync
@@ -331,7 +352,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [withProfile]);
 
   // User-triggered sync: fetch all pages from Kapso API
   const startSync = useCallback(async () => {
@@ -339,7 +360,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
     setSyncCount(0);
     try {
       // First page
-      const res = await fetch('/api/conversations?sync=true');
+      const res = await fetch(withProfile('/api/conversations?sync=true'));
       const data = await res.json();
       let allConvs: Conversation[] = data.data || [];
       let hasMorePages = !!data.hasMore;
@@ -352,7 +373,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       while (hasMorePages) {
         await new Promise(r => setTimeout(r, 500)); // 500ms delay between pages
         try {
-          const nextRes = await fetch('/api/conversations?cursor=next');
+          const nextRes = await fetch(withProfile('/api/conversations?cursor=next'));
           if (!nextRes.ok) throw new Error(`HTTP ${nextRes.status}`);
           const nextData = await nextRes.json();
           allConvs = nextData.data || [];
@@ -377,7 +398,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
     } finally {
       setSyncing(false);
     }
-  }, []);
+  }, [withProfile]);
 
   // Auto-start sync when triggered by force resync (not first setup)
   useEffect(() => {
@@ -391,7 +412,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
     setLoadingMore(true);
     try {
       pageRef.current += 1;
-      const response = await fetch(`/api/conversations?page=${pageRef.current}`);
+      const response = await fetch(withProfile(`/api/conversations?page=${pageRef.current}`));
       const data = await response.json();
       const newPage: Conversation[] = data.data || [];
       setHasMore(!!data.hasMore);
@@ -444,7 +465,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
     refresh: async () => {
       try {
         pageRef.current = 1;
-        const response = await fetch('/api/conversations?refresh=true');
+        const response = await fetch(withProfile('/api/conversations?refresh=true'));
         if (!response.ok) return conversations;
         const data = await response.json();
         const newConversations = data.data || [];

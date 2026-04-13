@@ -257,6 +257,7 @@ type Props = {
   pollInterval?: number;
   initialUnreadCount?: number;
   searchHighlight?: string;
+  profileId?: string | null;
 };
 
 export type MessageViewRef = {
@@ -265,7 +266,7 @@ export type MessageViewRef = {
   updateMessageStatus: (messageId: string, status: string) => void;
 };
 
-export const MessageView = forwardRef<MessageViewRef, Props>(function MessageView({ conversationIds, conversationStatuses, conversationStatus, phoneNumber, contactName, totalConversations, onTemplateSent, onStatusChanged, onConversationStatusUpdate, onMarkUnread, onBack, onInteraction, onTypingChange, isVisible = false, pollInterval = 5000, initialUnreadCount = 0, searchHighlight }: Props, ref) {
+export const MessageView = forwardRef<MessageViewRef, Props>(function MessageView({ conversationIds, conversationStatuses, conversationStatus, phoneNumber, contactName, totalConversations, onTemplateSent, onStatusChanged, onConversationStatusUpdate, onMarkUnread, onBack, onInteraction, onTypingChange, isVisible = false, pollInterval = 5000, initialUnreadCount = 0, searchHighlight, profileId }: Props, ref) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -310,6 +311,13 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
   const refreshingRef = useRef(false);
   const markedReadRef = useRef<string>('');
   const prevPhoneRef = useRef<string | undefined>(undefined);
+
+  // Append profileId query param to API URLs
+  const withProfile = useCallback((url: string) => {
+    if (!profileId) return url;
+    const sep = url.includes('?') ? '&' : '?';
+    return `${url}${sep}profileId=${profileId}`;
+  }, [profileId]);
 
   const SIDEBAR_MIN = 300;
   const SIDEBAR_MAX = 600;
@@ -511,7 +519,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
         ...(shouldRefresh ? { refresh: 'true' } : {}),
       });
 
-      const r = await fetch(`/api/messages/batch?${params}`);
+      const r = await fetch(withProfile(`/api/messages/batch?${params}`));
       if (!r.ok) {
         // On error, keep existing messages
         if (messagesRef.current.length > 0) return;
@@ -562,7 +570,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
               fetch('/api/messages/mark-read', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messageId: lastInbound.id }),
+                body: JSON.stringify({ messageId: lastInbound.id, profileId }),
               }).catch(() => {});
             }
           }
@@ -590,7 +598,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
     setLoadingOlder(true);
     try {
       // Get ALL conversation IDs for this phone from server cache (no Kapso API call)
-      const r = await fetch(`/api/conversations?olderIds=${encodeURIComponent(phoneNumber)}`);
+      const r = await fetch(withProfile(`/api/conversations?olderIds=${encodeURIComponent(phoneNumber)}`));
       if (!r.ok) return;
       const data = await r.json();
       const allIds = (data.conversationIds || []) as string[];
@@ -610,7 +618,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
         mode: 'initial',
         refresh: 'true',
       });
-      const msgRes = await fetch(`/api/messages/batch?${params}`);
+      const msgRes = await fetch(withProfile(`/api/messages/batch?${params}`));
       if (!msgRes.ok) return;
       const msgData = await msgRes.json();
       const olderMessages = (msgData.data || []) as Message[];
@@ -661,7 +669,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
 
         // Refresh all conversation statuses from Kapso API (non-blocking)
         if (phoneNumber) {
-          fetch(`/api/conversations/status-by-phone?phone=${phoneNumber}`)
+          fetch(withProfile(`/api/conversations/status-by-phone?phone=${phoneNumber}`))
             .then(r => r.ok ? r.json() : null)
             .then(data => {
               if (!data?.sessions) return;
@@ -680,7 +688,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
   useEffect(() => {
     if (!phoneNumber) return;
     const poll = () => {
-      fetch(`/api/conversations/status-by-phone?phone=${phoneNumber}`)
+      fetch(withProfile(`/api/conversations/status-by-phone?phone=${phoneNumber}`))
         .then(r => r.ok ? r.json() : null)
         .then(data => {
           if (!data?.sessions) return;
@@ -776,7 +784,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
       const response = await fetch('/api/conversations/status', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ conversationId: conversationIds[0], status: newStatus }),
+        body: JSON.stringify({ conversationId: conversationIds[0], status: newStatus, profileId }),
       });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
@@ -867,6 +875,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
     try {
       const formData = new FormData();
       formData.append('to', phoneNumber);
+      if (profileId) formData.append('profileId', profileId);
       if (text) {
         formData.append('body', text);
       }
@@ -1867,6 +1876,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
         conversationId={conversationIds?.[0]}
         phoneNumber={phoneNumber}
         onMessageSent={fetchMessages}
+        profileId={profileId}
       />
 
       <InteractiveListDialog
@@ -1874,6 +1884,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
         onOpenChange={setShowListDialog}
         phoneNumber={phoneNumber}
         onMessageSent={fetchMessages}
+        profileId={profileId}
       />
 
       <CtaUrlDialog
@@ -1881,6 +1892,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
         onOpenChange={setShowCtaDialog}
         phoneNumber={phoneNumber}
         onMessageSent={fetchMessages}
+        profileId={profileId}
       />
 
       <TemplateSelectorDialog
@@ -1888,6 +1900,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
         onOpenChange={setShowTemplateDialog}
         phoneNumber={phoneNumber ?? ''}
         onTemplateSent={fetchMessages}
+        profileId={profileId}
       />
 
       {/* Close / Reopen confirmation dialog */}

@@ -22,9 +22,10 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   phoneNumber: string;
   onTemplateSent?: () => void;
+  profileId?: string | null;
 };
 
-export function TemplateSelectorDialog({ open, onOpenChange, phoneNumber, onTemplateSent }: Props) {
+export function TemplateSelectorDialog({ open, onOpenChange, phoneNumber, onTemplateSent, profileId }: Props) {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
@@ -45,7 +46,7 @@ export function TemplateSelectorDialog({ open, onOpenChange, phoneNumber, onTemp
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/templates');
+      const response = await fetch('/api/templates' + (profileId ? `?profileId=${profileId}` : ''));
       const data = await response.json();
 
       if (!response.ok) {
@@ -90,7 +91,8 @@ export function TemplateSelectorDialog({ open, onOpenChange, phoneNumber, onTemp
         body: JSON.stringify({
           to: phoneNumber,
           templateName: template.name,
-          languageCode: template.language
+          languageCode: template.language,
+          profileId
         })
       });
 
@@ -231,6 +233,7 @@ export function TemplateSelectorDialog({ open, onOpenChange, phoneNumber, onTemp
         phoneNumber={phoneNumber}
         onBack={handleBackToTemplateSelector}
         onTemplateSent={handleTemplateWithParametersSent}
+        profileId={profileId}
       />
     )}
   </>

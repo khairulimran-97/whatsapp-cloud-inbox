@@ -26,6 +26,7 @@ type Props = {
   conversationId?: string;
   phoneNumber?: string;
   onMessageSent?: () => void;
+  profileId?: string | null;
 };
 
 export function InteractiveMessageDialog({
@@ -34,6 +35,7 @@ export function InteractiveMessageDialog({
   conversationId,
   phoneNumber,
   onMessageSent,
+  profileId,
 }: Props) {
   const [header, setHeader] = useState('');
   const [body, setBody] = useState('');
@@ -107,7 +109,8 @@ export function InteractiveMessageDialog({
           buttons: buttons.map(btn => ({
             id: btn.id,
             title: btn.title.trim()
-          }))
+          })),
+          profileId,
         }),
       });
 

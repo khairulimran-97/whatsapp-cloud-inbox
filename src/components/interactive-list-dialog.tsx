@@ -31,6 +31,7 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   phoneNumber?: string;
   onMessageSent?: () => void;
+  profileId?: string | null;
 };
 
 export function InteractiveListDialog({
@@ -38,6 +39,7 @@ export function InteractiveListDialog({
   onOpenChange,
   phoneNumber,
   onMessageSent,
+  profileId,
 }: Props) {
   const [header, setHeader] = useState('');
   const [bodyText, setBodyText] = useState('');
@@ -138,6 +140,7 @@ export function InteractiveListDialog({
           })),
           header: header.trim() || undefined,
           footerText: footerText.trim() || undefined,
+          profileId,
         }),
       });
 

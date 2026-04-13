@@ -20,6 +20,7 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   phoneNumber?: string;
   onMessageSent?: () => void;
+  profileId?: string | null;
 };
 
 export function CtaUrlDialog({
@@ -27,6 +28,7 @@ export function CtaUrlDialog({
   onOpenChange,
   phoneNumber,
   onMessageSent,
+  profileId,
 }: Props) {
   const [header, setHeader] = useState('');
   const [bodyText, setBodyText] = useState('');
@@ -69,6 +71,7 @@ export function CtaUrlDialog({
           url: url.trim(),
           header: header.trim() || undefined,
           footerText: footerText.trim() || undefined,
+          profileId,
         }),
       });
 

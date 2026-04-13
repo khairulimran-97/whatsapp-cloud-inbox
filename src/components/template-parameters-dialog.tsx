@@ -26,6 +26,7 @@ type Props = {
   phoneNumber: string;
   onBack: () => void;
   onTemplateSent?: () => void;
+  profileId?: string | null;
 };
 
 export function TemplateParametersDialog({
@@ -36,6 +37,7 @@ export function TemplateParametersDialog({
   phoneNumber,
   onBack,
   onTemplateSent,
+  profileId,
 }: Props) {
   const [parameterValues, setParameterValues] = useState<Record<string, string>>({});
   const [sending, setSending] = useState(false);
@@ -73,6 +75,7 @@ export function TemplateParametersDialog({
           languageCode: template.language,
           parameters: formattedParameters,
           parameterInfo: parameterInfo,
+          profileId,
         }),
       });
 

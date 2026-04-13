@@ -23,6 +23,15 @@ type Conversation = {
   totalConversations?: number;
 };
 
+type WaProfile = {
+  id: string;
+  label: string;
+  phoneNumberId: string;
+  wabaId: string;
+  phoneDisplay?: string;
+  isDefault: boolean;
+};
+
 // Server-side unread operations (SQLite is the single source of truth)
 function clearUnreadOnServer(phone: string) {
   fetch('/api/unread', {
@@ -55,6 +64,10 @@ export default function Home() {
   const { enabled: notifEnabled, permission: notifPermission, toggle: toggleNotif } = useNotification();
   const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
   const audioUnlockedRef = useRef(false);
+
+  // Multi-profile state
+  const [profiles, setProfiles] = useState<WaProfile[]>([]);
+  const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
 
   // Resizable panel widths (reset to defaults on refresh)
   const [listWidth, setListWidth] = useState(384);
@@ -91,6 +104,22 @@ export default function Home() {
   }, [listWidth]);
 
   useEffect(() => {
+    // Load WA profiles
+    fetch('/api/wa-profiles')
+      .then(r => r.json())
+      .then((data: WaProfile[]) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setProfiles(data);
+          const saved = localStorage.getItem('activeProfileId');
+          const match = saved ? data.find(p => p.id === saved) : null;
+          const defaultProfile = match || data.find(p => p.isDefault) || data[0];
+          setActiveProfileId(defaultProfile.id);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     // Load unread counts from server (SQLite is the single source of truth)
     fetch('/api/unread').then(r => r.json()).then(data => {
       if (data && typeof data === 'object' && !Array.isArray(data)) {
@@ -117,6 +146,13 @@ export default function Home() {
       document.removeEventListener('click', unlock);
       document.removeEventListener('touchstart', unlock);
     };
+  }, []);
+
+  const handleProfileSwitch = useCallback((newProfileId: string) => {
+    setActiveProfileId(newProfileId);
+    localStorage.setItem('activeProfileId', newProfileId);
+    setSelectedConversation(undefined);
+    setInitialUnreadCount(0);
   }, []);
 
   const handleSelectConversation = useCallback((conversation: Conversation, searchQuery?: string) => {
@@ -410,6 +446,22 @@ export default function Home() {
   return (
     <div className="h-dvh flex relative overflow-hidden">
       <PwaInstallBanner />
+      {/* Profile switcher — only shown if 2+ profiles */}
+      {profiles.length >= 2 && (
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50">
+          <select
+            value={activeProfileId ?? ''}
+            onChange={(e) => handleProfileSwitch(e.target.value)}
+            className="text-xs px-3 py-1.5 rounded-full border border-[var(--wa-border)] bg-[var(--wa-bg-deeper)] text-[var(--wa-text-primary)] shadow-md backdrop-blur-sm cursor-pointer outline-none focus:ring-1 focus:ring-[var(--wa-green)]"
+          >
+            {profiles.map(p => (
+              <option key={p.id} value={p.id}>
+                {p.label}{p.phoneDisplay ? ` (${p.phoneDisplay})` : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <ConversationList
         ref={conversationListRef}
         onSelectConversation={handleSelectConversation}
@@ -423,6 +475,7 @@ export default function Home() {
         onToggleNotification={toggleNotif}
         typingPhone={typingPhone}
         panelWidth={listWidth}
+        profileId={activeProfileId}
       />
       {/* Resize handle for conversation list — overlays the border, no extra gap */}
       <div
@@ -452,6 +505,7 @@ export default function Home() {
         pollInterval={messagePollInterval}
         initialUnreadCount={initialUnreadCount}
         searchHighlight={searchHighlight}
+        profileId={activeProfileId}
       />
     </div>
   );
