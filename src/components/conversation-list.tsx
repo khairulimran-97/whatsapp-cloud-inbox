@@ -1512,6 +1512,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
           <div className="relative">
             <input
               type={showApiKey ? 'text' : 'password'}
+              autoComplete="off"
               value={formApiKey}
               onChange={(e) => setFormApiKey(e.target.value)}
               placeholder={editingId ? 'New Kapso API key (leave empty to keep)' : 'Kapso API key'}
@@ -1802,6 +1803,7 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
           <div className="relative">
             <input
               type={showFormKey ? 'text' : 'password'}
+              autoComplete="off"
               value={formKey}
               onChange={(e) => setFormKey(e.target.value)}
               placeholder={editingId ? 'New API key (leave empty to keep)' : 'BCL API key'}
