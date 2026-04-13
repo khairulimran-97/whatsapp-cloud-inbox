@@ -179,6 +179,8 @@ type Props = {
   panelWidth?: number;
   profileId?: string | null;
   onSettingsVisibilityChange?: (visible: boolean) => void;
+  profiles?: { id: string; label: string }[];
+  onProfileSwitch?: (id: string) => void;
 };
 
 export type ConversationListRef = {
@@ -197,7 +199,7 @@ export type ConversationListRef = {
 const PAGE_SIZE = 50;
 
 export const ConversationList = forwardRef<ConversationListRef, Props>(
-  ({ onSelectConversation, onConversationsUpdated, selectedConversationId, isHidden = false, unreadCounts = new Map(), pollInterval = 10000, notificationEnabled = false, notificationPermission = 'default', onToggleNotification, typingPhone, panelWidth, profileId, onSettingsVisibilityChange }, ref) => {
+  ({ onSelectConversation, onConversationsUpdated, selectedConversationId, isHidden = false, unreadCounts = new Map(), pollInterval = 10000, notificationEnabled = false, notificationPermission = 'default', onToggleNotification, typingPhone, panelWidth, profileId, onSettingsVisibilityChange, profiles: parentProfiles, onProfileSwitch }, ref) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [needsSync, setNeedsSync] = useState(false);
@@ -779,6 +781,29 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
           )}
         </div>
       </div>
+
+      {/* Profile switcher */}
+      {parentProfiles && parentProfiles.length >= 2 && (
+        <div className="flex gap-1 px-4 py-2 border-b border-[var(--wa-border)] bg-[var(--wa-panel-bg)] overflow-x-auto no-scrollbar">
+          {parentProfiles.map(p => {
+            const active = p.id === profileId;
+            return (
+              <button
+                key={p.id}
+                onClick={() => onProfileSwitch?.(p.id)}
+                className={cn(
+                  "text-[12px] font-medium px-3 py-1 rounded-full transition-colors whitespace-nowrap flex-shrink-0",
+                  active
+                    ? "bg-[var(--wa-green)] text-white"
+                    : "bg-[var(--wa-hover)] text-[var(--wa-text-tertiary)] hover:bg-[var(--wa-active)]"
+                )}
+              >
+                {p.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Filter tabs */}
       <div className="flex gap-1.5 px-4 py-2 border-b border-[var(--wa-border)] bg-[var(--wa-panel-bg)]">

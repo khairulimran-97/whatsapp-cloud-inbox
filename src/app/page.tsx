@@ -449,29 +449,6 @@ export default function Home() {
   return (
     <div className="h-dvh flex relative overflow-hidden">
       <PwaInstallBanner />
-      {/* Profile switcher — only shown if 2+ profiles */}
-      {profiles.length >= 2 && (
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50">
-          <div className="flex items-center gap-0.5 p-0.5 rounded-full border border-[var(--wa-border)] bg-[var(--wa-panel-bg)] shadow-lg backdrop-blur-sm">
-            {profiles.map(p => {
-              const active = p.id === activeProfileId;
-              return (
-                <button
-                  key={p.id}
-                  onClick={() => handleProfileSwitch(p.id)}
-                  className={`text-[11px] font-medium px-3 py-1 rounded-full transition-all whitespace-nowrap ${
-                    active
-                      ? 'bg-[var(--wa-green)] text-white shadow-sm'
-                      : 'text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)]'
-                  }`}
-                >
-                  {p.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
       <ConversationList
         ref={conversationListRef}
         onSelectConversation={handleSelectConversation}
@@ -487,6 +464,8 @@ export default function Home() {
         panelWidth={listWidth}
         profileId={activeProfileId}
         onSettingsVisibilityChange={setSettingsVisible}
+        profiles={profiles}
+        onProfileSwitch={handleProfileSwitch}
       />
       {/* Resize handle for conversation list — overlays the border, no extra gap */}
       {!settingsVisible && (
