@@ -287,6 +287,7 @@ function extractEvent(item: Record<string, unknown>, headerEvent: string | null)
   return {
     type: eventType,
     phoneNumber: (msg?.from ?? conv?.phone_number ?? item.phone_number ?? item.phoneNumber ?? data.phone_number ?? data.from) as string | undefined,
+    phoneNumberId: (conv?.phone_number_id ?? item.phone_number_id ?? data.phone_number_id) as string | undefined,
     conversationId: (conv?.id ?? item.conversation_id ?? item.conversationId ?? data.conversation_id) as string | undefined,
     messageId: (msg?.id ?? item.message_id ?? item.messageId ?? data.message_id ?? data.id) as string | undefined,
     timestamp: new Date().toISOString(),
@@ -294,11 +295,13 @@ function extractEvent(item: Record<string, unknown>, headerEvent: string | null)
   };
 }
 
-function incrementUnread(phoneNumber: string) {
+function incrementUnread(phoneNumber: string, phoneNumberId?: string) {
   try {
     const db = getDb();
+    // Use phone:phoneNumberId composite key to scope unread per profile
+    const key = phoneNumberId ? `${phoneNumber}:${phoneNumberId}` : phoneNumber;
     db.insert(schema.unreadCounts)
-      .values({ phone: phoneNumber, count: 1, updatedAt: new Date() })
+      .values({ phone: key, count: 1, updatedAt: new Date() })
       .onConflictDoUpdate({
         target: schema.unreadCounts.phone,
         set: { count: sql`${schema.unreadCounts.count} + 1`, updatedAt: new Date() },
@@ -353,7 +356,7 @@ export async function POST(request: Request) {
 
         // Track unread server-side for inbound messages
         if (webhookEvent.type === 'message_received' && webhookEvent.phoneNumber) {
-          incrementUnread(webhookEvent.phoneNumber);
+          incrementUnread(webhookEvent.phoneNumber, webhookEvent.phoneNumberId);
           // Web Push notification
           const textBody = ((msg?.text as Record<string, unknown>)?.body as string) || (msg?.type as string) || 'New message';
           console.log('[Webhook] Sending push for', webhookEvent.phoneNumber, ':', textBody);

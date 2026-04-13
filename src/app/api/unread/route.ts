@@ -3,12 +3,20 @@ import { getDb, schema } from '@/lib/db';
 import { eq, sql } from 'drizzle-orm';
 import { publish } from '@/lib/event-bus';
 
-function getAllUnread(): Record<string, number> {
+function getAllUnread(phoneNumberId?: string | null): Record<string, number> {
   const db = getDb();
   const rows = db.select().from(schema.unreadCounts).all();
   const result: Record<string, number> = {};
   for (const row of rows) {
-    if (row.count > 0) result[row.phone] = row.count;
+    if (row.count <= 0) continue;
+    // Keys are either "phone" (legacy) or "phone:phoneNumberId" (new)
+    const parts = row.phone.split(':');
+    const phone = parts[0];
+    const pnid = parts[1]; // undefined for legacy keys
+    // Filter by phoneNumberId if provided
+    if (phoneNumberId && pnid && pnid !== phoneNumberId) continue;
+    // If same phone already counted (from legacy + new key), take the max
+    result[phone] = Math.max(result[phone] ?? 0, row.count);
   }
   return result;
 }
@@ -21,9 +29,11 @@ function broadcastUnreadUpdate(unread: Record<string, number>) {
   });
 }
 
-// GET — load all unread counts
-export async function GET() {
-  return NextResponse.json(getAllUnread());
+// GET — load unread counts (optionally filtered by phoneNumberId)
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const phoneNumberId = searchParams.get('phoneNumberId');
+  return NextResponse.json(getAllUnread(phoneNumberId));
 }
 
 // PUT — full replace (bulk save)
@@ -55,16 +65,18 @@ export async function PUT(request: Request) {
 // PATCH — increment or clear specific phone numbers
 export async function PATCH(request: Request) {
   try {
-    const { increment, clear } = await request.json() as {
+    const { increment, clear, phoneNumberId } = await request.json() as {
       increment?: string[];
       clear?: string[];
+      phoneNumberId?: string;
     };
     const db = getDb();
 
     if (increment) {
       for (const phone of increment) {
+        const key = phoneNumberId ? `${phone}:${phoneNumberId}` : phone;
         db.insert(schema.unreadCounts)
-          .values({ phone, count: 1, updatedAt: new Date() })
+          .values({ phone: key, count: 1, updatedAt: new Date() })
           .onConflictDoUpdate({
             target: schema.unreadCounts.phone,
             set: { count: sql`${schema.unreadCounts.count} + 1`, updatedAt: new Date() },
@@ -74,7 +86,11 @@ export async function PATCH(request: Request) {
     }
     if (clear) {
       for (const phone of clear) {
+        // Clear both legacy "phone" and composite "phone:phoneNumberId" keys
         db.delete(schema.unreadCounts).where(eq(schema.unreadCounts.phone, phone)).run();
+        if (phoneNumberId) {
+          db.delete(schema.unreadCounts).where(eq(schema.unreadCounts.phone, `${phone}:${phoneNumberId}`)).run();
+        }
       }
     }
 

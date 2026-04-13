@@ -4,6 +4,7 @@ export type RealtimeEvent = {
   type: 'message_received' | 'message_sent' | 'message_delivered' | 'message_read' | 'message_failed' |
         'conversation_started' | 'conversation_ended' | 'conversation_inactive' | 'unread_update' | 'connected';
   phoneNumber?: string;
+  phoneNumberId?: string;
   conversationId?: string;
   messageId?: string;
   timestamp?: string;

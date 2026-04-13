@@ -34,19 +34,19 @@ type WaProfile = {
 };
 
 // Server-side unread operations (SQLite is the single source of truth)
-function clearUnreadOnServer(phone: string) {
+function clearUnreadOnServer(phone: string, phoneNumberId?: string | null) {
   fetch('/api/unread', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ clear: [phone] }),
+    body: JSON.stringify({ clear: [phone], phoneNumberId: phoneNumberId ?? undefined }),
   }).catch(() => {});
 }
 
-function markUnreadOnServer(phone: string) {
+function markUnreadOnServer(phone: string, phoneNumberId?: string | null) {
   fetch('/api/unread', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ increment: [phone] }),
+    body: JSON.stringify({ increment: [phone], phoneNumberId: phoneNumberId ?? undefined }),
   }).catch(() => {});
 }
 
@@ -69,6 +69,10 @@ export default function Home() {
   // Multi-profile state
   const [profiles, setProfiles] = useState<WaProfile[]>([]);
   const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
+  const activePhoneNumberIdRef = useRef<string | null>(null);
+  // Keep ref in sync for use in event callbacks
+  const activeProfile = profiles.find(p => p.id === activeProfileId);
+  activePhoneNumberIdRef.current = activeProfile?.phoneNumberId ?? null;
 
   // Resizable panel widths (reset to defaults on refresh)
   const [listWidth, setListWidth] = useState(384);
@@ -122,14 +126,19 @@ export default function Home() {
       .catch(() => {});
   }, []);
 
+  // Load unread counts filtered by active profile
   useEffect(() => {
-    // Load unread counts from server (SQLite is the single source of truth)
-    fetch('/api/unread').then(r => r.json()).then(data => {
+    if (!activeProfileId) return;
+    const pnid = profiles.find(p => p.id === activeProfileId)?.phoneNumberId;
+    const url = pnid ? `/api/unread?phoneNumberId=${pnid}` : '/api/unread';
+    fetch(url).then(r => r.json()).then(data => {
       if (data && typeof data === 'object' && !Array.isArray(data)) {
         setUnreadCounts(new Map(Object.entries(data as Record<string, number>)));
       }
     }).catch(() => {});
+  }, [activeProfileId, profiles]);
 
+  useEffect(() => {
     notificationSoundRef.current = new Audio('/notification.wav');
     notificationSoundRef.current.volume = 0.8;
 
@@ -183,7 +192,7 @@ export default function Home() {
         next.delete(conversation.phoneNumber);
         return next;
       });
-      clearUnreadOnServer(conversation.phoneNumber);
+      clearUnreadOnServer(conversation.phoneNumber, activePhoneNumberIdRef.current);
     }
   }, [unreadCounts]);
 
@@ -200,7 +209,7 @@ export default function Home() {
       next.delete(selected.phoneNumber);
       return next;
     });
-    clearUnreadOnServer(selected.phoneNumber);
+    clearUnreadOnServer(selected.phoneNumber, activePhoneNumberIdRef.current);
   }, [unreadCounts]);
 
   // Sync selected conversation when conversation list updates
@@ -241,7 +250,7 @@ export default function Home() {
       next.set(phoneNumber, Math.max(next.get(phoneNumber) ?? 0, 1));
       return next;
     });
-    markUnreadOnServer(phoneNumber);
+    markUnreadOnServer(phoneNumber, activePhoneNumberIdRef.current);
   }, []);
 
   const handleTemplateSent = async (phoneNumber: string) => {
@@ -375,6 +384,12 @@ export default function Home() {
   // Real-time updates via webhook SSE — injects data directly, no API calls
   const handleRealtimeEvent = useCallback((event: RealtimeEvent) => {
     if (event.type === 'connected') return;
+
+    // Ignore events from other WABA profiles
+    const myPhoneNumberId = activePhoneNumberIdRef.current;
+    if (event.phoneNumberId && myPhoneNumberId && event.phoneNumberId !== myPhoneNumberId) {
+      return;
+    }
 
     // Extract webhook payload for direct injection
     const webhookData = event.data as Record<string, unknown> | undefined;
