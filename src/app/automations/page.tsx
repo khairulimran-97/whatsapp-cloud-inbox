@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   ArrowLeft, Sun, Moon, Zap, ChevronRight, CheckCircle2,
   XCircle, Clock, Activity, RefreshCw, Loader2, Store, ChevronDown,
   CircleDot, BarChart3, Search, TrendingUp, Calendar, Hash, Timer,
+  Settings2, Check,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -109,11 +110,23 @@ export default function AutomationsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMerchant, setFilterMerchant] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
     setIsDark(document.documentElement.classList.contains('dark'));
   }, []);
+
+  // Close menu on click outside
+  useEffect(() => {
+    if (!showMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowMenu(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showMenu]);
 
   const toggleTheme = () => {
     const next = !isDark;
@@ -291,38 +304,73 @@ export default function AutomationsPage() {
             {activeCount} active · {totalRuns.toLocaleString()} total runs
           </p>
         </div>
-        {/* Merchant dropdown */}
-        {merchantNames.length > 1 && (
-          <div className="relative">
-            <select
-              value={filterMerchant}
-              onChange={e => setFilterMerchant(e.target.value)}
-              className="appearance-none h-8 pl-2.5 pr-7 text-[11px] font-medium rounded-lg bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] border border-slate-200 dark:border-[var(--wa-border)] outline-none focus:border-amber-500/40 cursor-pointer transition-colors"
-            >
-              {merchantNames.map(name => (
-                <option key={name} value={name}>
-                  {name} ({automations.filter(a => (a.merchantName || a.team_name || 'Default') === name).length})
-                </option>
-              ))}
-            </select>
-            <Store className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-[var(--wa-text-secondary)] pointer-events-none" />
-          </div>
-        )}
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="h-9 w-9 flex items-center justify-center rounded-lg text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-          title="Refresh"
-        >
-          <RefreshCw className={cn('h-4.5 w-4.5', refreshing && 'animate-spin')} />
-        </button>
-        <button
-          onClick={toggleTheme}
-          className="h-9 w-9 flex items-center justify-center rounded-lg text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-          title="Toggle theme"
-        >
-          {isDark ? <Sun className="h-4.5 w-4.5" /> : <Moon className="h-4.5 w-4.5" />}
-        </button>
+        {/* Menu trigger */}
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className={cn(
+              'h-9 w-9 flex items-center justify-center rounded-lg transition-colors',
+              showMenu
+                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                : 'text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-black/5 dark:hover:bg-white/10'
+            )}
+          >
+            <Settings2 className="h-[18px] w-[18px]" />
+          </button>
+
+          {/* Popover menu */}
+          {showMenu && (
+            <div className="absolute right-0 top-full mt-1.5 w-56 bg-[var(--wa-panel-header)] border border-slate-200 dark:border-[var(--wa-border-strong)] rounded-xl shadow-lg z-50 overflow-hidden">
+              {/* Merchant list */}
+              {merchantNames.length > 1 && (
+                <div className="py-1.5">
+                  <p className="px-3 py-1 text-[9px] font-semibold text-[var(--wa-text-secondary)] uppercase tracking-wider">Merchant</p>
+                  {merchantNames.map(name => (
+                    <button
+                      key={name}
+                      onClick={() => { setFilterMerchant(name); setShowMenu(false); }}
+                      className={cn(
+                        'w-full text-left px-3 py-2 text-[12px] flex items-center gap-2 transition-colors',
+                        filterMerchant === name
+                          ? 'bg-amber-500/8 text-amber-600 dark:text-amber-400 font-medium'
+                          : 'text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)]'
+                      )}
+                    >
+                      <Store className="h-3.5 w-3.5 flex-shrink-0" />
+                      <span className="flex-1 truncate">{name}</span>
+                      <span className="text-[10px] text-[var(--wa-text-secondary)]">
+                        {automations.filter(a => (a.merchantName || a.team_name || 'Default') === name).length}
+                      </span>
+                      {filterMerchant === name && <Check className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Divider */}
+              <div className="border-t border-slate-200 dark:border-[var(--wa-border)]" />
+
+              {/* Actions */}
+              <div className="py-1.5">
+                <button
+                  onClick={() => { handleRefresh(); setShowMenu(false); }}
+                  disabled={refreshing}
+                  className="w-full text-left px-3 py-2 text-[12px] flex items-center gap-2 text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)] transition-colors"
+                >
+                  <RefreshCw className={cn('h-3.5 w-3.5', refreshing && 'animate-spin')} />
+                  Refresh
+                </button>
+                <button
+                  onClick={() => { toggleTheme(); setShowMenu(false); }}
+                  className="w-full text-left px-3 py-2 text-[12px] flex items-center gap-2 text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)] transition-colors"
+                >
+                  {isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+                  {isDark ? 'Light Mode' : 'Dark Mode'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </header>
 
       {/* Content */}
