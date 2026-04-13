@@ -1441,10 +1441,10 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
                   <div className="flex items-center gap-1.5">
                     <span className="text-[13px] font-medium text-[var(--wa-text-primary)] truncate">{p.label}</span>
                     {p.isDefault && (
-                      <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400">Default</span>
+                      <span className="text-xs font-bold uppercase px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400">Default</span>
                     )}
                   </div>
-                  <p className="text-[10px] text-[var(--wa-text-secondary)]/60 font-mono truncate mt-0.5">
+                  <p className="text-xs text-[var(--wa-text-secondary)]/60 font-mono truncate mt-0.5">
                     {p.phoneNumberId}
                   </p>
                   {p.bclMerchantIds.length > 0 && (
@@ -1452,7 +1452,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
                       {p.bclMerchantIds.map(bId => {
                         const m = bclMerchants.find(x => x.id === bId);
                         return m ? (
-                          <span key={bId} className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400">
+                          <span key={bId} className="text-xs px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400">
                             {m.name}
                           </span>
                         ) : null;
@@ -1465,7 +1465,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
                     {!p.isDefault && (
                       <button
                         onClick={() => handleSetDefault(p.id)}
-                        className="text-[10px] font-medium px-2 py-1 rounded-md text-emerald-400/50 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors mr-0.5"
+                        className="text-xs font-medium px-2 py-1 rounded-md text-emerald-400/50 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors mr-0.5"
                       >
                         Set Default
                       </button>
@@ -1499,7 +1499,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
             {editingId ? 'Edit Profile' : 'New Profile'}
           </h4>
           <div>
-            <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">Profile Name <span className="text-red-400">*</span></label>
+            <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">Profile Name <span className="text-red-400">*</span></label>
             <input
               type="text"
               value={formLabel}
@@ -1510,7 +1510,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">Phone Number ID <span className="text-red-400">*</span></label>
+              <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">Phone Number ID <span className="text-red-400">*</span></label>
               <input
                 type="text"
                 value={formPhoneNumberId}
@@ -1520,7 +1520,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
               />
             </div>
             <div>
-              <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">WABA ID <span className="text-red-400">*</span></label>
+              <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">WABA ID <span className="text-red-400">*</span></label>
               <input
                 type="text"
                 value={formWabaId}
@@ -1531,7 +1531,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
             </div>
           </div>
           <div>
-            <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">Kapso API Key {!editingId && <span className="text-red-400">*</span>}</label>
+            <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">Kapso API Key {!editingId && <span className="text-red-400">*</span>}</label>
             <div className="relative">
               <input
                 type={showApiKey ? 'text' : 'password'}
@@ -1553,7 +1553,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
           {/* BCL Merchant assignment */}
           {bclMerchants.length > 0 && (
             <div>
-              <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">
+              <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">
                 BCL Merchants
               </label>
               <div className="relative" ref={bclDropdownRef}>
@@ -1606,17 +1606,17 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
           )}
           {/* Webhook instructions */}
           <div className="rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] p-3 space-y-2">
-            <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider block">Webhook Setup</label>
+            <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider block">Webhook Setup</label>
             <div>
-              <span className="text-[10px] text-[var(--wa-text-secondary)] block mb-1">Webhook URL</span>
+              <span className="text-xs text-[var(--wa-text-secondary)] block mb-1">Webhook URL</span>
               <div className="flex items-center gap-1.5">
-                <code className="flex-1 text-[11px] text-[var(--wa-text-primary)] bg-[var(--wa-hover)] px-2 py-1 rounded font-mono truncate">
+                <code className="flex-1 text-xs text-[var(--wa-text-primary)] bg-[var(--wa-hover)] px-2 py-1 rounded font-mono truncate">
                   {typeof window !== 'undefined' ? window.location.origin : ''}/api/webhooks/kapso
                 </code>
                 <button
                   type="button"
                   onClick={() => navigator.clipboard.writeText(`${window.location.origin}/api/webhooks/kapso`)}
-                  className="shrink-0 text-[10px] px-2 py-1 rounded bg-[var(--wa-green)]/10 text-[var(--wa-green)] hover:bg-[var(--wa-green)]/20 transition-colors"
+                  className="shrink-0 text-xs px-2 py-1 rounded bg-[var(--wa-green)]/10 text-[var(--wa-green)] hover:bg-[var(--wa-green)]/20 transition-colors"
                 >
                   Copy
                 </button>
@@ -1624,15 +1624,15 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
             </div>
             {webhookSecret && (
               <div>
-                <span className="text-[10px] text-[var(--wa-text-secondary)] block mb-1">Secret Key</span>
+                <span className="text-xs text-[var(--wa-text-secondary)] block mb-1">Secret Key</span>
                 <div className="flex items-center gap-1.5">
-                  <code className="flex-1 text-[11px] text-[var(--wa-text-primary)] bg-[var(--wa-hover)] px-2 py-1 rounded font-mono truncate">
+                  <code className="flex-1 text-xs text-[var(--wa-text-primary)] bg-[var(--wa-hover)] px-2 py-1 rounded font-mono truncate">
                     {webhookSecret}
                   </code>
                   <button
                     type="button"
                     onClick={() => navigator.clipboard.writeText(webhookSecret)}
-                    className="shrink-0 text-[10px] px-2 py-1 rounded bg-[var(--wa-green)]/10 text-[var(--wa-green)] hover:bg-[var(--wa-green)]/20 transition-colors"
+                    className="shrink-0 text-xs px-2 py-1 rounded bg-[var(--wa-green)]/10 text-[var(--wa-green)] hover:bg-[var(--wa-green)]/20 transition-colors"
                   >
                     Copy
                   </button>
@@ -1640,7 +1640,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
               </div>
             )}
             {!webhookSecret && (
-              <p className="text-[10px] text-[var(--wa-text-secondary)]/70 leading-relaxed">
+              <p className="text-xs text-[var(--wa-text-secondary)]/70 leading-relaxed">
                 No secret key configured. Set <code className="text-[var(--wa-text-primary)] bg-[var(--wa-hover)] px-1 rounded">KAPSO_WEBHOOK_SECRET</code> in your env to enable signature verification.
               </p>
             )}
@@ -1843,10 +1843,10 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
                   <div className="flex items-center gap-1.5">
                     <span className="text-[13px] font-medium text-[var(--wa-text-primary)] truncate">{m.name}</span>
                     {m.isDefault && (
-                      <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400">Default</span>
+                      <span className="text-xs font-bold uppercase px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400">Default</span>
                     )}
                   </div>
-                  <p className="text-[10px] text-[var(--wa-text-secondary)]/60 font-mono truncate mt-0.5">
+                  <p className="text-xs text-[var(--wa-text-secondary)]/60 font-mono truncate mt-0.5">
                     ••••{m.apiKey.slice(-6)}
                   </p>
                 </div>
@@ -1855,7 +1855,7 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
                     {!m.isDefault && (
                       <button
                         onClick={() => handleSetDefault(m.id)}
-                        className="text-[10px] font-medium px-2 py-1 rounded-md text-blue-400/50 hover:text-blue-400 hover:bg-blue-500/10 transition-colors mr-0.5"
+                        className="text-xs font-medium px-2 py-1 rounded-md text-blue-400/50 hover:text-blue-400 hover:bg-blue-500/10 transition-colors mr-0.5"
                       >
                         Set Default
                       </button>
@@ -2145,7 +2145,7 @@ function ReplyTemplatesTab({ onClose, addTrigger, onCountChange }: { onClose: ()
                               'authentication': 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
                             };
                             const colorClass = colors[catLower] || 'bg-teal-500/10 text-teal-600 dark:text-teal-400';
-                            return <span className={cn("text-[9px] uppercase tracking-wider font-medium px-1.5 py-0.5 rounded", colorClass)}>{t.category || 'General'}</span>;
+                            return <span className={cn("text-xs uppercase tracking-wider font-medium px-1.5 py-0.5 rounded", colorClass)}>{t.category || 'General'}</span>;
                           })()}
                         </div>
                         <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -2222,7 +2222,7 @@ function DataTab() {
           ].map(({ label, value }) => (
             <div key={label} className="bg-[var(--wa-hover)] rounded-lg p-3 text-center">
               <p className="text-lg font-semibold text-[var(--wa-text-primary)]">{value.toLocaleString()}</p>
-              <p className="text-[10px] text-[var(--wa-text-secondary)] uppercase tracking-wider">{label}</p>
+              <p className="text-xs text-[var(--wa-text-secondary)] uppercase tracking-wider">{label}</p>
             </div>
           ))}
         </div>
