@@ -320,37 +320,7 @@ export default function AutomationsPage() {
 
           {/* Popover menu */}
           {showMenu && (
-            <div className="absolute right-0 top-full mt-1.5 w-56 bg-[var(--wa-panel-header)] border border-slate-200 dark:border-[var(--wa-border-strong)] rounded-xl shadow-lg z-50 overflow-hidden">
-              {/* Merchant list */}
-              {merchantNames.length > 1 && (
-                <div className="py-1.5">
-                  <p className="px-3 py-1 text-[9px] font-semibold text-[var(--wa-text-secondary)] uppercase tracking-wider">Merchant</p>
-                  {merchantNames.map(name => (
-                    <button
-                      key={name}
-                      onClick={() => { setFilterMerchant(name); setShowMenu(false); }}
-                      className={cn(
-                        'w-full text-left px-3 py-2 text-[12px] flex items-center gap-2 transition-colors',
-                        filterMerchant === name
-                          ? 'bg-amber-500/8 text-amber-600 dark:text-amber-400 font-medium'
-                          : 'text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)]'
-                      )}
-                    >
-                      <Store className="h-3.5 w-3.5 flex-shrink-0" />
-                      <span className="flex-1 truncate">{name}</span>
-                      <span className="text-[10px] text-[var(--wa-text-secondary)]">
-                        {automations.filter(a => (a.merchantName || a.team_name || 'Default') === name).length}
-                      </span>
-                      {filterMerchant === name && <Check className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" />}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Divider */}
-              <div className="border-t border-slate-200 dark:border-[var(--wa-border)]" />
-
-              {/* Actions */}
+            <div className="absolute right-0 top-full mt-1.5 w-48 bg-[var(--wa-panel-header)] border border-slate-200 dark:border-[var(--wa-border-strong)] rounded-xl shadow-lg z-50 overflow-hidden">
               <div className="py-1.5">
                 <button
                   onClick={() => { handleRefresh(); setShowMenu(false); }}
@@ -495,9 +465,35 @@ export default function AutomationsPage() {
               ))
             )}
           </div>
-        </div>
 
-        {/* Detail panel */}
+          {/* Merchant switcher at bottom */}
+          {merchantNames.length > 1 && (
+            <div className="flex-shrink-0 border-t border-slate-200 dark:border-[var(--wa-border)] bg-[var(--wa-panel-header)] px-2 py-2">
+              <p className="px-1.5 mb-1 text-[9px] font-semibold text-[var(--wa-text-secondary)] uppercase tracking-wider">Merchant</p>
+              <div className="flex flex-col gap-0.5">
+                {merchantNames.map(name => (
+                  <button
+                    key={name}
+                    onClick={() => setFilterMerchant(name)}
+                    className={cn(
+                      'w-full text-left px-2 py-1.5 text-[11px] rounded-lg flex items-center gap-2 transition-colors',
+                      filterMerchant === name
+                        ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium'
+                        : 'text-[var(--wa-text-secondary)] hover:bg-[var(--wa-hover)]'
+                    )}
+                  >
+                    <Store className="h-3 w-3 flex-shrink-0" />
+                    <span className="flex-1 truncate">{name}</span>
+                    <span className="text-[10px] opacity-60">
+                      {automations.filter(a => (a.merchantName || a.team_name || 'Default') === name).length}
+                    </span>
+                    {filterMerchant === name && <Check className="h-3 w-3 text-amber-500 flex-shrink-0" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
         <div className={cn(
           'flex-1 flex flex-col overflow-hidden bg-[var(--wa-bg)]',
           !showDetail && 'hidden md:flex'
