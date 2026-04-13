@@ -1441,7 +1441,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
                     )}
                   </div>
                   <p className="text-[10px] text-[var(--wa-text-secondary)]/60 font-mono truncate mt-0.5">
-                    {p.phoneDisplay || p.phoneNumberId}
+                    {p.phoneNumberId}
                   </p>
                   {p.bclMerchantIds.length > 0 && (
                     <div className="flex gap-1 mt-1 flex-wrap">
@@ -1514,27 +1514,15 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
               className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
             />
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">WABA ID</label>
-              <input
-                type="text"
-                value={formWabaId}
-                onChange={(e) => setFormWabaId(e.target.value)}
-                placeholder="Business Account ID"
-                className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">Display Phone <span className="normal-case opacity-60">(optional)</span></label>
-              <input
-                type="text"
-                value={formPhoneDisplay}
-                onChange={(e) => setFormPhoneDisplay(e.target.value)}
-                placeholder="+60 12-345 6789"
-                className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
-              />
-            </div>
+          <div>
+            <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">WABA ID</label>
+            <input
+              type="text"
+              value={formWabaId}
+              onChange={(e) => setFormWabaId(e.target.value)}
+              placeholder="Business Account ID"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+            />
           </div>
           <div>
             <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">Kapso API Key</label>

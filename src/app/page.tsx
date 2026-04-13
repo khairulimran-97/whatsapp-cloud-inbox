@@ -456,7 +456,7 @@ export default function Home() {
           >
             {profiles.map(p => (
               <option key={p.id} value={p.id}>
-                {p.label}{p.phoneDisplay ? ` (${p.phoneDisplay})` : ''}
+                {p.label}
               </option>
             ))}
           </select>
