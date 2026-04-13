@@ -359,7 +359,7 @@ export default function AutomationsPage() {
                             const auto = filteredAutomations.find(a => String(a.id) === aId && a.merchantId === mId);
                             if (auto) selectAutomation(auto);
                           }}
-                          className="appearance-none w-full h-8 pl-2 pr-7 text-[13px] font-semibold rounded-lg bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] border border-slate-200 dark:border-[var(--wa-border)] outline-none cursor-pointer truncate"
+                          className="appearance-none w-full h-9 pl-2.5 pr-7 text-[14px] font-semibold rounded-lg bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] border border-slate-200 dark:border-[var(--wa-border)] outline-none cursor-pointer truncate"
                         >
                           {filteredAutomations.map(a => (
                             <option key={`${a.id}-${a.merchantId}`} value={`${a.id}|${a.merchantId}`}>
@@ -370,11 +370,11 @@ export default function AutomationsPage() {
                         <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-[var(--wa-text-secondary)] pointer-events-none" />
                       </div>
                     ) : (
-                      <h2 className="text-[13px] font-semibold truncate">{selectedAuto.name}</h2>
+                      <h2 className="text-[15px] font-semibold truncate">{selectedAuto.name}</h2>
                     )}
-                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                       <span className={cn(
-                        'text-[10px] px-1.5 py-0.5 rounded-md font-medium inline-flex items-center gap-1',
+                        'text-[11px] px-1.5 py-0.5 rounded-md font-medium inline-flex items-center gap-1',
                         (TRIGGER_COLORS[selectedAuto.trigger_type] || DEFAULT_TRIGGER_COLOR).bg,
                         (TRIGGER_COLORS[selectedAuto.trigger_type] || DEFAULT_TRIGGER_COLOR).text
                       )}>
@@ -382,7 +382,7 @@ export default function AutomationsPage() {
                         {selectedAuto.trigger_type_label}
                       </span>
                       <span className={cn(
-                        'text-[10px] px-1.5 py-0.5 rounded-md font-semibold',
+                        'text-[11px] px-1.5 py-0.5 rounded-md font-semibold',
                         selectedAuto.is_active
                           ? 'bg-green-500/15 text-green-600 dark:text-green-400'
                           : 'bg-gray-500/15 text-gray-500 dark:text-gray-400'
@@ -393,7 +393,7 @@ export default function AutomationsPage() {
                   </div>
                 </div>
                 {/* Metadata inline */}
-                <div className="flex items-center gap-3 mt-2 ml-[44px] md:ml-[46px] text-[10px] text-[var(--wa-text-secondary)] flex-wrap">
+                <div className="flex items-center gap-3 mt-2 ml-[44px] md:ml-[46px] text-[11px] text-slate-500 dark:text-slate-300 flex-wrap">
                   {selectedAuto.merchantName && (
                     <span className="flex items-center gap-1">
                       <Store className="h-2.5 w-2.5" />
@@ -463,17 +463,17 @@ export default function AutomationsPage() {
 
               {/* Automation metadata */}
               <div className="px-4 py-2.5 border-b border-slate-200 dark:border-[var(--wa-border)] flex-shrink-0">
-                <div className="flex items-center gap-4 text-[11px] flex-wrap">
-                  <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-medium">
-                    <Store className="h-3 w-3" />
+                <div className="flex items-center gap-4 text-[12px] flex-wrap">
+                  <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-300 font-medium">
+                    <Store className="h-3.5 w-3.5" />
                     {selectedAuto.team_name}
                   </span>
-                  <span className="flex items-center gap-1.5 text-blue-600/70 dark:text-blue-400/70">
-                    <Calendar className="h-3 w-3" />
+                  <span className="flex items-center gap-1.5 text-blue-600/80 dark:text-blue-300">
+                    <Calendar className="h-3.5 w-3.5" />
                     Created {formatDate(selectedAuto.created_at)}
                   </span>
-                  <span className="flex items-center gap-1.5 text-purple-600/70 dark:text-purple-400/70">
-                    <Hash className="h-3 w-3" />
+                  <span className="flex items-center gap-1.5 text-purple-600/80 dark:text-purple-300">
+                    <Hash className="h-3.5 w-3.5" />
                     ID: {selectedAuto.id}
                   </span>
                 </div>
@@ -482,14 +482,14 @@ export default function AutomationsPage() {
               {/* Executions list */}
               <div className="flex-1 overflow-auto">
                 <div className="px-4 py-2.5 bg-[var(--wa-panel-header)]/80 backdrop-blur-sm border-b border-slate-200 dark:border-[var(--wa-border)] sticky top-0 z-10 flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-[var(--wa-text-secondary)] uppercase tracking-wider flex items-center gap-1.5">
-                    <Activity className="h-3 w-3" />
+                  <span className="text-[12px] font-semibold text-slate-600 dark:text-white/90 uppercase tracking-wider flex items-center gap-1.5">
+                    <Activity className="h-3.5 w-3.5" />
                     Execution History
                     {statusFilter && (
                       <button
                         onClick={() => setStatusFilter(null)}
                         className={cn(
-                          'ml-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold normal-case tracking-normal',
+                          'ml-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold normal-case tracking-normal',
                           statusFilter === 'failed'
                             ? 'bg-red-500/15 text-red-600 dark:text-red-400'
                             : statusFilter === 'completed'
@@ -503,7 +503,7 @@ export default function AutomationsPage() {
                     )}
                   </span>
                   {execMeta && (
-                    <span className="text-[10px] bg-[var(--wa-hover)] text-[var(--wa-text-secondary)] px-2 py-0.5 rounded-full">
+                    <span className="text-[11px] bg-[var(--wa-hover)] text-slate-600 dark:text-white/80 px-2 py-0.5 rounded-full font-medium">
                       {statusFilter
                         ? `${executions.filter(e => e.status === statusFilter).length} of ${execMeta.total.toLocaleString()}`
                         : `${execMeta.total.toLocaleString()} total`
@@ -657,11 +657,11 @@ function StatCard({
     >
       <div className="flex items-center gap-1.5 mb-1.5">
         <span className={c.iconColor}>{icon}</span>
-        <span className="text-[10px] text-[var(--wa-text-secondary)] font-medium uppercase tracking-wider">{label}</span>
+        <span className="text-[11px] text-slate-600 dark:text-white/70 font-medium uppercase tracking-wider">{label}</span>
       </div>
       <div className="flex items-baseline gap-1.5">
-        <span className={cn('text-[20px] font-bold leading-none', alert && c.valueBold)}>{value}</span>
-        {subtext && <span className="text-[10px] text-[var(--wa-text-secondary)] font-medium">{subtext}</span>}
+        <span className={cn('text-[22px] font-bold leading-none dark:text-white', alert && c.valueBold)}>{value}</span>
+        {subtext && <span className="text-[11px] text-slate-500 dark:text-white/60 font-medium">{subtext}</span>}
       </div>
     </Wrapper>
   );
@@ -674,41 +674,41 @@ function ExecutionCard({ exec }: { exec: Execution }) {
 
   return (
     <div className={cn(
-      'rounded-xl border p-2.5 text-[11px] transition-colors',
+      'rounded-xl border p-3 text-[12px] transition-colors',
       isCompleted && 'bg-gradient-to-br from-emerald-500/5 to-teal-500/5 border-emerald-300/50 dark:border-emerald-500/20',
       isFailed && 'bg-gradient-to-br from-red-500/5 to-rose-500/5 border-red-300/50 dark:border-red-500/20',
       !isCompleted && !isFailed && 'bg-gradient-to-br from-amber-500/5 to-orange-500/5 border-amber-300/50 dark:border-amber-500/20'
     )}>
       <div className="flex items-center gap-1.5 mb-1.5">
         {isCompleted ? (
-          <CheckCircle2 className="h-3 w-3 text-emerald-500 flex-shrink-0" />
+          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />
         ) : isFailed ? (
-          <XCircle className="h-3 w-3 text-red-500 flex-shrink-0" />
+          <XCircle className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
         ) : (
-          <Loader2 className="h-3 w-3 text-amber-500 animate-spin flex-shrink-0" />
+          <Loader2 className="h-3.5 w-3.5 text-amber-500 animate-spin flex-shrink-0" />
         )}
         <span className={cn(
-          'text-[10px] font-semibold uppercase',
-          isCompleted && 'text-emerald-600 dark:text-emerald-400',
-          isFailed && 'text-red-600 dark:text-red-400',
-          !isCompleted && !isFailed && 'text-amber-600 dark:text-amber-400'
+          'text-[11px] font-semibold uppercase',
+          isCompleted && 'text-emerald-600 dark:text-emerald-300',
+          isFailed && 'text-red-600 dark:text-red-300',
+          !isCompleted && !isFailed && 'text-amber-600 dark:text-amber-300'
         )}>
           {exec.status}
         </span>
         {exec.duration && (
-          <span className="text-[10px] text-[var(--wa-text-secondary)] font-mono ml-auto">{exec.duration}</span>
+          <span className="text-[11px] text-slate-500 dark:text-white/60 font-mono ml-auto">{exec.duration}</span>
         )}
       </div>
-      <div className="flex items-center justify-between text-[10.5px] text-[var(--wa-text-secondary)]">
+      <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-white/70">
         <span>#{exec.execution_id}</span>
         <span>{timeAgo(exec.started_at)} · {formatTime(exec.started_at)}</span>
       </div>
       {isFailed && exec.error_message && (
-        <div className="mt-1.5 text-[10px] text-red-600 dark:text-red-400 bg-red-500/10 rounded px-1.5 py-1">
+        <div className="mt-1.5 text-[11px] text-red-600 dark:text-red-300 bg-red-500/10 rounded px-2 py-1.5">
           <div className={expanded ? '' : 'line-clamp-2'}>{exec.error_message}</div>
           <button
             onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-            className="mt-0.5 text-[9px] font-semibold text-red-500 hover:text-red-700 dark:hover:text-red-300 underline"
+            className="mt-0.5 text-[10px] font-semibold text-red-500 hover:text-red-700 dark:hover:text-red-300 underline"
           >
             {expanded ? 'Show less' : 'View more'}
           </button>
