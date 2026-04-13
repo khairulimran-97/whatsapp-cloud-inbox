@@ -485,6 +485,10 @@ export default function Home() {
   if (!authenticated) {
     return <LoginScreen onSuccess={login} />;
   }
+  // Wait for profile to resolve before rendering to prevent flash of wrong data
+  if (!activeProfileId) {
+    return <div className="h-dvh bg-[#111b21]" />;
+  }
 
   return (
     <div className="h-dvh flex relative overflow-hidden">
