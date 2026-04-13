@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  ArrowLeft, Sun, Moon, Zap, ChevronRight, CheckCircle2,
+  ArrowLeft, Sun, Moon, Zap, CheckCircle2,
   XCircle, Clock, Activity, RefreshCw, Loader2, Store, ChevronDown,
   CircleDot, BarChart3, Search, Calendar, Hash,
 } from 'lucide-react';
@@ -105,7 +105,6 @@ export default function AutomationsPage() {
   const [isDark, setIsDark] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [showDetail, setShowDetail] = useState(false);
   const [filterMerchant, setFilterMerchant] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
@@ -238,24 +237,12 @@ export default function AutomationsPage() {
     return list;
   }, [automations, filterMerchant]);
 
-  // Auto-select if only one automation
+  // Auto-select first automation
   useEffect(() => {
-    if (filteredAutomations.length === 1 && !showDetail) {
+    if (filteredAutomations.length > 0 && !filteredAutomations.find(a => a.id === selectedId && a.merchantId === selectedMerchantId)) {
       selectAutomation(filteredAutomations[0]);
     }
-  }, [filteredAutomations, showDetail, selectAutomation]);
-
-  // Group by merchant
-  const grouped = useMemo(() => {
-    const map: Record<string, Automation[]> = {};
-    filteredAutomations.forEach(a => {
-      const key = a.merchantName || a.team_name || 'Default';
-      if (!map[key]) map[key] = [];
-      map[key].push(a);
-    });
-    return map;
-  }, [filteredAutomations]);
-  const groupKeys = Object.keys(grouped);
+  }, [filteredAutomations, selectedId, selectedMerchantId, selectAutomation]);
 
   // Summary stats
   const totalRuns = useMemo(() => automations.reduce((s, a) => s + a.execution_count, 0), [automations]);
@@ -322,119 +309,31 @@ export default function AutomationsPage() {
         </div>
       </header>
 
-      {/* Content — single column, toggle between list and detail */}
+      {/* Content — always show detail, dropdown to switch automation */}
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-        {!showDetail ? (
-          /* Automation list */
-          <div className="flex-1 overflow-auto">
-            {loading ? (
-              <div className="flex flex-col items-center justify-center py-20 gap-3">
-                <Loader2 className="h-7 w-7 animate-spin text-amber-500/60" />
-                <p className="text-[12px] text-[var(--wa-text-secondary)]">Loading automations...</p>
-              </div>
-            ) : filteredAutomations.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-[var(--wa-text-secondary)]">
-                <div className="h-16 w-16 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-4">
-                  <Zap className="h-8 w-8 text-amber-500/50" />
-                </div>
-                <p className="text-sm font-medium">No automations found</p>
-                <p className="text-[11px] mt-1 text-center px-8">
-                  Configure BCL merchants in Settings to get started
-                </p>
-              </div>
-            ) : (
-              groupKeys.map(groupName => (
-                <div key={groupName}>
-                  {groupKeys.length > 1 && (
-                    <div className="px-4 py-2 bg-[var(--wa-panel-header)]/80 backdrop-blur-sm border-b border-slate-200 dark:border-[var(--wa-border)] sticky top-0 z-10">
-                      <div className="flex items-center gap-2">
-                        <Store className="h-3.5 w-3.5 text-amber-500" />
-                        <span className="text-[11px] font-semibold text-[var(--wa-text-secondary)] uppercase tracking-wider">{groupName}</span>
-                        <span className="text-[10px] bg-[var(--wa-hover)] text-[var(--wa-text-secondary)] px-1.5 py-0.5 rounded-full ml-auto">{grouped[groupName].length}</span>
-                      </div>
-                    </div>
-                  )}
-                  {grouped[groupName].map(auto => {
-                    const triggerColor = TRIGGER_COLORS[auto.trigger_type] || DEFAULT_TRIGGER_COLOR;
-                    const isSelected = selectedId === auto.id && selectedMerchantId === auto.merchantId;
-                    return (
-                      <button
-                        key={`${auto.id}-${auto.merchantId}`}
-                        onClick={() => selectAutomation(auto)}
-                        className={cn(
-                          'w-full text-left px-4 py-3 border-b border-slate-200 dark:border-[var(--wa-border)] transition-all duration-150',
-                          isSelected
-                            ? 'bg-amber-500/8 dark:bg-amber-500/10 border-l-2 border-l-amber-500'
-                            : 'hover:bg-[var(--wa-hover)] border-l-2 border-l-transparent'
-                        )}
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className={cn('mt-0.5 h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors', triggerColor.bg)}>
-                            <Zap className={cn('h-4.5 w-4.5', triggerColor.icon)} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[13px] font-semibold truncate flex-1">{auto.name}</span>
-                              <span className={cn(
-                                'flex-shrink-0 text-[9px] px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wider',
-                                auto.is_active
-                                  ? 'bg-green-500/15 text-green-600 dark:text-green-400'
-                                  : 'bg-gray-500/15 text-gray-500 dark:text-gray-400'
-                              )}>
-                                {auto.is_active ? 'Active' : 'Off'}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1.5 mt-1">
-                              <span className={cn(
-                                'text-[10px] px-1.5 py-[2px] rounded-md font-medium inline-flex items-center gap-1',
-                                triggerColor.bg, triggerColor.text
-                              )}>
-                                <CircleDot className="h-2.5 w-2.5" />
-                                {auto.trigger_type_label}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-3 mt-1.5 text-[11px] text-[var(--wa-text-secondary)]">
-                              <span className="flex items-center gap-1">
-                                <BarChart3 className="h-3 w-3" />
-                                {auto.execution_count.toLocaleString()}
-                              </span>
-                              {auto.last_executed_at && (
-                                <span className="flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  {timeAgo(auto.last_executed_at)}
-                                </span>
-                              )}
-                              {groupKeys.length <= 1 && auto.team_name && (
-                                <span className="flex items-center gap-1 ml-auto truncate max-w-[100px]">
-                                  <Store className="h-3 w-3 flex-shrink-0" />
-                                  {auto.team_name}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <ChevronRight className="h-4 w-4 text-[var(--wa-text-secondary)]/50 mt-3 flex-shrink-0" />
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              ))
-            )}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Loader2 className="h-7 w-7 animate-spin text-amber-500/60" />
+            <p className="text-[12px] text-[var(--wa-text-secondary)]">Loading automations...</p>
+          </div>
+        ) : filteredAutomations.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-[var(--wa-text-secondary)]">
+            <div className="h-16 w-16 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-4">
+              <Zap className="h-8 w-8 text-amber-500/50" />
+            </div>
+            <p className="text-sm font-medium">No automations found</p>
+            <p className="text-[11px] mt-1 text-center px-8">
+              Configure BCL merchants in Settings to get started
+            </p>
           </div>
         ) : (
           /* Detail view */
           <div className="flex-1 flex flex-col overflow-hidden bg-[var(--wa-bg)]">
             {selectedAuto && (
               <>
-              {/* Detail header */}
+              {/* Detail header with automation dropdown */}
               <div className="px-3 sm:px-4 py-3 bg-[var(--wa-panel-header)] border-b border-slate-200 dark:border-[var(--wa-border-strong)] flex-shrink-0">
                 <div className="flex items-center gap-2.5">
-                  <button
-                    onClick={() => setShowDetail(false)}
-                    className="h-8 w-8 flex items-center justify-center rounded-lg text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-black/5 dark:hover:bg-white/10"
-                  >
-                    <ArrowLeft className="h-4.5 w-4.5" />
-                  </button>
                   <div className={cn(
                     'h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0',
                     (TRIGGER_COLORS[selectedAuto.trigger_type] || DEFAULT_TRIGGER_COLOR).bg
@@ -442,7 +341,28 @@ export default function AutomationsPage() {
                     <Zap className={cn('h-4 w-4', (TRIGGER_COLORS[selectedAuto.trigger_type] || DEFAULT_TRIGGER_COLOR).icon)} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h2 className="text-[13px] font-semibold truncate">{selectedAuto.name}</h2>
+                    {filteredAutomations.length > 1 ? (
+                      <div className="relative">
+                        <select
+                          value={`${selectedAuto.id}|${selectedAuto.merchantId}`}
+                          onChange={e => {
+                            const [aId, mId] = e.target.value.split('|');
+                            const auto = filteredAutomations.find(a => String(a.id) === aId && a.merchantId === mId);
+                            if (auto) selectAutomation(auto);
+                          }}
+                          className="appearance-none w-full h-8 pl-2 pr-7 text-[13px] font-semibold rounded-lg bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] border border-slate-200 dark:border-[var(--wa-border)] outline-none cursor-pointer truncate"
+                        >
+                          {filteredAutomations.map(a => (
+                            <option key={`${a.id}-${a.merchantId}`} value={`${a.id}|${a.merchantId}`}>
+                              {a.name} {a.is_active ? '● Active' : '○ Off'}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-[var(--wa-text-secondary)] pointer-events-none" />
+                      </div>
+                    ) : (
+                      <h2 className="text-[13px] font-semibold truncate">{selectedAuto.name}</h2>
+                    )}
                     <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                       <span className={cn(
                         'text-[10px] px-1.5 py-0.5 rounded-md font-medium inline-flex items-center gap-1',
