@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, forwardRef, useImperativeHandle, useCallback, type ReactNode } from 'react';
 import { format, isValid, isToday, isYesterday } from 'date-fns';
-import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save, Plus, Pencil, Trash2, MessageSquareText, CloudDownload, TriangleAlert, RefreshCw, Database, ExternalLink, CalendarDays, ChevronRight, ChevronDown, Check, Store, Zap } from 'lucide-react';
+import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save, Plus, Pencil, Trash2, MessageSquareText, CloudDownload, TriangleAlert, RefreshCw, Database, ExternalLink, CalendarDays, ChevronRight, ChevronDown, Check, Store, Zap, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAutoPolling } from '@/hooks/use-auto-polling';
 import { useTheme } from '@/hooks/use-theme';
@@ -659,6 +659,28 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       )}
       style={panelWidth ? { ['--panel-w' as string]: `${panelWidth}px` } : undefined}
     >
+      {showSettings ? (
+        <>
+          {/* Settings inline panel */}
+          <div className="px-4 pt-4 pb-3 border-b border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)]">
+            <div className="safe-area-top" />
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowSettings(false)}
+                className="h-8 w-8 flex items-center justify-center rounded-lg text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)] transition-colors flex-shrink-0"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <Settings className="h-5 w-5 text-[var(--wa-green)] flex-shrink-0" />
+                <h2 className="text-base font-semibold text-[var(--wa-text-primary)]">Settings</h2>
+              </div>
+            </div>
+          </div>
+          <SettingsDialog onClose={() => setShowSettings(false)} />
+        </>
+      ) : (
+        <>
       <div className="px-4 pt-5 pb-3 border-b border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)]">
         <div className="safe-area-top" />
         <div className="flex items-center gap-3 mb-3">
@@ -954,6 +976,8 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
           <span className="text-[10px]">Settings</span>
         </button>
       </div>
+        </>
+      )}
 
       {/* Quick Reply Dialog */}
       <Dialog open={showQuickReply} onOpenChange={setShowQuickReply}>
@@ -1149,20 +1173,6 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
               {notificationEnabled ? 'Disable' : 'Enable'}
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <Dialog open={showSettings} onOpenChange={setShowSettings}>
-        <DialogContent className="sm:max-w-[580px] max-w-[calc(100%-1rem)] rounded-2xl max-h-[95vh] sm:max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-          <div className="px-4 sm:px-5 pt-4 sm:pt-5 pb-0">
-            <DialogHeader>
-              <DialogTitle className="text-base sm:text-lg font-semibold text-[var(--wa-text-primary)] flex items-center gap-2">
-                <Settings className="h-5 w-5 text-[var(--wa-green)]" />
-                Settings
-              </DialogTitle>
-              <DialogDescription className="sr-only">App settings and configuration</DialogDescription>
-            </DialogHeader>
-          </div>
-          <SettingsDialog onClose={() => setShowSettings(false)} />
         </DialogContent>
       </Dialog>
     </div>
