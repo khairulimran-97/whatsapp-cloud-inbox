@@ -1728,7 +1728,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
               </div>
             )}
 
-      <div className="border-t border-[var(--wa-border-strong)] safe-area-bottom">
+      <div className="border-t border-[var(--wa-border-strong)] safe-area-bottom bg-[var(--wa-panel-header)] shrink-0">
 
             <div className="px-[5px] bg-[var(--wa-panel-header)]">
             {selectedFile && (
