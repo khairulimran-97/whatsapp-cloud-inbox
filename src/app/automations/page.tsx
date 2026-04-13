@@ -253,9 +253,6 @@ export default function AutomationsPage() {
     selectAutomation(filteredAutomations[0]);
   }, [filteredAutomations, selectedId, selectedMerchantId, selectAutomation, searchParams]);
 
-  // Summary stats
-  const totalRuns = useMemo(() => automations.reduce((s, a) => s + a.execution_count, 0), [automations]);
-  const activeCount = useMemo(() => automations.filter(a => a.is_active).length, [automations]);
 
   if (!mounted) return null;
 
@@ -284,8 +281,8 @@ export default function AutomationsPage() {
             <h1 className="text-[15px] font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent leading-tight">
               BCL Automations
             </h1>
-            <p className="text-[11px] text-[var(--wa-text-secondary)] truncate">
-              {activeCount} active · {totalRuns.toLocaleString()} total runs
+            <p className="text-[11px] text-amber-600/60 dark:text-amber-400/50 truncate">
+              Workflow monitoring & execution history
             </p>
           </div>
         </div>
