@@ -2069,21 +2069,20 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
         <Lightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />
       )}
 
-      {phoneNumber && (
-        <>
-          {/* Overlay sidebar for smaller screens */}
-          <div className="xl:hidden">
-            <CustomerSidebar
-              phoneNumber={phoneNumber}
-              open={showCustomerSidebar}
-              onClose={() => setShowCustomerSidebar(false)}
-              onInsertText={(text) => setMessageInput(prev => prev ? prev + '\n' + text : text)}
-              allowedMerchantIds={profileBclMerchantIds}
-            />
-          </div>
-        </>
-      )}
       </div>
+
+      {/* Overlay sidebar for smaller screens (fixed position, outside flex flow) */}
+      {phoneNumber && (
+        <div className="xl:hidden">
+          <CustomerSidebar
+            phoneNumber={phoneNumber}
+            open={showCustomerSidebar}
+            onClose={() => setShowCustomerSidebar(false)}
+            onInsertText={(text) => setMessageInput(prev => prev ? prev + '\n' + text : text)}
+            allowedMerchantIds={profileBclMerchantIds}
+          />
+        </div>
+      )}
 
       {/* Inline sidebar for desktop (xl+) with resize handle */}
       {phoneNumber && (
