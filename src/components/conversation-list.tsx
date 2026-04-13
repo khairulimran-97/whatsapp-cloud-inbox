@@ -39,6 +39,27 @@ function highlightMatch(text: string, query: string): ReactNode {
   );
 }
 
+function copyText(text: string) {
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text).catch(() => {
+      fallbackCopy(text);
+    });
+  } else {
+    fallbackCopy(text);
+  }
+}
+function fallbackCopy(text: string) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  document.execCommand('copy');
+  document.body.removeChild(ta);
+}
+
 type ProfileData = {
   phoneNumberId: string;
   displayPhoneNumber: string;
@@ -1712,7 +1733,7 @@ function WaProfilesTab({ onClose, onProfilesChanged }: { onClose: () => void; on
                 </code>
                 <button
                   type="button"
-                  onClick={() => navigator.clipboard.writeText(`${window.location.origin}/api/webhooks/kapso`)}
+                  onClick={() => copyText(`${window.location.origin}/api/webhooks/kapso`)}
                   className="shrink-0 text-xs font-medium px-2.5 py-1.5 rounded bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 transition-colors"
                 >
                   Copy
@@ -1728,7 +1749,7 @@ function WaProfilesTab({ onClose, onProfilesChanged }: { onClose: () => void; on
                   </code>
                   <button
                     type="button"
-                    onClick={() => navigator.clipboard.writeText(webhookSecret)}
+                    onClick={() => copyText(webhookSecret)}
                     className="shrink-0 text-xs font-medium px-2.5 py-1.5 rounded bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 transition-colors"
                   >
                     Copy
