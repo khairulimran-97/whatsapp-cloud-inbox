@@ -21,6 +21,10 @@ export function getBclMonitorKey(): string {
   return process.env.BCL_MONITOR_KEY || '';
 }
 
+export function getBclBaseUrl(): string {
+  return process.env.BCL_BASE_URL || 'https://bcl.my';
+}
+
 export type BclMerchant = {
   id: string;
   name: string;

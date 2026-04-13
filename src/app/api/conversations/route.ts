@@ -91,9 +91,9 @@ function paginateCache(pc: ProfileCache, page: number): { data: GroupedConversat
 
 // Check if webhook has invalidated our cache
 const CONV_CACHE_KEY = Symbol.for('__kapso_conv_cache_invalidated__');
-function isCacheInvalidated(): boolean {
+function isCacheInvalidated(profileCacheTimestamp: number): boolean {
   const invalidatedAt = (globalThis as Record<symbol, number>)[CONV_CACHE_KEY] ?? 0;
-  return invalidatedAt > cacheTimestamp;
+  return invalidatedAt > profileCacheTimestamp;
 }
 
 // Track whether initial API seed has completed per-profile
@@ -623,7 +623,7 @@ export async function GET(request: Request) {
     }
 
     // ── Polling: return cache if fresh and not invalidated by webhook ──
-    if (pc.cachedData && (Date.now() - pc.cacheTimestamp) < CACHE_TTL_MS && !isCacheInvalidated()) {
+    if (pc.cachedData && (Date.now() - pc.cacheTimestamp) < CACHE_TTL_MS && !isCacheInvalidated(pc.cacheTimestamp)) {
       const result = paginateCache(pc, pageParam);
       return NextResponse.json(result);
     }

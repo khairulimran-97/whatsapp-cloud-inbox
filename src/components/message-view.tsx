@@ -582,7 +582,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
       setLoading(false);
       refreshingRef.current = false;
     }
-  }, [conversationIds]);
+  }, [conversationIds, withProfile, profileId]);
 
   // Load older messages from additional conversation sessions on demand
   const loadedSessionIds = useRef<Set<string>>(new Set());
@@ -644,7 +644,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
     } finally {
       setLoadingOlder(false);
     }
-  }, [phoneNumber, conversationIds, loadingOlder]);
+  }, [phoneNumber, conversationIds, loadingOlder, withProfile]);
 
   useEffect(() => {
     messagesRef.current = messages;
