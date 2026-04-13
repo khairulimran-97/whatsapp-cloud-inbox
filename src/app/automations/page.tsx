@@ -241,17 +241,24 @@ export default function AutomationsPage() {
   // Auto-select: from URL params or first automation
   useEffect(() => {
     if (filteredAutomations.length === 0) return;
-    const current = filteredAutomations.find(a => a.id === selectedId && a.merchantId === selectedMerchantId);
-    if (current) return;
     // Try URL params first
     const urlId = searchParams.get('id');
     const urlMerchant = searchParams.get('merchant');
     if (urlId) {
       const fromUrl = filteredAutomations.find(a => String(a.id) === urlId && (!urlMerchant || a.merchantId === urlMerchant));
-      if (fromUrl) { selectAutomation(fromUrl); return; }
+      if (fromUrl) {
+        // Always call selectAutomation if data hasn't been loaded yet
+        if (fromUrl.id !== selectedId || fromUrl.merchantId !== selectedMerchantId || (!stats && !statsLoading)) {
+          selectAutomation(fromUrl);
+        }
+        return;
+      }
     }
-    selectAutomation(filteredAutomations[0]);
-  }, [filteredAutomations, selectedId, selectedMerchantId, selectAutomation, searchParams]);
+    // Fallback to first
+    if (!filteredAutomations.find(a => a.id === selectedId && a.merchantId === selectedMerchantId) || (!stats && !statsLoading)) {
+      selectAutomation(filteredAutomations[0]);
+    }
+  }, [filteredAutomations, selectedId, selectedMerchantId, selectAutomation, searchParams, stats, statsLoading]);
 
 
   if (!mounted) return null;
