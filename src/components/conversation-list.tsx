@@ -1475,7 +1475,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
 
       {/* Add / Edit form */}
       {showForm && (
-        <div className="space-y-3 p-3 rounded-lg border border-[var(--wa-border)] bg-[var(--wa-hover)]">
+        <form onSubmit={(e) => e.preventDefault()} className="space-y-3 p-3 rounded-lg border border-[var(--wa-border)] bg-[var(--wa-hover)]" autoComplete="off">
           <h4 className="text-xs font-semibold text-[var(--wa-text-primary)]">
             {editingId ? 'Edit Profile' : 'New Profile'}
           </h4>
@@ -1561,7 +1561,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
               {editingId ? 'Update' : 'Add'}
             </Button>
           </div>
-        </div>
+        </form>
       )}
 
       {message && (
@@ -1788,7 +1788,7 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
 
       {/* Add / Edit form */}
       {showForm && (
-        <div className="space-y-3 p-3 rounded-lg border border-[var(--wa-border)] bg-[var(--wa-hover)]">
+        <form onSubmit={(e) => e.preventDefault()} autoComplete="off" className="space-y-3 p-3 rounded-lg border border-[var(--wa-border)] bg-[var(--wa-hover)]">
           <h4 className="text-xs font-semibold text-[var(--wa-text-primary)]">
             {editingId ? 'Edit Merchant' : 'New Merchant'}
           </h4>
@@ -1827,7 +1827,7 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
               {editingId ? 'Update' : 'Add'}
             </Button>
           </div>
-        </div>
+        </form>
       )}
 
       {message && (
