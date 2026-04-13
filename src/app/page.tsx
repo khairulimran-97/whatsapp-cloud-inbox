@@ -30,6 +30,7 @@ type WaProfile = {
   wabaId: string;
   phoneDisplay?: string;
   isDefault: boolean;
+  bclMerchantIds?: string[];
 };
 
 // Server-side unread operations (SQLite is the single source of truth)
@@ -108,8 +109,9 @@ export default function Home() {
     // Load WA profiles
     fetch('/api/wa-profiles')
       .then(r => r.json())
-      .then((data: WaProfile[]) => {
-        if (Array.isArray(data) && data.length > 0) {
+      .then((resp) => {
+        const data: WaProfile[] = resp.profiles || (Array.isArray(resp) ? resp : []);
+        if (data.length > 0) {
           setProfiles(data);
           const saved = localStorage.getItem('activeProfileId');
           const match = saved ? data.find(p => p.id === saved) : null;
@@ -510,6 +512,7 @@ export default function Home() {
         initialUnreadCount={initialUnreadCount}
         searchHighlight={searchHighlight}
         profileId={activeProfileId}
+        profileBclMerchantIds={profiles.find(p => p.id === activeProfileId)?.bclMerchantIds || []}
       />
     </div>
   );

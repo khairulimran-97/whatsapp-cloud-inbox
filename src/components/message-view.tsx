@@ -258,6 +258,7 @@ type Props = {
   initialUnreadCount?: number;
   searchHighlight?: string;
   profileId?: string | null;
+  profileBclMerchantIds?: string[];
 };
 
 export type MessageViewRef = {
@@ -266,7 +267,7 @@ export type MessageViewRef = {
   updateMessageStatus: (messageId: string, status: string) => void;
 };
 
-export const MessageView = forwardRef<MessageViewRef, Props>(function MessageView({ conversationIds, conversationStatuses, conversationStatus, phoneNumber, contactName, totalConversations, onTemplateSent, onStatusChanged, onConversationStatusUpdate, onMarkUnread, onBack, onInteraction, onTypingChange, isVisible = false, pollInterval = 5000, initialUnreadCount = 0, searchHighlight, profileId }: Props, ref) {
+export const MessageView = forwardRef<MessageViewRef, Props>(function MessageView({ conversationIds, conversationStatuses, conversationStatus, phoneNumber, contactName, totalConversations, onTemplateSent, onStatusChanged, onConversationStatusUpdate, onMarkUnread, onBack, onInteraction, onTypingChange, isVisible = false, pollInterval = 5000, initialUnreadCount = 0, searchHighlight, profileId, profileBclMerchantIds }: Props, ref) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
@@ -2078,6 +2079,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
               open={showCustomerSidebar}
               onClose={() => setShowCustomerSidebar(false)}
               onInsertText={(text) => setMessageInput(prev => prev ? prev + '\n' + text : text)}
+              allowedMerchantIds={profileBclMerchantIds}
             />
           </div>
         </>
@@ -2102,6 +2104,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
             inline
             panelWidth={sidebarWidth}
             onInsertText={(text) => setMessageInput(prev => prev ? prev + '\n' + text : text)}
+            allowedMerchantIds={profileBclMerchantIds}
           />
         </div>
       )}

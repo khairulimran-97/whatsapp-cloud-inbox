@@ -71,6 +71,7 @@ type Props = {
   inline?: boolean;
   panelWidth?: number;
   onInsertText?: (text: string) => void;
+  allowedMerchantIds?: string[];
 };
 
 function formatRM(amount: number | string | undefined): string {
@@ -699,7 +700,7 @@ type BclMerchantInfo = {
   isDefault: boolean | null;
 };
 
-export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, panelWidth, onInsertText }: Props) {
+export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, panelWidth, onInsertText, allowedMerchantIds }: Props) {
   const [data, setData] = useState<CustomerData | null>(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>('customer');
@@ -716,7 +717,11 @@ export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, pa
     fetch('/api/bcl-merchants')
       .then(r => r.json())
       .then(d => {
-        const list = d.merchants || [];
+        const all: BclMerchantInfo[] = d.merchants || [];
+        // Filter by allowed merchant IDs from WA profile (empty = show all)
+        const list = allowedMerchantIds && allowedMerchantIds.length > 0
+          ? all.filter(m => allowedMerchantIds.includes(m.id))
+          : all;
         setMerchants(list);
         if (list.length > 0 && !selectedMerchant) {
           const def = list.find((m: BclMerchantInfo) => m.isDefault) || list[0];
@@ -726,7 +731,7 @@ export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, pa
       .catch(() => {})
       .finally(() => setMerchantsReady(true));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [allowedMerchantIds]);
 
   const fetchCustomer = useCallback(async () => {
     if (!phoneNumber || !merchantsReady) return;
