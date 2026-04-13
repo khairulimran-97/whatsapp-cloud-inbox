@@ -836,7 +836,8 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search or start new chat"
-            className="pl-9 pr-9 bg-[var(--wa-search-bg)] border border-white/10 focus-visible:ring-0 focus-visible:border-white/20 rounded-full h-9 text-[13px] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)]"
+            className="pl-9 pr-9 border border-white/10 focus-visible:ring-0 focus-visible:border-white/20 rounded-full h-9 text-[13px] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)]"
+            style={{ backgroundColor: 'var(--wa-search-bg)' }}
           />
           {searchQuery && (
             <button
