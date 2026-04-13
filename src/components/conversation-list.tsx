@@ -1495,7 +1495,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
             {editingId ? 'Edit Profile' : 'New Profile'}
           </h4>
           <div>
-            <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">Profile Name</label>
+            <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">Profile Name <span className="text-red-400">*</span></label>
             <input
               type="text"
               value={formLabel}
@@ -1506,7 +1506,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">Phone Number ID</label>
+              <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">Phone Number ID <span className="text-red-400">*</span></label>
               <input
                 type="text"
                 value={formPhoneNumberId}
@@ -1516,7 +1516,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
               />
             </div>
             <div>
-              <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">WABA ID</label>
+              <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">WABA ID <span className="text-red-400">*</span></label>
               <input
                 type="text"
                 value={formWabaId}
@@ -1527,7 +1527,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
             </div>
           </div>
           <div>
-            <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">Kapso API Key</label>
+            <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">Kapso API Key {!editingId && <span className="text-red-400">*</span>}</label>
             <div className="relative">
               <input
                 type={showApiKey ? 'text' : 'password'}
