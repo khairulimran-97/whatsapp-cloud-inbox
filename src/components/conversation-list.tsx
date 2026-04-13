@@ -1429,36 +1429,40 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
             return (
               <div key={p.id} className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors ${
                 p.isDefault
-                  ? 'border-emerald-500/30 bg-emerald-500/[0.04]'
-                  : 'border-[var(--wa-border)] bg-[var(--wa-search-bg)]'
+                  ? 'border-emerald-500/30 bg-emerald-500/[0.06]'
+                  : 'border-indigo-500/20 bg-indigo-500/[0.04]'
               }`}>
                 <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  p.isDefault ? 'bg-emerald-500/15' : 'bg-[var(--wa-hover)]'
+                  p.isDefault ? 'bg-emerald-500/15' : 'bg-indigo-500/10'
                 }`}>
-                  <Phone className={`h-3.5 w-3.5 ${p.isDefault ? 'text-emerald-400' : 'text-[var(--wa-text-secondary)]'}`} />
+                  <Phone className={`h-3.5 w-3.5 ${p.isDefault ? 'text-emerald-400' : 'text-indigo-400'}`} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <span className="text-[13px] font-medium text-[var(--wa-text-primary)] truncate">{p.label}</span>
                     {p.isDefault && (
-                      <span className="text-xs font-bold uppercase px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400">Default</span>
+                      <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 leading-none">Default</span>
                     )}
                   </div>
                   <p className="text-xs text-[var(--wa-text-secondary)]/60 font-mono truncate mt-0.5">
                     {p.phoneNumberId}
                   </p>
-                  {p.bclMerchantIds.length > 0 && (
-                    <div className="flex gap-1 mt-1 flex-wrap">
-                      {p.bclMerchantIds.map(bId => {
+                  <div className="flex gap-1 mt-1 flex-wrap">
+                    {p.bclMerchantIds.length > 0 ? (
+                      p.bclMerchantIds.map(bId => {
                         const m = bclMerchants.find(x => x.id === bId);
                         return m ? (
-                          <span key={bId} className="text-xs px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400">
+                          <span key={bId} className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400">
                             {m.name}
                           </span>
                         ) : null;
-                      })}
-                    </div>
-                  )}
+                      })
+                    ) : (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--wa-hover)] text-[var(--wa-text-secondary)]">
+                        All BCL Merchants
+                      </span>
+                    )}
+                  </div>
                 </div>
                 {!showForm && (
                   <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -1828,19 +1832,19 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
             return (
               <div key={m.id} className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors ${
                 m.isDefault
-                  ? 'border-blue-500/30 bg-blue-500/[0.04]'
-                  : 'border-[var(--wa-border)] bg-[var(--wa-search-bg)]'
+                  ? 'border-blue-500/30 bg-blue-500/[0.06]'
+                  : 'border-indigo-500/20 bg-indigo-500/[0.04]'
               }`}>
                 <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  m.isDefault ? 'bg-blue-500/15' : 'bg-[var(--wa-hover)]'
+                  m.isDefault ? 'bg-blue-500/15' : 'bg-indigo-500/10'
                 }`}>
-                  <Store className={`h-3.5 w-3.5 ${m.isDefault ? 'text-blue-400' : 'text-[var(--wa-text-secondary)]'}`} />
+                  <Store className={`h-3.5 w-3.5 ${m.isDefault ? 'text-blue-400' : 'text-indigo-400'}`} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <span className="text-[13px] font-medium text-[var(--wa-text-primary)] truncate">{m.name}</span>
                     {m.isDefault && (
-                      <span className="text-xs font-bold uppercase px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400">Default</span>
+                      <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400 leading-none">Default</span>
                     )}
                   </div>
                   <p className="text-xs text-[var(--wa-text-secondary)]/60 font-mono truncate mt-0.5">
