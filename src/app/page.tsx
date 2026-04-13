@@ -151,6 +151,16 @@ export default function Home() {
     };
   }, []);
 
+  const refreshProfiles = useCallback(() => {
+    fetch('/api/wa-profiles')
+      .then(r => r.json())
+      .then((resp) => {
+        const data: WaProfile[] = resp.profiles || (Array.isArray(resp) ? resp : []);
+        if (data.length > 0) setProfiles(data);
+      })
+      .catch(() => {});
+  }, []);
+
   const handleProfileSwitch = useCallback((newProfileId: string) => {
     setActiveProfileId(newProfileId);
     localStorage.setItem('activeProfileId', newProfileId);
@@ -466,6 +476,7 @@ export default function Home() {
         onSettingsVisibilityChange={setSettingsVisible}
         profiles={profiles}
         onProfileSwitch={handleProfileSwitch}
+        onProfilesChanged={refreshProfiles}
       />
       {/* Resize handle for conversation list — overlays the border, no extra gap */}
       {!settingsVisible && (

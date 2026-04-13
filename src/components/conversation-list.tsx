@@ -181,6 +181,7 @@ type Props = {
   onSettingsVisibilityChange?: (visible: boolean) => void;
   profiles?: { id: string; label: string }[];
   onProfileSwitch?: (id: string) => void;
+  onProfilesChanged?: () => void;
 };
 
 export type ConversationListRef = {
@@ -199,7 +200,7 @@ export type ConversationListRef = {
 const PAGE_SIZE = 50;
 
 export const ConversationList = forwardRef<ConversationListRef, Props>(
-  ({ onSelectConversation, onConversationsUpdated, selectedConversationId, isHidden = false, unreadCounts = new Map(), pollInterval = 10000, notificationEnabled = false, notificationPermission = 'default', onToggleNotification, typingPhone, panelWidth, profileId, onSettingsVisibilityChange, profiles: parentProfiles, onProfileSwitch }, ref) => {
+  ({ onSelectConversation, onConversationsUpdated, selectedConversationId, isHidden = false, unreadCounts = new Map(), pollInterval = 10000, notificationEnabled = false, notificationPermission = 'default', onToggleNotification, typingPhone, panelWidth, profileId, onSettingsVisibilityChange, profiles: parentProfiles, onProfileSwitch, onProfilesChanged }, ref) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [needsSync, setNeedsSync] = useState(false);
@@ -697,7 +698,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
               </div>
             </div>
           </div>
-          <SettingsDialog onClose={() => setShowSettings(false)} profileId={profileId} />
+          <SettingsDialog onClose={() => setShowSettings(false)} profileId={profileId} onProfilesChanged={onProfilesChanged} />
         </>
       ) : (
         <>
@@ -1266,7 +1267,7 @@ type ReplyTemplate = {
   created_at: string;
 };
 
-function SettingsDialog({ onClose, profileId }: { onClose: () => void; profileId?: string | null }) {
+function SettingsDialog({ onClose, profileId, onProfilesChanged }: { onClose: () => void; profileId?: string | null; onProfilesChanged?: () => void }) {
   const [tab, setTab] = useState<'profiles' | 'bcl' | 'data'>('profiles');
 
   const tabs = [
@@ -1299,7 +1300,7 @@ function SettingsDialog({ onClose, profileId }: { onClose: () => void; profileId
         })}
       </div>
       <div className="flex-1 overflow-y-auto px-3 py-4 min-h-0">
-        {tab === 'profiles' ? <WaProfilesTab onClose={onClose} /> : tab === 'bcl' ? <BclSettingsTab onClose={onClose} /> : <DataTab profileId={profileId} />}
+        {tab === 'profiles' ? <WaProfilesTab onClose={onClose} onProfilesChanged={onProfilesChanged} /> : tab === 'bcl' ? <BclSettingsTab onClose={onClose} onProfilesChanged={onProfilesChanged} /> : <DataTab profileId={profileId} />}
       </div>
     </div>
   );
@@ -1316,7 +1317,7 @@ type WaProfile = {
   bclMerchantIds: string[];
 };
 
-function WaProfilesTab({ onClose }: { onClose: () => void }) {
+function WaProfilesTab({ onClose, onProfilesChanged }: { onClose: () => void; onProfilesChanged?: () => void }) {
   const [profiles, setProfiles] = useState<WaProfile[]>([]);
   const [bclMerchants, setBclMerchants] = useState<BclMerchant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1422,6 +1423,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
         setMessage({ text: editingId ? 'Profile updated' : 'Profile added' });
         resetForm();
         fetchData();
+        onProfilesChanged?.();
       }
     } catch {
       setMessage({ text: 'Network error', error: true });
@@ -1444,6 +1446,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
       } else {
         setMessage({ text: 'Profile removed' });
         fetchData();
+        onProfilesChanged?.();
       }
     } catch {
       setMessage({ text: 'Network error', error: true });
@@ -1465,6 +1468,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
         setMessage({ text: d.error || 'Failed', error: true });
       } else {
         fetchData();
+        onProfilesChanged?.();
       }
     } catch {
       setMessage({ text: 'Network error', error: true });
@@ -1770,7 +1774,7 @@ type BclMerchant = {
   isDefault: boolean | null;
 };
 
-function BclSettingsTab({ onClose }: { onClose: () => void }) {
+function BclSettingsTab({ onClose, onProfilesChanged }: { onClose: () => void; onProfilesChanged?: () => void }) {
   const [merchants, setMerchants] = useState<BclMerchant[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
@@ -1831,6 +1835,7 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
         setMessage({ text: editingId ? 'Merchant updated' : 'Merchant added' });
         resetForm();
         fetchMerchants();
+        onProfilesChanged?.();
       }
     } catch {
       setMessage({ text: 'Network error', error: true });
@@ -1853,6 +1858,7 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
       } else {
         setMessage({ text: 'Merchant removed' });
         fetchMerchants();
+        onProfilesChanged?.();
       }
     } catch {
       setMessage({ text: 'Network error', error: true });
@@ -1874,6 +1880,7 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
         setMessage({ text: d.error || 'Failed', error: true });
       } else {
         fetchMerchants();
+        onProfilesChanged?.();
       }
     } catch {
       setMessage({ text: 'Network error', error: true });
