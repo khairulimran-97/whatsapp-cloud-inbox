@@ -175,6 +175,10 @@ export default function Home() {
     localStorage.setItem('activeProfileId', newProfileId);
     setSelectedConversation(undefined);
     setInitialUnreadCount(0);
+    // Clear URL hash so it doesn't carry over from previous profile
+    if (window.location.hash) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   }, []);
 
   const handleSelectConversation = useCallback((conversation: Conversation, searchQuery?: string) => {
@@ -449,10 +453,21 @@ export default function Home() {
       }
     }
 
-    // Unread sync from another browser/tab
+    // Unread sync from another browser/tab — filter by active profile
     if (event.type === 'unread_update' && event.data) {
-      const serverUnread = event.data as Record<string, number>;
-      setUnreadCounts(new Map(Object.entries(serverUnread)));
+      const rawUnread = event.data as Record<string, number>;
+      const pnid = activePhoneNumberIdRef.current;
+      const filtered: Record<string, number> = {};
+      for (const [key, count] of Object.entries(rawUnread)) {
+        if (count <= 0) continue;
+        const parts = key.split(':');
+        const phone = parts[0];
+        const keyPnid = parts[1];
+        // Skip entries from other profiles
+        if (pnid && keyPnid && keyPnid !== pnid) continue;
+        filtered[phone] = Math.max(filtered[phone] ?? 0, count);
+      }
+      setUnreadCounts(new Map(Object.entries(filtered)));
     }
   }, [updateConversationFromWebhook]);
 

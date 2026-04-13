@@ -191,7 +191,7 @@ function persistConversationsToDb(records: ConversationRecord[], fallbackPhoneNu
 // Search conversations in SQLite by phone number, contact name, or message content
 const SEARCH_LIMIT = 30;
 
-function searchConversationsInDb(query: string, page = 1): { data: GroupedConversation[]; hasMore: boolean } {
+function searchConversationsInDb(query: string, page = 1, phoneNumberId?: string): { data: GroupedConversation[]; hasMore: boolean } {
   try {
     const db = getDb();
     const rawDb = (db as unknown as { session: { client: import('better-sqlite3').Database } }).session.client;
@@ -200,18 +200,23 @@ function searchConversationsInDb(query: string, page = 1): { data: GroupedConver
     const stripped = query.replace(/^0+/, '');
     const altPattern = stripped !== query ? `%${stripped}%` : pattern;
 
+    // Build profile filter: restrict to phones that have conversations in this profile
+    const profileFilter = phoneNumberId
+      ? `AND phone IN (SELECT DISTINCT phone FROM conversations WHERE phone_number_id = @pnid)`
+      : '';
+
     // Step 1: Find all unique matching phone numbers via raw SQL UNION
     const stmt = rawDb.prepare(`
       SELECT DISTINCT phone FROM (
-        SELECT phone FROM conversations WHERE phone LIKE @pattern OR phone LIKE @alt
+        SELECT phone FROM conversations WHERE (phone LIKE @pattern OR phone LIKE @alt) ${profileFilter}
         UNION
-        SELECT phone FROM contacts WHERE name LIKE @pattern OR phone LIKE @pattern OR phone LIKE @alt
+        SELECT phone FROM contacts WHERE (name LIKE @pattern OR phone LIKE @pattern OR phone LIKE @alt) ${profileFilter}
         UNION
-        SELECT phone FROM messages WHERE content LIKE @pattern GROUP BY phone
+        SELECT phone FROM messages WHERE content LIKE @pattern GROUP BY phone HAVING phone IN (SELECT DISTINCT phone FROM conversations WHERE 1=1 ${phoneNumberId ? 'AND phone_number_id = @pnid' : ''})
       ) ORDER BY phone
     `);
 
-    const matchingPhones = stmt.all({ pattern, alt: altPattern }) as { phone: string }[];
+    const matchingPhones = stmt.all({ pattern, alt: altPattern, ...(phoneNumberId ? { pnid: phoneNumberId } : {}) }) as { phone: string }[];
     if (matchingPhones.length === 0) return { data: [], hasMore: false };
 
     const allPhones = matchingPhones.map(r => r.phone);
@@ -220,9 +225,13 @@ function searchConversationsInDb(query: string, page = 1): { data: GroupedConver
     const pagedPhones = allPhones.slice(offset, offset + SEARCH_LIMIT);
     if (pagedPhones.length === 0) return { data: [], hasMore: false };
 
-    // Step 2: Get conversation rows for matched phones
+    // Step 2: Get conversation rows for matched phones (filtered by profile)
+    const phoneFilter = sql`${schema.conversations.phone} IN (${sql.join(pagedPhones.map(p => sql`${p}`), sql`,`)})`;
+    const profileFilterDrizzle = phoneNumberId
+      ? sql`${phoneFilter} AND ${schema.conversations.phoneNumberId} = ${phoneNumberId}`
+      : phoneFilter;
     const rows = db.select().from(schema.conversations)
-      .where(sql`${schema.conversations.phone} IN (${sql.join(pagedPhones.map(p => sql`${p}`), sql`,`)})`)
+      .where(profileFilterDrizzle)
       .orderBy(desc(schema.conversations.updatedAt))
       .all();
 
@@ -564,7 +573,7 @@ export async function GET(request: Request) {
 
     // ── Search mode: query SQLite directly, paginated ──
     if (searchQuery && searchQuery.trim().length > 0) {
-      const results = searchConversationsInDb(searchQuery.trim(), pageParam);
+      const results = searchConversationsInDb(searchQuery.trim(), pageParam, profile.phoneNumberId);
       return NextResponse.json({ ...results, search: true });
     }
 

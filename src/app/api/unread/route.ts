@@ -21,11 +21,24 @@ function getAllUnread(phoneNumberId?: string | null): Record<string, number> {
   return result;
 }
 
-function broadcastUnreadUpdate(unread: Record<string, number>) {
+// Returns raw composite keys (phone:phoneNumberId) for SSE broadcast
+// so clients can filter by their active profile
+function getRawUnread(): Record<string, number> {
+  const db = getDb();
+  const rows = db.select().from(schema.unreadCounts).all();
+  const result: Record<string, number> = {};
+  for (const row of rows) {
+    if (row.count <= 0) continue;
+    result[row.phone] = row.count;
+  }
+  return result;
+}
+
+function broadcastUnreadUpdate() {
   publish({
     type: 'unread_update',
     timestamp: new Date().toISOString(),
-    data: unread,
+    data: getRawUnread(),
   });
 }
 
@@ -55,7 +68,7 @@ export async function PUT(request: Request) {
       }
     }
 
-    broadcastUnreadUpdate(data as Record<string, number>);
+    broadcastUnreadUpdate();
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
@@ -95,7 +108,7 @@ export async function PATCH(request: Request) {
     }
 
     const current = getAllUnread();
-    broadcastUnreadUpdate(current);
+    broadcastUnreadUpdate();
     return NextResponse.json(current);
   } catch {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
