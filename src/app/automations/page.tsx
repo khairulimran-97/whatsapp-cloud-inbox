@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import {
   ArrowLeft, Sun, Moon, Zap, CheckCircle2,
   XCircle, Clock, Activity, Loader2, Store, ChevronDown,
@@ -92,7 +92,7 @@ const TRIGGER_COLORS: Record<string, { bg: string; text: string; icon: string }>
 };
 const DEFAULT_TRIGGER_COLOR = { bg: 'bg-indigo-500/15', text: 'text-indigo-700 dark:text-indigo-400', icon: 'text-indigo-500' };
 
-export default function AutomationsPage() {
+function AutomationsPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [automations, setAutomations] = useState<Automation[]>([]);
@@ -715,5 +715,13 @@ function ExecutionCard({ exec }: { exec: Execution }) {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AutomationsPage() {
+  return (
+    <Suspense fallback={<div className="h-dvh bg-[var(--wa-bg-deeper)]" />}>
+      <AutomationsPageInner />
+    </Suspense>
   );
 }
