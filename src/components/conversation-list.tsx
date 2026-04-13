@@ -1430,7 +1430,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
               <div key={p.id} className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors ${
                 p.isDefault
                   ? 'border-emerald-500/30 bg-emerald-500/[0.06]'
-                  : 'border-[var(--wa-border)] bg-[var(--wa-hover)]'
+                  : 'border-slate-500/20 bg-[var(--wa-hover)]'
               }`}>
                 <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                   p.isDefault ? 'bg-emerald-500/15' : 'bg-[var(--wa-active)]'
@@ -1834,7 +1834,7 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
               <div key={m.id} className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors ${
                 m.isDefault
                   ? 'border-blue-500/30 bg-blue-500/[0.06]'
-                  : 'border-[var(--wa-border)] bg-[var(--wa-hover)]'
+                  : 'border-slate-500/20 bg-[var(--wa-hover)]'
               }`}>
                 <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                   m.isDefault ? 'bg-blue-500/15' : 'bg-[var(--wa-active)]'
