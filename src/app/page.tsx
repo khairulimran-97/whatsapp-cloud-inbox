@@ -71,6 +71,7 @@ export default function Home() {
 
   // Resizable panel widths (reset to defaults on refresh)
   const [listWidth, setListWidth] = useState(384);
+  const [settingsVisible, setSettingsVisible] = useState(false);
   const resizingRef = useRef<'list' | null>(null);
   const startXRef = useRef(0);
   const startWidthRef = useRef(0);
@@ -476,8 +477,10 @@ export default function Home() {
         typingPhone={typingPhone}
         panelWidth={listWidth}
         profileId={activeProfileId}
+        onSettingsVisibilityChange={setSettingsVisible}
       />
       {/* Resize handle for conversation list — overlays the border, no extra gap */}
+      {!settingsVisible && (
       <div
         className="hidden md:flex w-0 relative z-10 cursor-col-resize items-center justify-center group"
         onMouseDown={(e) => handleResizeStart('list', e)}
@@ -486,6 +489,7 @@ export default function Home() {
           <div className="w-[2px] h-8 rounded-full bg-transparent group-hover:bg-[var(--wa-green)]/60 group-active:bg-[var(--wa-green)] transition-colors" />
         </div>
       </div>
+      )}
       <MessageView
         ref={messageViewRef}
         conversationIds={selectedConversation?.conversationIds}

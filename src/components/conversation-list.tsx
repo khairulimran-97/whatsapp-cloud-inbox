@@ -178,6 +178,7 @@ type Props = {
   typingPhone?: string | null;
   panelWidth?: number;
   profileId?: string | null;
+  onSettingsVisibilityChange?: (visible: boolean) => void;
 };
 
 export type ConversationListRef = {
@@ -196,7 +197,7 @@ export type ConversationListRef = {
 const PAGE_SIZE = 50;
 
 export const ConversationList = forwardRef<ConversationListRef, Props>(
-  ({ onSelectConversation, onConversationsUpdated, selectedConversationId, isHidden = false, unreadCounts = new Map(), pollInterval = 10000, notificationEnabled = false, notificationPermission = 'default', onToggleNotification, typingPhone, panelWidth, profileId }, ref) => {
+  ({ onSelectConversation, onConversationsUpdated, selectedConversationId, isHidden = false, unreadCounts = new Map(), pollInterval = 10000, notificationEnabled = false, notificationPermission = 'default', onToggleNotification, typingPhone, panelWidth, profileId, onSettingsVisibilityChange }, ref) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [needsSync, setNeedsSync] = useState(false);
@@ -215,7 +216,11 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [showPushDialog, setShowPushDialog] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [showSettings, setShowSettingsRaw] = useState(false);
+  const setShowSettings = useCallback((v: boolean) => {
+    setShowSettingsRaw(v);
+    onSettingsVisibilityChange?.(v);
+  }, [onSettingsVisibilityChange]);
   const [showQuickReply, setShowQuickReply] = useState(false);
   const [quickReplyAddTrigger, setQuickReplyAddTrigger] = useState(0);
   const [quickReplyCount, setQuickReplyCount] = useState(0);
