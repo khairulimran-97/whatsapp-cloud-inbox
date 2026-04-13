@@ -1024,8 +1024,8 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
         "flex-1 flex flex-col chat-bg panel-slide",
         !isVisible ? "panel-slide-right" : "panel-slide-center"
       )}>
-        <div className="border-b border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)] safe-area-top">
-          <div className="flex items-center h-[60px] px-2 sm:px-3">
+        <div className="border-b border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)] safe-area-top shrink-0">
+          <div className="flex items-center min-h-[60px] px-2 sm:px-3">
             {onBack && (
               <button
                 onClick={onBack}
@@ -1071,9 +1071,8 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
     >
       {/* Main chat column */}
       <div className="flex-1 flex flex-col min-w-0">
-      <div className="border-b border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)] safe-area-top">
-        <div className="flex items-center h-[60px] px-2 sm:px-3">
-          {/* Back button — overlaps with avatar on mobile like WhatsApp */}
+      <div className="border-b border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)] safe-area-top shrink-0">
+        <div className="flex items-center min-h-[60px] px-2 sm:px-3">
           {onBack && (
             <button
               onClick={onBack}
