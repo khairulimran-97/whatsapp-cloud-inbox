@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, forwardRef, useImperativeHandle, useCallback, type ReactNode } from 'react';
 import { format, isValid, isToday, isYesterday } from 'date-fns';
-import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save, Plus, Pencil, Trash2, MessageSquareText, CloudDownload, TriangleAlert, RefreshCw, Database, ExternalLink, CalendarDays, ChevronRight, ChevronDown, Check, Store, Zap, ArrowLeft } from 'lucide-react';
+import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save, Plus, Pencil, Trash2, MessageSquareText, CloudDownload, TriangleAlert, RefreshCw, Database, ExternalLink, CalendarDays, ChevronRight, ChevronDown, Check, Store, Zap, ArrowLeft, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAutoPolling } from '@/hooks/use-auto-polling';
 import { useTheme } from '@/hooks/use-theme';
@@ -692,9 +692,17 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
         <div className="safe-area-top" />
         <div className="flex items-center gap-3 mb-3">
           <button
-            onClick={() => setShowProfile(true)}
+            onClick={() => {
+              if (parentProfiles && parentProfiles.length >= 2 && onProfileSwitch) {
+                const currentIdx = parentProfiles.findIndex(p => p.id === profileId);
+                const nextIdx = (currentIdx + 1) % parentProfiles.length;
+                onProfileSwitch(parentProfiles[nextIdx].id);
+              } else {
+                setShowProfile(true);
+              }
+            }}
             className="group flex items-center gap-3 flex-1 min-w-0 rounded-xl px-2 py-1.5 -mx-2 -my-1.5 hover:bg-[var(--wa-green)]/[0.06] active:bg-[var(--wa-green)]/10 transition-all duration-200"
-            title="View business profile"
+            title={parentProfiles && parentProfiles.length >= 2 ? "Switch profile" : "View business profile"}
           >
             <div className="relative flex-shrink-0">
               <div className="absolute inset-0 rounded-full border-2 border-[var(--wa-green)]/40 animate-ping" style={{ animationDuration: '2.5s' }} />
@@ -719,10 +727,15 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
                 )}
               </div>
               <p className="text-[12px] text-[var(--wa-text-secondary)] truncate leading-tight mt-0.5">
-                Support Inbox
+                {parentProfiles && parentProfiles.length >= 2
+                  ? parentProfiles.find(p => p.id === profileId)?.label || 'Support Inbox'
+                  : 'Support Inbox'}
               </p>
             </div>
-            <ChevronRight className="h-4 w-4 text-[var(--wa-text-secondary)]/40 group-hover:text-[var(--wa-text-secondary)] transition-colors flex-shrink-0" />
+            {parentProfiles && parentProfiles.length >= 2
+              ? <ChevronsUpDown className="h-4 w-4 text-[var(--wa-text-secondary)]/40 group-hover:text-[var(--wa-text-secondary)] transition-colors flex-shrink-0" />
+              : <ChevronRight className="h-4 w-4 text-[var(--wa-text-secondary)]/40 group-hover:text-[var(--wa-text-secondary)] transition-colors flex-shrink-0" />
+            }
           </button>
           <div className="flex items-center flex-shrink-0">
             <div className="relative group">
@@ -782,28 +795,7 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
         </div>
       </div>
 
-      {/* Profile switcher */}
-      {parentProfiles && parentProfiles.length >= 2 && (
-        <div className="flex gap-1 px-4 py-2 border-b border-[var(--wa-border)] bg-[var(--wa-panel-bg)] overflow-x-auto no-scrollbar">
-          {parentProfiles.map(p => {
-            const active = p.id === profileId;
-            return (
-              <button
-                key={p.id}
-                onClick={() => onProfileSwitch?.(p.id)}
-                className={cn(
-                  "text-[12px] font-medium px-3 py-1 rounded-full transition-colors whitespace-nowrap flex-shrink-0",
-                  active
-                    ? "bg-[var(--wa-green)] text-white"
-                    : "bg-[var(--wa-hover)] text-[var(--wa-text-tertiary)] hover:bg-[var(--wa-active)]"
-                )}
-              >
-                {p.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {/* Profile switcher — removed, now in header */}
 
       {/* Filter tabs */}
       <div className="flex gap-1.5 px-4 py-2 border-b border-[var(--wa-border)] bg-[var(--wa-panel-bg)]">
