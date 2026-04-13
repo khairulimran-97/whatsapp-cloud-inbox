@@ -35,6 +35,24 @@ export const bclMerchants = sqliteTable('bcl_merchants', {
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 });
 
+export const waProfiles = sqliteTable('wa_profiles', {
+  id: text('id').primaryKey(),
+  label: text('label').notNull(),
+  phoneNumberId: text('phone_number_id').notNull().unique(),
+  wabaId: text('waba_id').notNull(),
+  kapsoApiKey: text('kapso_api_key').notNull(),
+  phoneDisplay: text('phone_display'),
+  isDefault: integer('is_default', { mode: 'boolean' }).default(false),
+  synced: integer('synced', { mode: 'boolean' }).default(false),
+  lastSyncedAt: integer('last_synced_at', { mode: 'timestamp' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+});
+
+export const waProfileBcl = sqliteTable('wa_profile_bcl', {
+  profileId: text('profile_id').notNull(),
+  bclMerchantId: text('bcl_merchant_id').notNull(),
+});
+
 export const ppvSchedules = sqliteTable('ppv_schedules', {
   id: text('id').primaryKey(),
   matchDatetime: integer('match_datetime', { mode: 'timestamp' }).notNull(),

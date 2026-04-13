@@ -115,6 +115,23 @@ function createDb() {
       created_at INTEGER,
       updated_at INTEGER
     );
+    CREATE TABLE IF NOT EXISTS wa_profiles (
+      id TEXT PRIMARY KEY,
+      label TEXT NOT NULL,
+      phone_number_id TEXT NOT NULL UNIQUE,
+      waba_id TEXT NOT NULL,
+      kapso_api_key TEXT NOT NULL,
+      phone_display TEXT,
+      is_default INTEGER DEFAULT 0,
+      synced INTEGER DEFAULT 0,
+      last_synced_at INTEGER,
+      created_at INTEGER
+    );
+    CREATE TABLE IF NOT EXISTS wa_profile_bcl (
+      profile_id TEXT NOT NULL,
+      bcl_merchant_id TEXT NOT NULL,
+      PRIMARY KEY (profile_id, bcl_merchant_id)
+    );
   `);
 
   // Migration: add source column to existing tables
@@ -142,6 +159,23 @@ function createDb() {
           `INSERT INTO bcl_merchants (id, name, api_key, is_default, created_at) VALUES (?, 'Default', ?, 1, ?)`
         ).run(id, row.value, Math.floor(Date.now() / 1000));
         sqlite.prepare(`DELETE FROM settings WHERE key = 'bcl_api_key'`).run();
+      }
+    }
+  } catch { /* ignore */ }
+
+  // Migration: seed wa_profiles from env vars on first run
+  try {
+    const existing = sqlite.prepare(`SELECT COUNT(*) as cnt FROM wa_profiles`).get() as { cnt: number };
+    if (existing.cnt === 0) {
+      const phoneNumberId = process.env.PHONE_NUMBER_ID;
+      const wabaId = process.env.WABA_ID;
+      const kapsoApiKey = process.env.KAPSO_API_KEY;
+      if (phoneNumberId && wabaId && kapsoApiKey) {
+        const id = Math.random().toString(36).slice(2, 10);
+        sqlite.prepare(
+          `INSERT INTO wa_profiles (id, label, phone_number_id, waba_id, kapso_api_key, is_default, created_at) VALUES (?, 'Default', ?, ?, ?, 1, ?)`
+        ).run(id, phoneNumberId, wabaId, kapsoApiKey, Math.floor(Date.now() / 1000));
+        console.log('[DB Migration] Migrated WABA from .env to wa_profiles');
       }
     }
   } catch { /* ignore */ }

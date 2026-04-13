@@ -5,7 +5,7 @@ import {
   type MediaData,
   type MetaMessage
 } from '@kapso/whatsapp-cloud-api';
-import { whatsappClient, PHONE_NUMBER_ID } from '@/lib/whatsapp-client';
+import { resolveProfile } from '@/lib/whatsapp-client';
 import { getDb, schema } from '@/lib/db';
 import { inArray, sql } from 'drizzle-orm';
 
@@ -301,16 +301,19 @@ function loadMessagesFromDb(conversationIds: string[]): TransformedMessage[] {
 async function fetchConversationMessages(
   conversationId: string,
   limit: number,
-  retries: number
+  retries: number,
+  profileId?: string | null
 ): Promise<TransformedMessage[]> {
   // Check in-memory cache first
   const cached = getCached(conversationId);
   if (cached !== null) return cached;
 
+  const { client, profile } = resolveProfile(profileId);
+
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const response = await whatsappClient.messages.listByConversation({
-        phoneNumberId: PHONE_NUMBER_ID,
+      const response = await client.messages.listByConversation({
+        phoneNumberId: profile.phoneNumberId,
         conversationId,
         limit,
         fields: KAPSO_FIELDS,
@@ -338,6 +341,7 @@ export async function GET(request: Request) {
     const idsParam = searchParams.get('ids');
     const refresh = searchParams.get('refresh') === 'true';
     const mode = searchParams.get('mode') ?? 'poll'; // 'initial' | 'poll'
+    const profileId = searchParams.get('profileId');
 
     if (!idsParam) {
       return NextResponse.json({ error: 'Missing ids parameter' }, { status: 400 });
@@ -375,7 +379,7 @@ export async function GET(request: Request) {
 
         // Some sessions missing — fetch only the missing ones from API
         const apiResults = await Promise.all(
-          missingIds.map(id => fetchConversationMessages(id, limit, retries))
+          missingIds.map(id => fetchConversationMessages(id, limit, retries, profileId))
         );
         const allMessages = [...dbMessages, ...apiResults.flat()];
         return NextResponse.json({ data: allMessages });
@@ -384,7 +388,7 @@ export async function GET(request: Request) {
 
     // Fetch from Kapso API (with in-memory cache)
     const results = await Promise.all(
-      conversationIds.map(id => fetchConversationMessages(id, limit, retries))
+      conversationIds.map(id => fetchConversationMessages(id, limit, retries, profileId))
     );
 
     const allMessages = results.flat();

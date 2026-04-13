@@ -1,19 +1,14 @@
 import { NextResponse } from 'next/server';
-import { whatsappClient } from '@/lib/whatsapp-client';
+import { resolveProfile } from '@/lib/whatsapp-client';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const wabaId = process.env.WABA_ID;
+    const { searchParams } = new URL(request.url);
+    const profileId = searchParams.get('profileId');
+    const { client, profile } = resolveProfile(profileId);
 
-    if (!wabaId) {
-      return NextResponse.json(
-        { error: 'WABA_ID not configured' },
-        { status: 500 }
-      );
-    }
-
-    const response = await whatsappClient.templates.list({
-      businessAccountId: wabaId,
+    const response = await client.templates.list({
+      businessAccountId: profile.wabaId,
       limit: 100
     });
 

@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { whatsappClient, PHONE_NUMBER_ID } from '@/lib/whatsapp-client';
+import { resolveProfile } from '@/lib/whatsapp-client';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { phoneNumber, header, body: bodyText, buttons } = body;
+    const { phoneNumber, header, body: bodyText, buttons, profileId } = body;
 
     if (!phoneNumber || !bodyText || !buttons || buttons.length === 0) {
       return NextResponse.json(
@@ -13,7 +13,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validate buttons
     if (buttons.length > 3) {
       return NextResponse.json(
         { error: 'Maximum 3 buttons allowed' },
@@ -21,7 +20,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Build interactive button message payload
+    const { client, profile } = resolveProfile(profileId);
+
     const payload: {
       phoneNumberId: string;
       to: string;
@@ -29,25 +29,20 @@ export async function POST(request: Request) {
       header?: { type: 'text'; text: string };
       buttons: Array<{ id: string; title: string }>;
     } = {
-      phoneNumberId: PHONE_NUMBER_ID,
+      phoneNumberId: profile.phoneNumberId,
       to: phoneNumber,
       bodyText,
       buttons: buttons.map((btn: { id: string; title: string }) => ({
         id: btn.id,
-        title: btn.title.substring(0, 20) // Ensure max 20 chars
+        title: btn.title.substring(0, 20)
       }))
     };
 
-    // Add header if provided
     if (header) {
-      payload.header = {
-        type: 'text',
-        text: header
-      };
+      payload.header = { type: 'text', text: header };
     }
 
-    // Send interactive button message
-    const result = await whatsappClient.messages.sendInteractiveButtons(payload);
+    const result = await client.messages.sendInteractiveButtons(payload);
 
     return NextResponse.json(result);
   } catch (error) {

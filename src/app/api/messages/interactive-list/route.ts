@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { whatsappClient, PHONE_NUMBER_ID } from '@/lib/whatsapp-client';
+import { resolveProfile } from '@/lib/whatsapp-client';
 
 export async function POST(request: Request) {
   try {
-    const { phoneNumber, bodyText, buttonText, sections, header, footerText } = await request.json();
+    const { phoneNumber, bodyText, buttonText, sections, header, footerText, profileId } = await request.json();
 
     if (!phoneNumber || !bodyText || !buttonText || !sections || sections.length === 0) {
       return NextResponse.json(
@@ -12,8 +12,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await whatsappClient.messages.sendInteractiveList({
-      phoneNumberId: PHONE_NUMBER_ID,
+    const { client, profile } = resolveProfile(profileId);
+    const result = await client.messages.sendInteractiveList({
+      phoneNumberId: profile.phoneNumberId,
       to: phoneNumber,
       bodyText,
       buttonText,

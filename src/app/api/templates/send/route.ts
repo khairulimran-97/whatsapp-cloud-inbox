@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
 import { buildTemplateSendPayload } from '@kapso/whatsapp-cloud-api';
-import { whatsappClient, PHONE_NUMBER_ID } from '@/lib/whatsapp-client';
+import { resolveProfile } from '@/lib/whatsapp-client';
 import type { TemplateParameterInfo } from '@/types/whatsapp';
 
 type TemplateSendInput = Parameters<typeof buildTemplateSendPayload>[0];
-type TemplateMessageInput = Parameters<(typeof whatsappClient.messages)['sendTemplate']>[0];
-type TemplatePayload = TemplateMessageInput['template'];
+type TemplatePayload = ReturnType<typeof buildTemplateSendPayload>;
 type TemplateBodyParameter = NonNullable<TemplateSendInput['body']>[number];
 type TemplateHeaderParameter = Extract<NonNullable<TemplateSendInput['header']>, { type: 'text' }>;
 type TemplateButtonParameter = Extract<NonNullable<TemplateSendInput['buttons']>[number], { subType: 'url' }>;
@@ -14,7 +13,7 @@ type ButtonTextParameter = { type: 'text'; text: string; parameter_name?: string
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { to, templateName, languageCode, parameters, parameterInfo } = body;
+    const { to, templateName, languageCode, parameters, parameterInfo, profileId } = body;
 
     if (!to || !templateName || !languageCode) {
       return NextResponse.json(
@@ -108,9 +107,9 @@ export async function POST(request: Request) {
 
     const templatePayload = buildTemplateSendPayload(templateOptions) as TemplatePayload;
 
-    // Send template message
-    const result = await whatsappClient.messages.sendTemplate({
-      phoneNumberId: PHONE_NUMBER_ID,
+    const { client, profile } = resolveProfile(profileId);
+    const result = await client.messages.sendTemplate({
+      phoneNumberId: profile.phoneNumberId,
       to,
       template: templatePayload
     });

@@ -5,7 +5,7 @@ import {
   type MediaData,
   type MetaMessage
 } from '@kapso/whatsapp-cloud-api';
-import { whatsappClient, PHONE_NUMBER_ID } from '@/lib/whatsapp-client';
+import { resolveProfile } from '@/lib/whatsapp-client';
 
 type MessageTypeData = {
   filename?: string;
@@ -83,6 +83,8 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const parsedLimit = Number.parseInt(searchParams.get('limit') ?? '', 10);
     const limit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? Math.min(parsedLimit, 100) : 50;
+    const profileId = searchParams.get('profileId');
+    const { client, profile } = resolveProfile(profileId);
 
     const fields = buildKapsoFields([
       'direction',
@@ -106,8 +108,8 @@ export async function GET(
     let response;
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        response = await whatsappClient.messages.listByConversation({
-          phoneNumberId: PHONE_NUMBER_ID,
+        response = await client.messages.listByConversation({
+          phoneNumberId: profile.phoneNumberId,
           conversationId,
           limit,
           fields,

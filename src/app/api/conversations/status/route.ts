@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
+import { resolveProfile } from '@/lib/whatsapp-client';
 
 export async function PATCH(request: Request) {
   try {
-    const { conversationId, status } = await request.json();
+    const { conversationId, status, profileId } = await request.json();
 
     if (!conversationId || !status) {
       return NextResponse.json(
@@ -18,13 +19,7 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const kapsoApiKey = process.env.KAPSO_API_KEY;
-    if (!kapsoApiKey) {
-      return NextResponse.json(
-        { error: 'KAPSO_API_KEY not configured' },
-        { status: 500 }
-      );
-    }
+    const { profile } = resolveProfile(profileId);
 
     const response = await fetch(
       `https://api.kapso.ai/platform/v1/whatsapp/conversations/${conversationId}`,
@@ -32,7 +27,7 @@ export async function PATCH(request: Request) {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': kapsoApiKey,
+          'X-API-Key': profile.kapsoApiKey,
         },
         body: JSON.stringify({ whatsapp_conversation: { status } }),
       }

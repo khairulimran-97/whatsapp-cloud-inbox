@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { whatsappClient, PHONE_NUMBER_ID } from '@/lib/whatsapp-client';
+import { resolveProfile } from '@/lib/whatsapp-client';
 
 export async function POST(request: Request) {
   try {
@@ -7,6 +7,7 @@ export async function POST(request: Request) {
     const to = formData.get('to') as string;
     const body = formData.get('body') as string;
     const file = formData.get('file') as File | null;
+    const profileId = formData.get('profileId') as string | null;
 
     if (!to) {
       return NextResponse.json(
@@ -15,57 +16,56 @@ export async function POST(request: Request) {
       );
     }
 
+    const { client, profile } = resolveProfile(profileId);
+    const phoneNumberId = profile.phoneNumberId;
     let result;
 
     // Send media message
     if (file) {
-      const fileType = file.type.split('/')[0]; // image, video, audio, application
+      const fileType = file.type.split('/')[0];
       const mediaType = fileType === 'application' ? 'document' : fileType;
 
-      // Upload media first
-      const uploadResult = await whatsappClient.media.upload({
-        phoneNumberId: PHONE_NUMBER_ID,
+      const uploadResult = await client.media.upload({
+        phoneNumberId,
         type: mediaType as 'image' | 'video' | 'audio' | 'document',
         file: file,
         fileName: file.name
       });
 
-      // Send message with media
       if (file.type === 'image/webp') {
-        result = await whatsappClient.messages.sendSticker({
-          phoneNumberId: PHONE_NUMBER_ID,
+        result = await client.messages.sendSticker({
+          phoneNumberId,
           to,
           sticker: { id: uploadResult.id }
         });
       } else if (mediaType === 'image') {
-        result = await whatsappClient.messages.sendImage({
-          phoneNumberId: PHONE_NUMBER_ID,
+        result = await client.messages.sendImage({
+          phoneNumberId,
           to,
           image: { id: uploadResult.id, caption: body || undefined }
         });
       } else if (mediaType === 'video') {
-        result = await whatsappClient.messages.sendVideo({
-          phoneNumberId: PHONE_NUMBER_ID,
+        result = await client.messages.sendVideo({
+          phoneNumberId,
           to,
           video: { id: uploadResult.id, caption: body || undefined }
         });
       } else if (mediaType === 'audio') {
-        result = await whatsappClient.messages.sendAudio({
-          phoneNumberId: PHONE_NUMBER_ID,
+        result = await client.messages.sendAudio({
+          phoneNumberId,
           to,
           audio: { id: uploadResult.id }
         });
       } else {
-        result = await whatsappClient.messages.sendDocument({
-          phoneNumberId: PHONE_NUMBER_ID,
+        result = await client.messages.sendDocument({
+          phoneNumberId,
           to,
           document: { id: uploadResult.id, caption: body || undefined, filename: file.name }
         });
       }
     } else if (body) {
-      // Send text message
-      result = await whatsappClient.messages.sendText({
-        phoneNumberId: PHONE_NUMBER_ID,
+      result = await client.messages.sendText({
+        phoneNumberId,
         to,
         body
       });

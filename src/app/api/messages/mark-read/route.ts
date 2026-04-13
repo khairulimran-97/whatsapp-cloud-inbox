@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { whatsappClient, PHONE_NUMBER_ID } from '@/lib/whatsapp-client';
+import { resolveProfile } from '@/lib/whatsapp-client';
 
 export async function POST(request: Request) {
   try {
-    const { messageId, phoneNumberId } = await request.json();
+    const { messageId, phoneNumberId, profileId } = await request.json();
 
     if (!messageId || typeof messageId !== 'string') {
       return NextResponse.json(
@@ -12,9 +12,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const resolvedPhoneNumberId = phoneNumberId || PHONE_NUMBER_ID;
+    const { client, profile } = resolveProfile(profileId);
+    const resolvedPhoneNumberId = phoneNumberId || profile.phoneNumberId;
 
-    const result = await whatsappClient.messages.markRead({
+    const result = await client.messages.markRead({
       phoneNumberId: resolvedPhoneNumberId,
       messageId,
     });

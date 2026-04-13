@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getWhatsAppClient, PHONE_NUMBER_ID } from '@/lib/whatsapp-client';
+import { resolveProfile } from '@/lib/whatsapp-client';
 
 interface ProfileData {
   phoneNumberId: string;
@@ -14,30 +14,33 @@ interface ProfileData {
   profilePictureUrl?: string;
 }
 
-let cachedProfile: ProfileData | null = null;
+// Per-profile cache
+const profileCache = new Map<string, ProfileData>();
 
-export async function GET() {
-  if (cachedProfile) {
-    return NextResponse.json(cachedProfile);
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const profileIdParam = searchParams.get('profileId');
+  const { client, profile: waProfile } = resolveProfile(profileIdParam);
+
+  const cached = profileCache.get(waProfile.id);
+  if (cached) {
+    return NextResponse.json(cached);
   }
 
   const profile: ProfileData = {
-    phoneNumberId: PHONE_NUMBER_ID,
-    displayPhoneNumber: '',
+    phoneNumberId: waProfile.phoneNumberId,
+    displayPhoneNumber: waProfile.phoneDisplay || '',
     verifiedName: '',
   };
 
-  // Use the SDK's internal request method (handles auth headers correctly)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const client = getWhatsAppClient() as any;
+  const rawClient = client as any;
 
-  // 1. Fetch business profile with fields param
   try {
-    const bpRes = await client.request('GET', `${PHONE_NUMBER_ID}/whatsapp_business_profile`, {
+    const bpRes = await rawClient.request('GET', `${waProfile.phoneNumberId}/whatsapp_business_profile`, {
       query: { fields: 'about,address,description,email,profile_picture_url,websites,vertical' },
       responseType: 'json',
     });
-    console.log('[profile] businessProfile:', JSON.stringify(bpRes));
     const biz = bpRes?.data?.[0];
     if (biz) {
       profile.about = biz.about;
@@ -52,22 +55,19 @@ export async function GET() {
     console.error('[profile] businessProfile error:', e);
   }
 
-  // 2. Fetch phone number details (display number + verified name)
   try {
-    const phoneRes = await client.request('GET', PHONE_NUMBER_ID, {
+    const phoneRes = await rawClient.request('GET', waProfile.phoneNumberId, {
       query: { fields: 'display_phone_number,verified_name,quality_rating' },
       responseType: 'json',
     });
-    console.log('[profile] phoneNumber:', JSON.stringify(phoneRes));
     if (phoneRes?.displayPhoneNumber) profile.displayPhoneNumber = phoneRes.displayPhoneNumber;
     if (phoneRes?.verifiedName) profile.verifiedName = phoneRes.verifiedName;
-    // Also check snake_case (raw response may not be converted)
     if (phoneRes?.display_phone_number) profile.displayPhoneNumber = phoneRes.display_phone_number;
     if (phoneRes?.verified_name) profile.verifiedName = phoneRes.verified_name;
   } catch (e) {
     console.error('[profile] phoneNumber error:', e);
   }
 
-  cachedProfile = profile;
+  profileCache.set(waProfile.id, profile);
   return NextResponse.json(profile);
 }

@@ -4,7 +4,7 @@ import {
   type ConversationKapsoExtensions,
   type ConversationRecord
 } from '@kapso/whatsapp-cloud-api';
-import { whatsappClient, PHONE_NUMBER_ID } from '@/lib/whatsapp-client';
+import { resolveProfile, PHONE_NUMBER_ID } from '@/lib/whatsapp-client';
 import { getDb, schema } from '@/lib/db';
 import { sql, desc, eq } from 'drizzle-orm';
 
@@ -52,25 +52,41 @@ const KAPSO_FIELDS = buildKapsoFields([
 
 const DEFAULT_PAGE_SIZE = 30;
 
-// In-memory cache of all grouped conversations fetched so far
-let cachedData: GroupedConversation[] | null = null;
-let cacheTimestamp = 0;
-// Kapso API cursor for next page of raw conversations
-let nextApiCursor: string | undefined;
-// Whether we've exhausted all pages from the Kapso API
-let allPagesFetched = false;
-const CACHE_TTL_MS = 30_000; // 30s — SSE handles freshness
-const PAGE_SIZE = 50; // contacts per page for initial/scroll loading
+// Per-profile cache state
+type ProfileCache = {
+  cachedData: GroupedConversation[] | null;
+  cacheTimestamp: number;
+  nextApiCursor: string | undefined;
+  allPagesFetched: boolean;
+  allIdsPerPhone: Map<string, string[]>;
+};
 
-// Cache ALL conversation IDs per phone (not sliced) for "load older" feature
-const allIdsPerPhone = new Map<string, string[]>();
+const profileCaches = new Map<string, ProfileCache>();
+
+function getProfileCache(profileId: string): ProfileCache {
+  let cache = profileCaches.get(profileId);
+  if (!cache) {
+    cache = {
+      cachedData: null,
+      cacheTimestamp: 0,
+      nextApiCursor: undefined,
+      allPagesFetched: false,
+      allIdsPerPhone: new Map(),
+    };
+    profileCaches.set(profileId, cache);
+  }
+  return cache;
+}
+
+const CACHE_TTL_MS = 30_000;
+const PAGE_SIZE = 50;
 
 // Return a page of cached data
-function paginateCache(page: number): { data: GroupedConversation[]; hasMore: boolean; total: number } {
-  if (!cachedData) return { data: [], hasMore: false, total: 0 };
+function paginateCache(pc: ProfileCache, page: number): { data: GroupedConversation[]; hasMore: boolean; total: number } {
+  if (!pc.cachedData) return { data: [], hasMore: false, total: 0 };
   const start = (page - 1) * PAGE_SIZE;
-  const slice = cachedData.slice(start, start + PAGE_SIZE);
-  return { data: slice, hasMore: start + PAGE_SIZE < cachedData.length, total: cachedData.length };
+  const slice = pc.cachedData.slice(start, start + PAGE_SIZE);
+  return { data: slice, hasMore: start + PAGE_SIZE < pc.cachedData.length, total: pc.cachedData.length };
 }
 
 // Check if webhook has invalidated our cache
@@ -80,20 +96,25 @@ function isCacheInvalidated(): boolean {
   return invalidatedAt > cacheTimestamp;
 }
 
-// Track whether initial API seed has completed (survives restarts via SQLite)
-function isSeedComplete(): boolean {
+// Track whether initial API seed has completed per-profile
+function isSeedComplete(profileId: string): boolean {
   try {
     const db = getDb();
-    const row = db.select().from(schema.settings).where(eq(schema.settings.key, 'seed_complete')).get();
-    return row?.value === 'true';
+    const key = `seed_complete_${profileId}`;
+    const row = db.select().from(schema.settings).where(eq(schema.settings.key, key)).get();
+    if (row?.value === 'true') return true;
+    // Legacy: check global seed_complete for backward compatibility
+    const legacy = db.select().from(schema.settings).where(eq(schema.settings.key, 'seed_complete')).get();
+    return legacy?.value === 'true';
   } catch { return false; }
 }
 
-function markSeedComplete() {
+function markSeedComplete(profileId: string) {
   try {
     const db = getDb();
+    const key = `seed_complete_${profileId}`;
     db.insert(schema.settings)
-      .values({ key: 'seed_complete', value: 'true' })
+      .values({ key, value: 'true' })
       .onConflictDoUpdate({ target: schema.settings.key, set: { value: 'true', updatedAt: new Date() } })
       .run();
   } catch (e) {
@@ -102,7 +123,7 @@ function markSeedComplete() {
 }
 
 // Persist Kapso API conversations to SQLite for cache-first loading
-function persistConversationsToDb(records: ConversationRecord[]) {
+function persistConversationsToDb(records: ConversationRecord[], fallbackPhoneNumberId?: string) {
   try {
     const db = getDb();
     db.transaction((tx) => {
@@ -111,7 +132,6 @@ function persistConversationsToDb(records: ConversationRecord[]) {
         const phone = conv.phoneNumber ?? '';
         if (!phone) continue;
 
-        // Prefer last_message_timestamp for display, fall back to updatedAt
         const lastMsgTs = typeof kapso?.lastMessageTimestamp === 'string'
           ? new Date(String(kapso.lastMessageTimestamp))
           : null;
@@ -121,7 +141,7 @@ function persistConversationsToDb(records: ConversationRecord[]) {
             id: conv.id,
             phone,
             status: conv.status ?? 'active',
-            phoneNumberId: conv.phoneNumberId ?? PHONE_NUMBER_ID,
+            phoneNumberId: conv.phoneNumberId ?? fallbackPhoneNumberId ?? PHONE_NUMBER_ID,
             lastMessageText: typeof kapso?.lastMessageText === 'string' ? kapso.lastMessageText : null,
             lastMessageType: typeof kapso?.lastMessageType === 'string' ? kapso.lastMessageType : null,
             lastMessageDirection: parseDirection(kapso),
@@ -268,11 +288,16 @@ function searchConversationsInDb(query: string, page = 1): { data: GroupedConver
   }
 }
 
-// Load conversations from SQLite (instant, no API call)
-function loadConversationsFromDb(): GroupedConversation[] {
+// Load conversations from SQLite (instant, no API call), optionally filtered by phoneNumberId
+function loadConversationsFromDb(phoneNumberId?: string): GroupedConversation[] {
   try {
     const db = getDb();
-    const rows = db.select().from(schema.conversations).orderBy(desc(schema.conversations.updatedAt)).all();
+    const query = phoneNumberId
+      ? db.select().from(schema.conversations)
+          .where(eq(schema.conversations.phoneNumberId, phoneNumberId))
+          .orderBy(desc(schema.conversations.updatedAt))
+      : db.select().from(schema.conversations).orderBy(desc(schema.conversations.updatedAt));
+    const rows = query.all();
     if (rows.length === 0) return [];
 
     // Load contact names
@@ -324,7 +349,6 @@ function loadConversationsFromDb(): GroupedConversation[] {
     // Sort IDs and limit
     for (const group of phoneGroupMap.values()) {
       group.totalConversations = group.conversationIds.length;
-      allIdsPerPhone.set(group.phoneNumber, [...group.conversationIds]);
       group.conversationIds = group.conversationIds.slice(0, 3);
       const idSet = new Set(group.conversationIds);
       for (const key of Object.keys(group.conversationStatuses)) {
@@ -345,7 +369,7 @@ function loadConversationsFromDb(): GroupedConversation[] {
   }
 }
 
-function groupConversations(records: ConversationRecord[], maxIdsPerGroup = 3): GroupedConversation[] {
+function groupConversations(records: ConversationRecord[], maxIdsPerGroup = 3, idsCache?: Map<string, string[]>): GroupedConversation[] {
   const phoneGroupMap = new Map<string, GroupedConversation>();
   // Track lastActiveAt per conversation ID for sorting
   const convTimestamps = new Map<string, string>();
@@ -414,7 +438,7 @@ function groupConversations(records: ConversationRecord[], maxIdsPerGroup = 3): 
     // Store total count so frontend knows if older sessions exist
     group.totalConversations = group.conversationIds.length;
     // Store ALL sorted IDs (for "load older" feature) before slicing
-    allIdsPerPhone.set(group.phoneNumber, [...group.conversationIds]);
+    if (idsCache) idsCache.set(group.phoneNumber, [...group.conversationIds]);
     // Only include first N in the active set — frontend loads more on demand
     group.conversationIds = group.conversationIds.slice(0, maxIdsPerGroup);
     const idSet = new Set(group.conversationIds);
@@ -469,43 +493,46 @@ function mergeGrouped(existing: GroupedConversation[], incoming: GroupedConversa
 
 /**
  * Fetch one page of raw conversations from Kapso and return grouped results.
- * Updates nextApiCursor and allPagesFetched.
+ * Uses the profile's phoneNumberId and client.
  */
-async function fetchNextPage(status?: string, limit = 100): Promise<GroupedConversation[]> {
-  if (allPagesFetched) return [];
+async function fetchNextPage(profileId: string, status?: string, limit = 100): Promise<GroupedConversation[]> {
+  const pc = getProfileCache(profileId);
+  if (pc.allPagesFetched) return [];
 
-  const response = await whatsappClient.conversations.list({
-    phoneNumberId: PHONE_NUMBER_ID,
+  const { client, profile } = resolveProfile(profileId);
+  const response = await client.conversations.list({
+    phoneNumberId: profile.phoneNumberId,
     ...(status && { status: status as 'active' | 'ended' }),
     limit,
-    ...(nextApiCursor && { after: nextApiCursor }),
+    ...(pc.nextApiCursor && { after: pc.nextApiCursor }),
     fields: KAPSO_FIELDS
   });
 
   const records = response.data as ConversationRecord[];
 
-  nextApiCursor = response.paging?.cursors?.after ?? undefined;
-  if (!nextApiCursor) {
-    allPagesFetched = true;
-    markSeedComplete();
+  pc.nextApiCursor = response.paging?.cursors?.after ?? undefined;
+  if (!pc.nextApiCursor) {
+    pc.allPagesFetched = true;
+    markSeedComplete(profileId);
   }
 
-  // Persist to SQLite for cache-first loading on next startup
-  persistConversationsToDb(records);
+  persistConversationsToDb(records, profile.phoneNumberId);
 
-  return groupConversations(records);
+  return groupConversations(records, 3, pc.allIdsPerPhone);
 }
 
 // Quick fetch: only page 1 (100 most recent) — used for polling updates
-async function fetchRecentConversations(status?: string): Promise<ConversationRecord[]> {
-  const response = await whatsappClient.conversations.list({
-    phoneNumberId: PHONE_NUMBER_ID,
+async function fetchRecentConversations(profileId: string, status?: string): Promise<ConversationRecord[]> {
+  const { client, profile } = resolveProfile(profileId);
+  const pc = getProfileCache(profileId);
+  const response = await client.conversations.list({
+    phoneNumberId: profile.phoneNumberId,
     ...(status && { status: status as 'active' | 'ended' }),
     limit: 100,
     fields: KAPSO_FIELDS
   });
   const records = response.data as ConversationRecord[];
-  persistConversationsToDb(records);
+  persistConversationsToDb(records, profile.phoneNumberId);
   return records;
 }
 
@@ -520,6 +547,12 @@ export async function GET(request: Request) {
     const olderIdsPhone = searchParams.get('olderIds');
     const syncMode = searchParams.get('sync') === 'true';
     const searchQuery = searchParams.get('search');
+    const profileIdParam = searchParams.get('profileId');
+
+    // Resolve profile (uses param or default)
+    const { profile } = resolveProfile(profileIdParam);
+    const profileId = profile.id;
+    const pc = getProfileCache(profileId);
 
     // ── Search mode: query SQLite directly, paginated ──
     if (searchQuery && searchQuery.trim().length > 0) {
@@ -529,51 +562,50 @@ export async function GET(request: Request) {
 
     // ── Older IDs mode: return all conversation IDs for a phone (from cache, no API call) ──
     if (olderIdsPhone) {
-      const ids = allIdsPerPhone.get(olderIdsPhone) ?? [];
+      const ids = pc.allIdsPerPhone.get(olderIdsPhone) ?? [];
       return NextResponse.json({ conversationIds: ids });
     }
 
     // ── Sync mode: user-triggered full fetch from Kapso API ──
     if (syncMode) {
-      nextApiCursor = undefined;
-      allPagesFetched = false;
-      const page = await fetchNextPage(status ?? undefined, 100);
-      cachedData = page;
-      cacheTimestamp = Date.now();
-      return NextResponse.json({ data: page, hasMore: !allPagesFetched, syncing: true });
+      pc.nextApiCursor = undefined;
+      pc.allPagesFetched = false;
+      const page = await fetchNextPage(profileId, status ?? undefined, 100);
+      pc.cachedData = page;
+      pc.cacheTimestamp = Date.now();
+      return NextResponse.json({ data: page, hasMore: !pc.allPagesFetched, syncing: true });
     }
 
     // ── Paginated mode: ?cursor=next  (load more / continue sync) ──
     if (cursorParam === 'next') {
-      if (allPagesFetched) {
-        return NextResponse.json({ data: cachedData ?? [], hasMore: false });
+      if (pc.allPagesFetched) {
+        return NextResponse.json({ data: pc.cachedData ?? [], hasMore: false });
       }
-      const page = await fetchNextPage(status ?? undefined);
+      const page = await fetchNextPage(profileId, status ?? undefined);
       if (page.length > 0) {
-        cachedData = mergeGrouped(cachedData ?? [], page);
-        cacheTimestamp = Date.now();
+        pc.cachedData = mergeGrouped(pc.cachedData ?? [], page);
+        pc.cacheTimestamp = Date.now();
       }
-      return NextResponse.json({ data: cachedData ?? [], hasMore: !allPagesFetched });
+      return NextResponse.json({ data: pc.cachedData ?? [], hasMore: !pc.allPagesFetched });
     }
 
     // ── Force refresh: reset everything ──
     if (forceRefresh) {
-      const previousCache = cachedData;
-      nextApiCursor = undefined;
-      allPagesFetched = false;
-      cachedData = null;
+      const previousCache = pc.cachedData;
+      pc.nextApiCursor = undefined;
+      pc.allPagesFetched = false;
+      pc.cachedData = null;
 
       try {
-        const page = await fetchNextPage(status ?? undefined, 100);
-        cachedData = page;
-        cacheTimestamp = Date.now();
-        const result = paginateCache(1);
+        const page = await fetchNextPage(profileId, status ?? undefined, 100);
+        pc.cachedData = page;
+        pc.cacheTimestamp = Date.now();
+        const result = paginateCache(pc, 1);
         return NextResponse.json(result);
       } catch (refreshError) {
-        // Restore previous cache on failure
         if (previousCache) {
-          cachedData = previousCache;
-          const result = paginateCache(1);
+          pc.cachedData = previousCache;
+          const result = paginateCache(pc, 1);
           return NextResponse.json(result);
         }
         throw refreshError;
@@ -581,38 +613,38 @@ export async function GET(request: Request) {
     }
 
     // ── Check if seed is complete (must be before cache paths) ──
-    const seedComplete = isSeedComplete();
+    const seedComplete = isSeedComplete(profileId);
     if (!seedComplete) {
-      // Check if conversations exist (resync) vs empty DB (first setup)
       const db = getDb();
-      const count = db.select({ count: sql<number>`count(*)` }).from(schema.conversations).get();
+      const count = db.select({ count: sql<number>`count(*)` }).from(schema.conversations)
+        .where(eq(schema.conversations.phoneNumberId, profile.phoneNumberId)).get();
       const isResync = (count?.count ?? 0) > 0;
       return NextResponse.json({ data: [], hasMore: false, needsSync: true, isResync });
     }
 
     // ── Polling: return cache if fresh and not invalidated by webhook ──
-    if (cachedData && (Date.now() - cacheTimestamp) < CACHE_TTL_MS && !isCacheInvalidated()) {
-      const result = paginateCache(pageParam);
+    if (pc.cachedData && (Date.now() - pc.cacheTimestamp) < CACHE_TTL_MS && !isCacheInvalidated()) {
+      const result = paginateCache(pc, pageParam);
       return NextResponse.json(result);
     }
 
     // ── Polling with stale cache: fetch page 1 and merge ──
-    if (cachedData) {
-      const recent = await fetchRecentConversations(status ?? undefined);
-      const recentGrouped = groupConversations(recent);
-      cachedData = mergeGrouped(cachedData, recentGrouped);
-      cacheTimestamp = Date.now();
-      const result = paginateCache(pageParam);
+    if (pc.cachedData) {
+      const recent = await fetchRecentConversations(profileId, status ?? undefined);
+      const recentGrouped = groupConversations(recent, 3, pc.allIdsPerPhone);
+      pc.cachedData = mergeGrouped(pc.cachedData, recentGrouped);
+      pc.cacheTimestamp = Date.now();
+      const result = paginateCache(pc, pageParam);
       return NextResponse.json(result);
     }
 
     // ── First load: load from SQLite (seed is complete at this point) ──
-    const dbConversations = loadConversationsFromDb();
+    const dbConversations = loadConversationsFromDb(profile.phoneNumberId);
     if (dbConversations.length > 0) {
-      cachedData = dbConversations;
-      cacheTimestamp = Date.now();
-      allPagesFetched = true;
-      const result = paginateCache(pageParam);
+      pc.cachedData = dbConversations;
+      pc.cacheTimestamp = Date.now();
+      pc.allPagesFetched = true;
+      const result = paginateCache(pc, pageParam);
       return NextResponse.json(result);
     }
 
@@ -620,10 +652,16 @@ export async function GET(request: Request) {
     return NextResponse.json({ data: [], hasMore: false, needsSync: true });
   } catch (error) {
     console.error('Error fetching conversations:', error);
-    if (cachedData) {
-      const result = paginateCache(1);
-      return NextResponse.json(result);
-    }
+    try {
+      const { searchParams: sp } = new URL(request.url);
+      const pid = sp.get('profileId');
+      const { profile: p2 } = resolveProfile(pid);
+      const pc2 = getProfileCache(p2.id);
+      if (pc2.cachedData) {
+        const result = paginateCache(pc2, 1);
+        return NextResponse.json(result);
+      }
+    } catch { /* ignore */ }
     return NextResponse.json(
       { error: 'Failed to fetch conversations' },
       { status: 500 }
@@ -632,24 +670,24 @@ export async function GET(request: Request) {
 }
 
 // POST: Force resync — clears conversation cache and re-seeds from Kapso API
-export async function POST() {
+export async function POST(request: Request) {
   try {
+    const body = await request.json().catch(() => ({}));
+    const profileIdParam = (body as Record<string, unknown>).profileId as string | undefined;
+
+    const { profile } = resolveProfile(profileIdParam);
+    const profileId = profile.id;
     const db = getDb();
 
-    // Reset seed_complete flag so the next load triggers a full re-fetch
-    // Conversations are NOT deleted — persistConversationsToDb uses upsert
-    // so fresh data (including last_message_at) overwrites stale rows
+    // Reset per-profile seed_complete flag
+    const key = `seed_complete_${profileId}`;
     db.insert(schema.settings)
-      .values({ key: 'seed_complete', value: 'false' })
+      .values({ key, value: 'false' })
       .onConflictDoUpdate({ target: schema.settings.key, set: { value: 'false', updatedAt: new Date() } })
       .run();
 
-    // Reset in-memory state
-    cachedData = null;
-    cacheTimestamp = 0;
-    nextApiCursor = undefined;
-    allPagesFetched = false;
-    allIdsPerPhone.clear();
+    // Reset in-memory state for this profile
+    profileCaches.delete(profileId);
 
     return NextResponse.json({ success: true, message: 'Resync triggered. Reload the page to start syncing.' });
   } catch (error) {

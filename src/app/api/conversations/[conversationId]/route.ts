@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { whatsappClient } from '@/lib/whatsapp-client';
+import { resolveProfile } from '@/lib/whatsapp-client';
 import { getDb, schema } from '@/lib/db';
 import { eq } from 'drizzle-orm';
 
@@ -19,6 +19,8 @@ export async function GET(
 
     // Lightweight SQLite-only lookup (for polling, no API call)
     const url = new URL(request.url);
+    const profileId = url.searchParams.get('profileId');
+
     if (url.searchParams.get('source') === 'db') {
       try {
         const db = getDb();
@@ -34,7 +36,9 @@ export async function GET(
       }
     }
 
-    const result = await whatsappClient.conversations.get({
+    const { client } = resolveProfile(profileId);
+
+    const result = await client.conversations.get({
       conversationId,
     });
 

@@ -1,17 +1,16 @@
 import { NextResponse } from 'next/server';
-import { whatsappClient, PHONE_NUMBER_ID } from '@/lib/whatsapp-client';
+import { resolveProfile } from '@/lib/whatsapp-client';
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const phoneNumberId = searchParams.get('phoneNumberId') || PHONE_NUMBER_ID;
+    const profileId = searchParams.get('profileId');
+    const { client, profile } = resolveProfile(profileId);
+    const phoneNumberId = searchParams.get('phoneNumberId') || profile.phoneNumberId;
     const conversationId = searchParams.get('conversationId') || undefined;
-    // Note: The Kapso SDK messages.query() does not support text search yet.
-    // The `q` param is accepted but filtering must happen client-side.
-    // Server-side text search can be added when the Kapso API supports it.
     const q = searchParams.get('q') || undefined;
 
-    const result = await whatsappClient.messages.query({
+    const result = await client.messages.query({
       phoneNumberId,
       ...(conversationId ? { conversationId } : {}),
     });

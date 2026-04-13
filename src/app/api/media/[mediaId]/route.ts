@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { whatsappClient, PHONE_NUMBER_ID } from '@/lib/whatsapp-client';
+import { resolveProfile } from '@/lib/whatsapp-client';
 import { getDb, schema } from '@/lib/db';
 import { sql } from 'drizzle-orm';
 
@@ -9,6 +9,10 @@ export async function GET(
 ) {
   const { mediaId } = await params;
   try {
+    const { searchParams } = new URL(request.url);
+    const profileId = searchParams.get('profileId');
+    const { client, profile } = resolveProfile(profileId);
+
     // First check if we have a Kapso direct URL cached in SQLite
     try {
       const db = getDb();
@@ -19,7 +23,6 @@ export async function GET(
       if (row?.mediaDataJson) {
         const md = JSON.parse(row.mediaDataJson);
         if (md.url && !md.url.startsWith('/api/')) {
-          // Redirect to permanent Kapso URL
           return NextResponse.redirect(md.url, 302);
         }
       }
@@ -27,15 +30,14 @@ export async function GET(
       // Fall through to SDK download
     }
 
-    // Get metadata for mime type
-    const metadata = await whatsappClient.media.get({
+    const metadata = await client.media.get({
       mediaId,
-      phoneNumberId: PHONE_NUMBER_ID
+      phoneNumberId: profile.phoneNumberId
     });
 
-    const buffer = await whatsappClient.media.download({
+    const buffer = await client.media.download({
       mediaId,
-      phoneNumberId: PHONE_NUMBER_ID,
+      phoneNumberId: profile.phoneNumberId,
     });
 
     // If buffer is a Response, clone and add cache headers

@@ -1154,11 +1154,22 @@ type ReplyTemplate = {
 };
 
 function SettingsDialog({ onClose }: { onClose: () => void }) {
-  const [tab, setTab] = useState<'bcl' | 'data'>('bcl');
+  const [tab, setTab] = useState<'profiles' | 'bcl' | 'data'>('profiles');
 
   return (
     <div className="flex flex-col min-h-0 flex-1">
       <div className="flex border-b border-[var(--wa-border)] mb-4">
+        <button
+          onClick={() => setTab('profiles')}
+          className={cn(
+            "flex-1 py-2 text-sm font-medium transition-colors border-b-2 -mb-px",
+            tab === 'profiles'
+              ? "border-[var(--wa-green)] text-[var(--wa-green)]"
+              : "border-transparent text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]"
+          )}
+        >
+          WA Profiles
+        </button>
         <button
           onClick={() => setTab('bcl')}
           className={cn(
@@ -1182,7 +1193,367 @@ function SettingsDialog({ onClose }: { onClose: () => void }) {
           Data
         </button>
       </div>
-      {tab === 'bcl' ? <BclSettingsTab onClose={onClose} /> : <DataTab />}
+      {tab === 'profiles' ? <WaProfilesTab onClose={onClose} /> : tab === 'bcl' ? <BclSettingsTab onClose={onClose} /> : <DataTab />}
+    </div>
+  );
+}
+
+type WaProfile = {
+  id: string;
+  label: string;
+  phoneNumberId: string;
+  wabaId: string;
+  kapsoApiKey: string;
+  phoneDisplay: string | null;
+  isDefault: boolean | null;
+  bclMerchantIds: string[];
+};
+
+function WaProfilesTab({ onClose }: { onClose: () => void }) {
+  const [profiles, setProfiles] = useState<WaProfile[]>([]);
+  const [bclMerchants, setBclMerchants] = useState<BclMerchant[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formLabel, setFormLabel] = useState('');
+  const [formPhoneNumberId, setFormPhoneNumberId] = useState('');
+  const [formWabaId, setFormWabaId] = useState('');
+  const [formApiKey, setFormApiKey] = useState('');
+  const [formPhoneDisplay, setFormPhoneDisplay] = useState('');
+  const [formBclIds, setFormBclIds] = useState<string[]>([]);
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [pRes, mRes] = await Promise.all([
+        fetch('/api/wa-profiles'),
+        fetch('/api/bcl-merchants'),
+      ]);
+      const pData = await pRes.json();
+      const mData = await mRes.json();
+      setProfiles(pData.profiles || []);
+      setBclMerchants(mData.merchants || []);
+    } catch { /* ignore */ }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const resetForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setFormLabel('');
+    setFormPhoneNumberId('');
+    setFormWabaId('');
+    setFormApiKey('');
+    setFormPhoneDisplay('');
+    setFormBclIds([]);
+    setShowApiKey(false);
+  };
+
+  const startEdit = (p: WaProfile) => {
+    setEditingId(p.id);
+    setFormLabel(p.label);
+    setFormPhoneNumberId(p.phoneNumberId);
+    setFormWabaId(p.wabaId);
+    setFormApiKey('');
+    setFormPhoneDisplay(p.phoneDisplay || '');
+    setFormBclIds(p.bclMerchantIds);
+    setShowForm(true);
+  };
+
+  const handleSave = async () => {
+    if (!formLabel.trim() || !formPhoneNumberId.trim() || !formWabaId.trim()) return;
+    if (!editingId && !formApiKey.trim()) {
+      setMessage({ text: 'Kapso API key is required', error: true });
+      return;
+    }
+    setSaving(true);
+    setMessage(null);
+    try {
+      const method = editingId ? 'PUT' : 'POST';
+      const body: Record<string, unknown> = {
+        label: formLabel.trim(),
+        phone_number_id: formPhoneNumberId.trim(),
+        waba_id: formWabaId.trim(),
+        phone_display: formPhoneDisplay.trim() || undefined,
+        bcl_merchant_ids: formBclIds,
+      };
+      if (editingId) body.id = editingId;
+      if (formApiKey) body.kapso_api_key = formApiKey;
+
+      const res = await fetch('/api/wa-profiles', {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage({ text: data.error || 'Failed to save', error: true });
+      } else {
+        setMessage({ text: editingId ? 'Profile updated' : 'Profile added' });
+        resetForm();
+        fetchData();
+      }
+    } catch {
+      setMessage({ text: 'Network error', error: true });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setMessage(null);
+    try {
+      const res = await fetch('/api/wa-profiles', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        setMessage({ text: d.error || 'Failed to delete', error: true });
+      } else {
+        setMessage({ text: 'Profile removed' });
+        fetchData();
+      }
+    } catch {
+      setMessage({ text: 'Network error', error: true });
+    }
+  };
+
+  const handleSetDefault = async (id: string) => {
+    setMessage(null);
+    try {
+      const p = profiles.find(x => x.id === id);
+      if (!p) return;
+      const res = await fetch('/api/wa-profiles', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, label: p.label, is_default: true }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        setMessage({ text: d.error || 'Failed', error: true });
+      } else {
+        fetchData();
+      }
+    } catch {
+      setMessage({ text: 'Network error', error: true });
+    }
+  };
+
+  const toggleBcl = (merchantId: string) => {
+    setFormBclIds(prev =>
+      prev.includes(merchantId) ? prev.filter(id => id !== merchantId) : [...prev, merchantId]
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-5 w-5 animate-spin text-[var(--wa-text-secondary)]" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Profile list */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider">
+            WhatsApp Profiles ({profiles.length})
+          </label>
+          {!showForm && (
+            <button
+              onClick={() => { resetForm(); setShowForm(true); }}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg bg-[var(--wa-green)]/15 text-[var(--wa-green)] hover:bg-[var(--wa-green)]/25 transition-colors flex items-center gap-1.5"
+            >
+              <Plus className="h-3.5 w-3.5" /> Add Profile
+            </button>
+          )}
+        </div>
+
+        {profiles.length === 0 && !showForm && (
+          <p className="text-xs text-[var(--wa-text-secondary)] bg-[var(--wa-hover)] px-3 py-3 rounded-lg text-center">
+            No profiles configured. Add one to connect a WhatsApp number.
+          </p>
+        )}
+
+        <div className="space-y-2">
+          {profiles.map(p => {
+            if (editingId && p.id !== editingId) return null;
+            return (
+              <div key={p.id} className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-colors ${
+                p.isDefault
+                  ? 'border-emerald-500/30 bg-emerald-500/[0.04]'
+                  : 'border-[var(--wa-border)] bg-[var(--wa-search-bg)]'
+              }`}>
+                <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  p.isDefault ? 'bg-emerald-500/15' : 'bg-[var(--wa-hover)]'
+                }`}>
+                  <Phone className={`h-3.5 w-3.5 ${p.isDefault ? 'text-emerald-400' : 'text-[var(--wa-text-secondary)]'}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[13px] font-medium text-[var(--wa-text-primary)] truncate">{p.label}</span>
+                    {p.isDefault && (
+                      <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400">Default</span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-[var(--wa-text-secondary)]/60 font-mono truncate mt-0.5">
+                    {p.phoneDisplay || p.phoneNumberId}
+                  </p>
+                  {p.bclMerchantIds.length > 0 && (
+                    <div className="flex gap-1 mt-1 flex-wrap">
+                      {p.bclMerchantIds.map(bId => {
+                        const m = bclMerchants.find(x => x.id === bId);
+                        return m ? (
+                          <span key={bId} className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400">
+                            {m.name}
+                          </span>
+                        ) : null;
+                      })}
+                    </div>
+                  )}
+                </div>
+                {!showForm && (
+                  <div className="flex items-center gap-0.5 flex-shrink-0">
+                    {!p.isDefault && (
+                      <button
+                        onClick={() => handleSetDefault(p.id)}
+                        className="text-[10px] font-medium px-2 py-1 rounded-md text-emerald-400/50 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors mr-0.5"
+                      >
+                        Set Default
+                      </button>
+                    )}
+                    <button
+                      onClick={() => startEdit(p)}
+                      title="Edit"
+                      className="h-7 w-7 flex items-center justify-center rounded-md text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)] transition-colors"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(p.id)}
+                      title="Remove"
+                      className="h-7 w-7 flex items-center justify-center rounded-md text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Add / Edit form */}
+      {showForm && (
+        <div className="space-y-3 p-3 rounded-lg border border-[var(--wa-border)] bg-[var(--wa-hover)]">
+          <h4 className="text-xs font-semibold text-[var(--wa-text-primary)]">
+            {editingId ? 'Edit Profile' : 'New Profile'}
+          </h4>
+          <input
+            type="text"
+            value={formLabel}
+            onChange={(e) => setFormLabel(e.target.value)}
+            placeholder="Profile label (e.g. My Business)"
+            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+          />
+          <input
+            type="text"
+            value={formPhoneNumberId}
+            onChange={(e) => setFormPhoneNumberId(e.target.value)}
+            placeholder="Phone Number ID"
+            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+          />
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              type="text"
+              value={formWabaId}
+              onChange={(e) => setFormWabaId(e.target.value)}
+              placeholder="WABA ID"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+            />
+            <input
+              type="text"
+              value={formPhoneDisplay}
+              onChange={(e) => setFormPhoneDisplay(e.target.value)}
+              placeholder="Phone display (optional)"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+            />
+          </div>
+          <div className="relative">
+            <input
+              type={showApiKey ? 'text' : 'password'}
+              value={formApiKey}
+              onChange={(e) => setFormApiKey(e.target.value)}
+              placeholder={editingId ? 'New Kapso API key (leave empty to keep)' : 'Kapso API key'}
+              className="w-full px-3 py-2 pr-9 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+            />
+            <button
+              type="button"
+              onClick={() => setShowApiKey(!showApiKey)}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]"
+            >
+              {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          {/* BCL Merchant assignment */}
+          {bclMerchants.length > 0 && (
+            <div>
+              <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1.5 block">
+                Linked BCL Merchants
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {bclMerchants.map(m => (
+                  <button
+                    key={m.id}
+                    onClick={() => toggleBcl(m.id)}
+                    className={cn(
+                      "text-[11px] px-2.5 py-1 rounded-full border transition-colors",
+                      formBclIds.includes(m.id)
+                        ? "border-blue-500/40 bg-blue-500/15 text-blue-400"
+                        : "border-[var(--wa-border)] bg-transparent text-[var(--wa-text-secondary)] hover:border-blue-500/30"
+                    )}
+                  >
+                    {m.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={resetForm}>Cancel</Button>
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={saving || !formLabel || !formPhoneNumberId || !formWabaId || (!formApiKey && !editingId)}
+              className="bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] text-white gap-1"
+            >
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+              {editingId ? 'Update' : 'Add'}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {message && (
+        <p className={cn("text-xs px-3 py-2 rounded-lg", message.error ? "text-red-400 bg-red-500/10" : "text-green-400 bg-green-500/10")}>
+          {message.text}
+        </p>
+      )}
+
+      <div className="flex justify-end pt-1">
+        <Button variant="ghost" onClick={onClose} className="text-sm">
+          Close
+        </Button>
+      </div>
     </div>
   );
 }
