@@ -140,7 +140,6 @@ export default function AutomationsPage() {
   const selectAutomation = useCallback(async (auto: Automation) => {
     setSelectedId(auto.id);
     setSelectedMerchantId(auto.merchantId);
-    setShowDetail(true);
     setStats(null);
     setExecutions([]);
     setExecMeta(null);
