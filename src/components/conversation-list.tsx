@@ -1152,10 +1152,10 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
         </DialogContent>
       </Dialog>
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
-        <DialogContent className="sm:max-w-[580px] rounded-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
-          <div className="px-5 pt-5 pb-0">
+        <DialogContent className="sm:max-w-[580px] max-w-[calc(100%-1rem)] rounded-2xl max-h-[95vh] sm:max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <div className="px-4 sm:px-5 pt-4 sm:pt-5 pb-0">
             <DialogHeader>
-              <DialogTitle className="text-lg font-semibold text-[var(--wa-text-primary)] flex items-center gap-2">
+              <DialogTitle className="text-base sm:text-lg font-semibold text-[var(--wa-text-primary)] flex items-center gap-2">
                 <Settings className="h-5 w-5 text-[var(--wa-green)]" />
                 Settings
               </DialogTitle>
@@ -1190,7 +1190,7 @@ function SettingsDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="flex flex-col min-h-0 flex-1">
-      <div className="flex gap-1 px-5 py-3 border-b border-[var(--wa-border)]">
+      <div className="flex gap-1 px-4 sm:px-5 py-3 border-b border-[var(--wa-border)]">
         {tabs.map(t => {
           const Icon = t.icon;
           const active = tab === t.key;
@@ -1199,19 +1199,20 @@ function SettingsDialog({ onClose }: { onClose: () => void }) {
               key={t.key}
               onClick={() => setTab(t.key)}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                "flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all",
                 active
                   ? "bg-[var(--wa-green)]/15 text-[var(--wa-green)]"
                   : "text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)]"
               )}
             >
               <Icon className="h-3.5 w-3.5" />
-              {t.label}
+              <span className="hidden sm:inline">{t.label}</span>
+              <span className="sm:hidden">{t.key === 'profiles' ? 'Profiles' : t.key === 'bcl' ? 'BCL' : 'Data'}</span>
             </button>
           );
         })}
       </div>
-      <div className="flex-1 overflow-y-auto px-5 py-4 min-h-0">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4 min-h-0">
         {tab === 'profiles' ? <WaProfilesTab onClose={onClose} /> : tab === 'bcl' ? <BclSettingsTab onClose={onClose} /> : <DataTab />}
       </div>
     </div>
@@ -1468,7 +1469,8 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
                     {!p.isDefault && (
                       <button
                         onClick={() => handleSetDefault(p.id)}
-                        className="text-xs font-medium px-2 py-1 rounded-md text-emerald-400/50 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors mr-0.5"
+                        title="Set as default"
+                        className="text-xs font-medium px-2 py-1 rounded-md text-emerald-400/50 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors mr-0.5 hidden sm:block"
                       >
                         Set Default
                       </button>
@@ -1511,7 +1513,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
               className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
             />
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">Phone Number ID <span className="text-red-400">*</span></label>
               <input
@@ -1855,7 +1857,7 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
                     {!m.isDefault && (
                       <button
                         onClick={() => handleSetDefault(m.id)}
-                        className="text-xs font-medium px-2 py-1 rounded-md text-blue-400/50 hover:text-blue-400 hover:bg-blue-500/10 transition-colors mr-0.5"
+                        className="text-xs font-medium px-2 py-1 rounded-md text-blue-400/50 hover:text-blue-400 hover:bg-blue-500/10 transition-colors mr-0.5 hidden sm:block"
                       >
                         Set Default
                       </button>
