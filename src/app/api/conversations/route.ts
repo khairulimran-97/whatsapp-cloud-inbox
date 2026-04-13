@@ -672,8 +672,9 @@ export async function GET(request: Request) {
 // POST: Force resync — clears conversation cache and re-seeds from Kapso API
 export async function POST(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
     const body = await request.json().catch(() => ({}));
-    const profileIdParam = (body as Record<string, unknown>).profileId as string | undefined;
+    const profileIdParam = searchParams.get('profileId') || (body as Record<string, unknown>).profileId as string | undefined;
 
     const { profile } = resolveProfile(profileIdParam);
     const profileId = profile.id;
