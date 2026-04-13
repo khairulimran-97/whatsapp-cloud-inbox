@@ -276,16 +276,18 @@ export default function AutomationsPage() {
         >
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-[15px] font-bold flex items-center gap-2">
-            <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-              <Zap className="h-3.5 w-3.5 text-white" />
-            </div>
-            <span className="bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">BCL Automations</span>
-          </h1>
-          <p className="text-[11px] text-[var(--wa-text-secondary)] truncate ml-8">
-            {activeCount} active · {totalRuns.toLocaleString()} total runs
-          </p>
+        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+          <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center flex-shrink-0">
+            <Zap className="h-4 w-4 text-white" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-[15px] font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent leading-tight">
+              BCL Automations
+            </h1>
+            <p className="text-[11px] text-[var(--wa-text-secondary)] truncate">
+              {activeCount} active · {totalRuns.toLocaleString()} total runs
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-1.5">
           {merchantNames.length > 1 && (
