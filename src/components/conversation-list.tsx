@@ -1600,6 +1600,27 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
               </div>
             </div>
           )}
+          {/* Webhook instructions */}
+          <div className="rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] p-3 space-y-1.5">
+            <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider block">Webhook Setup</label>
+            <div className="flex items-center gap-1.5">
+              <code className="flex-1 text-[11px] text-[var(--wa-text-primary)] bg-[var(--wa-hover)] px-2 py-1 rounded font-mono truncate">
+                {typeof window !== 'undefined' ? window.location.origin : ''}/api/webhooks/kapso
+              </code>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/api/webhooks/kapso`);
+                }}
+                className="shrink-0 text-[10px] px-2 py-1 rounded bg-[var(--wa-green)]/10 text-[var(--wa-green)] hover:bg-[var(--wa-green)]/20 transition-colors"
+              >
+                Copy
+              </button>
+            </div>
+            <p className="text-[10px] text-[var(--wa-text-secondary)] leading-relaxed">
+              Set this URL as the webhook in your Kapso dashboard. The secret key is configured via <code className="text-[var(--wa-text-primary)] bg-[var(--wa-hover)] px-1 rounded">KAPSO_WEBHOOK_SECRET</code> env variable.
+            </p>
+          </div>
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="ghost" size="sm" onClick={resetForm}>Cancel</Button>
             <Button
