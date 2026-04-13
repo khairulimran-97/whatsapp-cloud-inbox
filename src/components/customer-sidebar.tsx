@@ -469,7 +469,7 @@ function LookupResultCard({ tx, onInsertText }: { tx: Transaction; onInsertText?
 }
 
 function MerchantSelector({ merchants, selected, onChange }: { merchants: BclMerchantInfo[]; selected: string; onChange: (id: string) => void }) {
-  if (merchants.length <= 1) return null;
+  if (merchants.length === 0) return null;
   return (
     <div className="px-4 py-2 border-b border-[var(--wa-border)] bg-[var(--wa-panel-bg)]">
       <div className="flex items-center gap-2">
