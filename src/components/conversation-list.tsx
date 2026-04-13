@@ -1152,11 +1152,16 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
         </DialogContent>
       </Dialog>
       <Dialog open={showSettings} onOpenChange={setShowSettings}>
-        <DialogContent className="sm:max-w-[580px] rounded-2xl max-h-[90vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="text-lg">Settings</DialogTitle>
-            <DialogDescription className="sr-only">App settings and configuration</DialogDescription>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-[580px] rounded-2xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <div className="px-5 pt-5 pb-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-[var(--wa-text-primary)] flex items-center gap-2">
+                <Settings className="h-5 w-5 text-[var(--wa-green)]" />
+                Settings
+              </DialogTitle>
+              <DialogDescription className="sr-only">App settings and configuration</DialogDescription>
+            </DialogHeader>
+          </div>
           <SettingsDialog onClose={() => setShowSettings(false)} />
         </DialogContent>
       </Dialog>
@@ -1177,44 +1182,38 @@ type ReplyTemplate = {
 function SettingsDialog({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<'profiles' | 'bcl' | 'data'>('profiles');
 
+  const tabs = [
+    { key: 'profiles' as const, label: 'WA Profiles', icon: Phone },
+    { key: 'bcl' as const, label: 'BCL API', icon: Store },
+    { key: 'data' as const, label: 'Data', icon: Database },
+  ];
+
   return (
     <div className="flex flex-col min-h-0 flex-1">
-      <div className="flex border-b border-[var(--wa-border)] mb-4">
-        <button
-          onClick={() => setTab('profiles')}
-          className={cn(
-            "flex-1 py-2 text-sm font-medium transition-colors border-b-2 -mb-px",
-            tab === 'profiles'
-              ? "border-[var(--wa-green)] text-[var(--wa-green)]"
-              : "border-transparent text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]"
-          )}
-        >
-          WA Profiles
-        </button>
-        <button
-          onClick={() => setTab('bcl')}
-          className={cn(
-            "flex-1 py-2 text-sm font-medium transition-colors border-b-2 -mb-px",
-            tab === 'bcl'
-              ? "border-[var(--wa-green)] text-[var(--wa-green)]"
-              : "border-transparent text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]"
-          )}
-        >
-          BCL API
-        </button>
-        <button
-          onClick={() => setTab('data')}
-          className={cn(
-            "flex-1 py-2 text-sm font-medium transition-colors border-b-2 -mb-px",
-            tab === 'data'
-              ? "border-[var(--wa-green)] text-[var(--wa-green)]"
-              : "border-transparent text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]"
-          )}
-        >
-          Data
-        </button>
+      <div className="flex gap-1 px-5 py-3 border-b border-[var(--wa-border)]">
+        {tabs.map(t => {
+          const Icon = t.icon;
+          const active = tab === t.key;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                active
+                  ? "bg-[var(--wa-green)]/15 text-[var(--wa-green)]"
+                  : "text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)]"
+              )}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {t.label}
+            </button>
+          );
+        })}
       </div>
-      {tab === 'profiles' ? <WaProfilesTab onClose={onClose} /> : tab === 'bcl' ? <BclSettingsTab onClose={onClose} /> : <DataTab />}
+      <div className="flex-1 overflow-y-auto px-5 py-4 min-h-0">
+        {tab === 'profiles' ? <WaProfilesTab onClose={onClose} /> : tab === 'bcl' ? <BclSettingsTab onClose={onClose} /> : <DataTab />}
+      </div>
     </div>
   );
 }
@@ -1885,35 +1884,41 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
 
       {/* Add / Edit form */}
       {showForm && (
-        <form onSubmit={(e) => e.preventDefault()} autoComplete="off" className="space-y-3 p-3 rounded-lg border border-[var(--wa-border)] bg-[var(--wa-hover)]">
+        <form onSubmit={(e) => e.preventDefault()} autoComplete="off" className="space-y-3.5 p-3.5 rounded-lg border border-[var(--wa-border)] bg-[var(--wa-hover)]">
           <h4 className="text-xs font-semibold text-[var(--wa-text-primary)]">
             {editingId ? 'Edit Merchant' : 'New Merchant'}
           </h4>
-          <input
-            type="text"
-            value={formName}
-            onChange={(e) => setFormName(e.target.value)}
-            placeholder="Merchant name"
-            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
-          />
-          <div className="relative">
+          <div>
+            <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">Merchant Name <span className="text-red-400">*</span></label>
             <input
-              type={showFormKey ? 'text' : 'password'}
-              autoComplete="off"
-              value={formKey}
-              onChange={(e) => setFormKey(e.target.value)}
-              placeholder={editingId ? 'New API key (leave empty to keep)' : 'BCL API key'}
-              className="w-full px-3 py-2 pr-9 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+              type="text"
+              value={formName}
+              onChange={(e) => setFormName(e.target.value)}
+              placeholder="e.g. My Store"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
             />
-            <button
-              type="button"
-              onClick={() => setShowFormKey(!showFormKey)}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]"
-            >
-              {showFormKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
           </div>
-          <div className="flex justify-end gap-2">
+          <div>
+            <label className="text-xs font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">BCL API Key {!editingId && <span className="text-red-400">*</span>}</label>
+            <div className="relative">
+              <input
+                type={showFormKey ? 'text' : 'password'}
+                autoComplete="off"
+                value={formKey}
+                onChange={(e) => setFormKey(e.target.value)}
+                placeholder={editingId ? 'Leave empty to keep current key' : 'Enter API key'}
+                className="w-full px-3 py-2 pr-9 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+              />
+              <button
+                type="button"
+                onClick={() => setShowFormKey(!showFormKey)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]"
+              >
+                {showFormKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-1">
             <Button variant="ghost" size="sm" onClick={resetForm}>Cancel</Button>
             <Button
               size="sm"
@@ -2210,27 +2215,29 @@ function DataTab() {
   return (
     <div className="space-y-4">
       {dbStats && (
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'Conversations', value: dbStats.conversations },
-            { label: 'Messages', value: dbStats.messages },
-            { label: 'Contacts', value: dbStats.contacts },
-          ].map(({ label, value }) => (
-            <div key={label} className="bg-[var(--wa-hover)] rounded-lg p-3 text-center">
-              <p className="text-lg font-semibold text-[var(--wa-text-primary)]">{value.toLocaleString()}</p>
-              <p className="text-xs text-[var(--wa-text-secondary)] uppercase tracking-wider">{label}</p>
+            { label: 'Conversations', value: dbStats.conversations, color: 'text-emerald-400' },
+            { label: 'Messages', value: dbStats.messages, color: 'text-blue-400' },
+            { label: 'Contacts', value: dbStats.contacts, color: 'text-amber-400' },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="bg-[var(--wa-hover)] rounded-xl p-3.5 text-center border border-[var(--wa-border)]">
+              <p className={`text-xl font-bold ${color}`}>{value.toLocaleString()}</p>
+              <p className="text-xs text-[var(--wa-text-secondary)] mt-0.5">{label}</p>
             </div>
           ))}
         </div>
       )}
 
-      <div className="bg-[var(--wa-hover)] rounded-lg p-4 space-y-3">
+      <div className="bg-[var(--wa-hover)] rounded-xl p-4 space-y-3 border border-[var(--wa-border)]">
         <div className="flex items-start gap-3">
-          <Database className="h-5 w-5 text-[var(--wa-text-secondary)] flex-shrink-0 mt-0.5" />
+          <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+            <RefreshCw className="h-4 w-4 text-emerald-400" />
+          </div>
           <div>
             <h3 className="text-sm font-medium text-[var(--wa-text-primary)]">Force Resync</h3>
             <p className="text-xs text-[var(--wa-text-secondary)] mt-1 leading-relaxed">
-              Re-fetch all conversations from Kapso API. Existing messages are kept — only conversation metadata (status, timestamps, contacts) is refreshed.
+              Re-fetch all conversations from Kapso API. Existing messages are kept — only conversation metadata is refreshed.
             </p>
           </div>
         </div>
@@ -2244,9 +2251,11 @@ function DataTab() {
         </Button>
       </div>
 
-      <div className="bg-[var(--wa-hover)] rounded-lg p-4 space-y-3">
+      <div className="bg-[var(--wa-hover)] rounded-xl p-4 space-y-3 border border-[var(--wa-border)]">
         <div className="flex items-start gap-3">
-          <ExternalLink className="h-5 w-5 text-[var(--wa-text-secondary)] flex-shrink-0 mt-0.5" />
+          <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
+            <Database className="h-4 w-4 text-blue-400" />
+          </div>
           <div>
             <h3 className="text-sm font-medium text-[var(--wa-text-primary)]">Database Viewer</h3>
             <p className="text-xs text-[var(--wa-text-secondary)] mt-1 leading-relaxed">
@@ -2264,9 +2273,9 @@ function DataTab() {
               }
             } catch { /* ignore */ }
           }}
-          className="w-full bg-gray-700 hover:bg-gray-600 text-white text-sm gap-2"
+          className="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm gap-2"
         >
-          <Database className="h-4 w-4" />
+          <ExternalLink className="h-4 w-4" />
           Open Database Viewer
         </Button>
       </div>
