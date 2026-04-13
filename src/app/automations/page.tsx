@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   ArrowLeft, Sun, Moon, Zap, ChevronRight, CheckCircle2,
   XCircle, Clock, Activity, RefreshCw, Loader2, Store, ChevronDown,
-  CircleDot, BarChart3, Search, TrendingUp, Calendar, Hash,
+  CircleDot, BarChart3, Search, Calendar, Hash,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -282,17 +282,43 @@ export default function AutomationsPage() {
             {activeCount} active · {totalRuns.toLocaleString()} total runs
           </p>
         </div>
+        <div className="flex items-center gap-1.5">
+          {merchantNames.length > 1 && (
+            <div className="relative">
+              <select
+                value={filterMerchant}
+                onChange={e => setFilterMerchant(e.target.value)}
+                className="appearance-none h-8 pl-2.5 pr-7 text-[12px] rounded-lg bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] border border-slate-200 dark:border-[var(--wa-border)] outline-none cursor-pointer font-medium"
+              >
+                {merchantNames.map(name => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-[var(--wa-text-secondary)] pointer-events-none" />
+            </div>
+          )}
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="h-8 w-8 flex items-center justify-center rounded-lg text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-black/5 dark:hover:bg-white/10 transition-colors disabled:opacity-40"
+            title="Refresh"
+          >
+            <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
+          </button>
+          <button
+            onClick={toggleTheme}
+            className="h-8 w-8 flex items-center justify-center rounded-lg text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+            title={isDark ? 'Light mode' : 'Dark mode'}
+          >
+            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+        </div>
       </header>
 
-      {/* Content */}
-      <div className="flex-1 min-h-0 flex flex-col md:flex-row">
-        {/* List panel */}
-        <div className={cn(
-          'md:w-[380px] lg:w-[420px] md:border-r md:border-slate-200 md:dark:border-[var(--wa-border-strong)] flex flex-col overflow-hidden',
-          showDetail && 'hidden md:flex'
-        )}>
-
-          {/* Automation list */}
+      {/* Content — single column, toggle between list and detail */}
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+        {!showDetail ? (
+          /* Automation list */
           <div className="flex-1 overflow-auto">
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20 gap-3">
@@ -379,7 +405,7 @@ export default function AutomationsPage() {
                               )}
                             </div>
                           </div>
-                          <ChevronRight className="h-4 w-4 text-[var(--wa-text-secondary)]/50 mt-3 flex-shrink-0 md:hidden" />
+                          <ChevronRight className="h-4 w-4 text-[var(--wa-text-secondary)]/50 mt-3 flex-shrink-0" />
                         </div>
                       </button>
                     );
@@ -388,83 +414,17 @@ export default function AutomationsPage() {
               ))
             )}
           </div>
-
-          {/* Bottom bar — merchant switcher + actions */}
-          <div className="flex-shrink-0 border-t border-slate-200 dark:border-[var(--wa-border)] bg-[var(--wa-panel-header)]">
-            {merchantNames.length > 1 && (
-              <div className="px-2 pt-2.5 pb-1.5">
-                <p className="px-1.5 mb-1.5 text-[10px] font-semibold text-[var(--wa-text-secondary)] uppercase tracking-wider">Merchant</p>
-                <div className="flex flex-col gap-0.5">
-                  {merchantNames.map(name => {
-                    const count = automations.filter(a => (a.merchantName || a.team_name || 'Default') === name).length;
-                    const isActive = filterMerchant === name;
-                    return (
-                      <button
-                        key={name}
-                        onClick={() => setFilterMerchant(name)}
-                        className={cn(
-                          'w-full text-left px-2.5 py-2 text-[13px] rounded-lg flex items-center gap-2.5 transition-all',
-                          isActive
-                            ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium'
-                            : 'text-[var(--wa-text-secondary)] hover:bg-[var(--wa-hover)]'
-                        )}
-                      >
-                        <Store className={cn('h-4 w-4 flex-shrink-0', isActive ? 'text-amber-500' : 'opacity-50')} />
-                        <span className="flex-1 truncate">{name}</span>
-                        <span className={cn(
-                          'min-w-[22px] text-center text-[11px] px-1.5 py-0.5 rounded-full',
-                          isActive
-                            ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 font-medium'
-                            : 'bg-black/5 dark:bg-white/5 opacity-60'
-                        )}>{count}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            <div className={cn(
-              'flex gap-1.5 px-2 py-2',
-              merchantNames.length > 1 && 'border-t border-slate-200/60 dark:border-[var(--wa-border)]'
-            )}>
-              <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-[13px] rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-colors disabled:opacity-40 font-medium"
-              >
-                <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
-                Refresh
-              </button>
-              <button
-                onClick={toggleTheme}
-                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-[13px] rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 transition-colors font-medium"
-              >
-                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                {isDark ? 'Light' : 'Dark'}
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className={cn(
-          'flex-1 flex flex-col overflow-hidden bg-[var(--wa-bg)]',
-          !showDetail && 'hidden md:flex'
-        )}>
-          {!selectedAuto ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-[var(--wa-text-secondary)]">
-              <div className="h-20 w-20 rounded-2xl bg-amber-500/5 flex items-center justify-center mb-4">
-                <Activity className="h-10 w-10 text-amber-500/30" />
-              </div>
-              <p className="text-[14px] font-medium">Select an automation</p>
-              <p className="text-[12px] mt-1">View stats and execution history</p>
-            </div>
-          ) : (
-            <>
+        ) : (
+          /* Detail view */
+          <div className="flex-1 flex flex-col overflow-hidden bg-[var(--wa-bg)]">
+            {selectedAuto && (
+              <>
               {/* Detail header */}
               <div className="px-3 sm:px-4 py-3 bg-[var(--wa-panel-header)] border-b border-slate-200 dark:border-[var(--wa-border-strong)] flex-shrink-0">
                 <div className="flex items-center gap-2.5">
                   <button
                     onClick={() => setShowDetail(false)}
-                    className="md:hidden h-8 w-8 flex items-center justify-center rounded-lg text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-black/5 dark:hover:bg-white/10"
+                    className="h-8 w-8 flex items-center justify-center rounded-lg text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-black/5 dark:hover:bg-white/10"
                   >
                     <ArrowLeft className="h-4.5 w-4.5" />
                   </button>
@@ -699,8 +659,9 @@ export default function AutomationsPage() {
                 })()}
               </div>
             </>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
