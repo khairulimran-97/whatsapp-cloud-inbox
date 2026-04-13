@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, forwardRef, useImperativeHandle, useCallback, type ReactNode } from 'react';
 import { format, isValid, isToday, isYesterday } from 'date-fns';
-import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save, Plus, Pencil, Trash2, MessageSquareText, CloudDownload, TriangleAlert, RefreshCw, Database, ExternalLink, CalendarDays, ChevronRight, Store, Zap } from 'lucide-react';
+import { Search, X, Moon, Sun, Phone, Globe, MapPin, Mail, Info, CheckCheck, Bell, BellOff, Loader2, Settings, Eye, EyeOff, Save, Plus, Pencil, Trash2, MessageSquareText, CloudDownload, TriangleAlert, RefreshCw, Database, ExternalLink, CalendarDays, ChevronRight, ChevronDown, Check, Store, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAutoPolling } from '@/hooks/use-auto-polling';
 import { useTheme } from '@/hooks/use-theme';
@@ -1245,6 +1245,21 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
   const [formBclIds, setFormBclIds] = useState<string[]>([]);
   const [showApiKey, setShowApiKey] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [bclDropdownOpen, setBclDropdownOpen] = useState(false);
+  const bclDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close BCL dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (bclDropdownRef.current && !bclDropdownRef.current.contains(e.target as Node)) {
+        setBclDropdownOpen(false);
+      }
+    }
+    if (bclDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [bclDropdownOpen]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -1544,35 +1559,54 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
           {/* BCL Merchant assignment */}
           {bclMerchants.length > 0 && (
             <div>
-              <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-2 block">
+              <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">
                 BCL Merchants
               </label>
-              <div className="space-y-1">
-                {bclMerchants.map(m => {
-                  const linked = formBclIds.includes(m.id);
-                  return (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => toggleBcl(m.id)}
-                      className={cn(
-                        "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border text-left text-xs transition-all",
-                        linked
-                          ? "border-emerald-500/40 bg-emerald-500/10 text-[var(--wa-text-primary)]"
-                          : "border-[var(--wa-border)] bg-transparent text-[var(--wa-text-secondary)] hover:border-[var(--wa-border-hover)] hover:bg-[var(--wa-search-bg)]"
-                      )}
-                    >
-                      <Store className={cn("h-3.5 w-3.5 shrink-0", linked ? "text-emerald-400" : "text-[var(--wa-text-secondary)]")} />
-                      <span className="flex-1 truncate">{m.name}</span>
-                      <span className={cn(
-                        "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
-                        linked ? "bg-emerald-500/20 text-emerald-400" : "bg-[var(--wa-search-bg)] text-[var(--wa-text-secondary)]"
-                      )}>
-                        {linked ? 'Linked' : 'Link'}
-                      </span>
-                    </button>
-                  );
-                })}
+              <div className="relative" ref={bclDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setBclDropdownOpen(!bclDropdownOpen)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-left hover:border-[var(--wa-green)]/50 transition-colors"
+                >
+                  <Store className="h-3.5 w-3.5 shrink-0 text-[var(--wa-text-secondary)]" />
+                  <span className="flex-1 truncate text-[var(--wa-text-primary)]">
+                    {formBclIds.length === 0
+                      ? <span className="text-[var(--wa-text-secondary)]">Select merchants…</span>
+                      : `${formBclIds.length} merchant${formBclIds.length > 1 ? 's' : ''} linked`}
+                  </span>
+                  <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 text-[var(--wa-text-secondary)] transition-transform", bclDropdownOpen && "rotate-180")} />
+                </button>
+                {bclDropdownOpen && (
+                  <div className="absolute z-50 mt-1 w-full rounded-lg border border-[var(--wa-border)] bg-[var(--wa-deeper-bg)] shadow-lg overflow-hidden">
+                    {bclMerchants.map(m => {
+                      const linked = formBclIds.includes(m.id);
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => toggleBcl(m.id)}
+                          className={cn(
+                            "w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left transition-colors",
+                            "hover:bg-[var(--wa-hover)]",
+                            linked && "bg-emerald-500/5"
+                          )}
+                        >
+                          <div className={cn(
+                            "h-4 w-4 rounded border flex items-center justify-center shrink-0 transition-colors",
+                            linked
+                              ? "bg-emerald-500 border-emerald-500"
+                              : "border-[var(--wa-border)] bg-transparent"
+                          )}>
+                            {linked && <Check className="h-3 w-3 text-white" />}
+                          </div>
+                          <span className={cn("flex-1 truncate", linked ? "text-[var(--wa-text-primary)]" : "text-[var(--wa-text-secondary)]")}>
+                            {m.name}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           )}
