@@ -1475,82 +1475,108 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
 
       {/* Add / Edit form */}
       {showForm && (
-        <form onSubmit={(e) => e.preventDefault()} className="space-y-3 p-3 rounded-lg border border-[var(--wa-border)] bg-[var(--wa-hover)]" autoComplete="off">
+        <form onSubmit={(e) => e.preventDefault()} className="space-y-3.5 p-3.5 rounded-lg border border-[var(--wa-border)] bg-[var(--wa-hover)]" autoComplete="off">
           <h4 className="text-xs font-semibold text-[var(--wa-text-primary)]">
             {editingId ? 'Edit Profile' : 'New Profile'}
           </h4>
-          <input
-            type="text"
-            value={formLabel}
-            onChange={(e) => setFormLabel(e.target.value)}
-            placeholder="Profile label (e.g. My Business)"
-            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
-          />
-          <input
-            type="text"
-            value={formPhoneNumberId}
-            onChange={(e) => setFormPhoneNumberId(e.target.value)}
-            placeholder="Phone Number ID"
-            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
-          />
-          <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">Profile Name</label>
             <input
               type="text"
-              value={formWabaId}
-              onChange={(e) => setFormWabaId(e.target.value)}
-              placeholder="WABA ID"
-              className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
-            />
-            <input
-              type="text"
-              value={formPhoneDisplay}
-              onChange={(e) => setFormPhoneDisplay(e.target.value)}
-              placeholder="Phone display (optional)"
+              value={formLabel}
+              onChange={(e) => setFormLabel(e.target.value)}
+              placeholder="e.g. My Business"
               className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
             />
           </div>
-          <div className="relative">
+          <div>
+            <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">Phone Number ID</label>
             <input
-              type={showApiKey ? 'text' : 'password'}
-              autoComplete="off"
-              value={formApiKey}
-              onChange={(e) => setFormApiKey(e.target.value)}
-              placeholder={editingId ? 'New Kapso API key (leave empty to keep)' : 'Kapso API key'}
-              className="w-full px-3 py-2 pr-9 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+              type="text"
+              value={formPhoneNumberId}
+              onChange={(e) => setFormPhoneNumberId(e.target.value)}
+              placeholder="From Meta Business Suite"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
             />
-            <button
-              type="button"
-              onClick={() => setShowApiKey(!showApiKey)}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]"
-            >
-              {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">WABA ID</label>
+              <input
+                type="text"
+                value={formWabaId}
+                onChange={(e) => setFormWabaId(e.target.value)}
+                placeholder="Business Account ID"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">Display Phone <span className="normal-case opacity-60">(optional)</span></label>
+              <input
+                type="text"
+                value={formPhoneDisplay}
+                onChange={(e) => setFormPhoneDisplay(e.target.value)}
+                placeholder="+60 12-345 6789"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1 block">Kapso API Key</label>
+            <div className="relative">
+              <input
+                type={showApiKey ? 'text' : 'password'}
+                autoComplete="off"
+                value={formApiKey}
+                onChange={(e) => setFormApiKey(e.target.value)}
+                placeholder={editingId ? 'Leave empty to keep current key' : 'Enter API key'}
+                className="w-full px-3 py-2 pr-9 text-sm rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
+              />
+              <button
+                type="button"
+                onClick={() => setShowApiKey(!showApiKey)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]"
+              >
+                {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
           {/* BCL Merchant assignment */}
           {bclMerchants.length > 0 && (
             <div>
-              <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-1.5 block">
-                Linked BCL Merchants
+              <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider mb-2 block">
+                BCL Merchants
               </label>
-              <div className="flex flex-wrap gap-1.5">
-                {bclMerchants.map(m => (
-                  <button
-                    key={m.id}
-                    onClick={() => toggleBcl(m.id)}
-                    className={cn(
-                      "text-[11px] px-2.5 py-1 rounded-full border transition-colors",
-                      formBclIds.includes(m.id)
-                        ? "border-blue-500/40 bg-blue-500/15 text-blue-400"
-                        : "border-[var(--wa-border)] bg-transparent text-[var(--wa-text-secondary)] hover:border-blue-500/30"
-                    )}
-                  >
-                    {m.name}
-                  </button>
-                ))}
+              <div className="space-y-1">
+                {bclMerchants.map(m => {
+                  const linked = formBclIds.includes(m.id);
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => toggleBcl(m.id)}
+                      className={cn(
+                        "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border text-left text-xs transition-all",
+                        linked
+                          ? "border-emerald-500/40 bg-emerald-500/10 text-[var(--wa-text-primary)]"
+                          : "border-[var(--wa-border)] bg-transparent text-[var(--wa-text-secondary)] hover:border-[var(--wa-border-hover)] hover:bg-[var(--wa-search-bg)]"
+                      )}
+                    >
+                      <Store className={cn("h-3.5 w-3.5 shrink-0", linked ? "text-emerald-400" : "text-[var(--wa-text-secondary)]")} />
+                      <span className="flex-1 truncate">{m.name}</span>
+                      <span className={cn(
+                        "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
+                        linked ? "bg-emerald-500/20 text-emerald-400" : "bg-[var(--wa-search-bg)] text-[var(--wa-text-secondary)]"
+                      )}>
+                        {linked ? 'Linked' : 'Link'}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 pt-1">
             <Button variant="ghost" size="sm" onClick={resetForm}>Cancel</Button>
             <Button
               size="sm"
