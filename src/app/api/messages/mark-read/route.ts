@@ -22,15 +22,14 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result);
   } catch (error: unknown) {
-    // Rate limits are non-critical for mark-read — return 200 silently
-    const isRateLimit = error instanceof Error && error.message.includes('Rate limit');
-    if (isRateLimit) {
-      return NextResponse.json({ ok: true, skipped: 'rate_limited' });
+    // Rate limits and invalid message IDs are non-critical for mark-read
+    const msg = error instanceof Error ? error.message : '';
+    if (msg.includes('Rate limit') || msg.includes('Invalid parameter') || msg.includes('does not exist')) {
+      return NextResponse.json({ ok: true, skipped: true });
     }
     console.error('Error marking message as read:', error);
-    const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to mark message as read', details: message },
+      { error: 'Failed to mark message as read', details: msg || 'Unknown error' },
       { status: 500 }
     );
   }
