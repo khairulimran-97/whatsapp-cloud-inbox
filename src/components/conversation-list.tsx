@@ -1484,7 +1484,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
                       <button
                         onClick={() => handleSetDefault(p.id)}
                         title="Set as default"
-                        className="text-xs font-medium px-2 py-1 rounded-md text-emerald-400/50 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors mr-0.5 hidden sm:block"
+                        className="text-xs font-medium px-2 py-1 rounded-md text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 hover:bg-emerald-500/20 transition-colors mr-0.5 hidden sm:block"
                       >
                         Set Default
                       </button>
@@ -1871,7 +1871,7 @@ function BclSettingsTab({ onClose }: { onClose: () => void }) {
                     {!m.isDefault && (
                       <button
                         onClick={() => handleSetDefault(m.id)}
-                        className="text-xs font-medium px-2 py-1 rounded-md text-blue-400/50 hover:text-blue-400 hover:bg-blue-500/10 transition-colors mr-0.5 hidden sm:block"
+                        className="text-xs font-medium px-2 py-1 rounded-md text-blue-400 bg-blue-500/10 border border-blue-500/25 hover:bg-blue-500/20 transition-colors mr-0.5 hidden sm:block"
                       >
                         Set Default
                       </button>
