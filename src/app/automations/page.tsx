@@ -457,15 +457,14 @@ export default function AutomationsPage() {
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] rounded-lg text-[var(--wa-text-secondary)] hover:bg-[var(--wa-hover)] hover:text-[var(--wa-text-primary)] transition-colors disabled:opacity-40"
+                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-colors disabled:opacity-40 font-medium"
               >
                 <RefreshCw className={cn('h-3.5 w-3.5', refreshing && 'animate-spin')} />
                 Refresh
               </button>
-              <div className="w-px bg-slate-200/60 dark:bg-[var(--wa-border)] my-1" />
               <button
                 onClick={toggleTheme}
-                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] rounded-lg text-[var(--wa-text-secondary)] hover:bg-[var(--wa-hover)] hover:text-[var(--wa-text-primary)] transition-colors"
+                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-[11px] rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 transition-colors font-medium"
               >
                 {isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
                 {isDark ? 'Light' : 'Dark'}
