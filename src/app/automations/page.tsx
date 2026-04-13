@@ -7,6 +7,7 @@ import {
   CircleDot, BarChart3, Search, Calendar, Hash,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 function cn(...classes: (string | false | undefined)[]) {
   return classes.filter(Boolean).join(' ');
@@ -92,10 +93,17 @@ const TRIGGER_COLORS: Record<string, { bg: string; text: string; icon: string }>
 const DEFAULT_TRIGGER_COLOR = { bg: 'bg-slate-500/10', text: 'text-slate-600 dark:text-slate-400', icon: 'text-slate-500' };
 
 export default function AutomationsPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [automations, setAutomations] = useState<Automation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [selectedMerchantId, setSelectedMerchantId] = useState<string | undefined>();
+  const [selectedId, setSelectedId] = useState<number | null>(() => {
+    const id = searchParams.get('id');
+    return id ? Number(id) : null;
+  });
+  const [selectedMerchantId, setSelectedMerchantId] = useState<string | undefined>(() => {
+    return searchParams.get('merchant') || undefined;
+  });
   const [stats, setStats] = useState<Stats | null>(null);
   const [executions, setExecutions] = useState<Execution[]>([]);
   const [execMeta, setExecMeta] = useState<ExecMeta | null>(null);
@@ -140,6 +148,11 @@ export default function AutomationsPage() {
   const selectAutomation = useCallback(async (auto: Automation) => {
     setSelectedId(auto.id);
     setSelectedMerchantId(auto.merchantId);
+    // Update URL query params for sharing
+    const params = new URLSearchParams();
+    params.set('id', String(auto.id));
+    if (auto.merchantId) params.set('merchant', auto.merchantId);
+    router.replace(`/automations?${params.toString()}`, { scroll: false });
     setStats(null);
     setExecutions([]);
     setExecMeta(null);
@@ -236,12 +249,20 @@ export default function AutomationsPage() {
     return list;
   }, [automations, filterMerchant]);
 
-  // Auto-select first automation
+  // Auto-select: from URL params or first automation
   useEffect(() => {
-    if (filteredAutomations.length > 0 && !filteredAutomations.find(a => a.id === selectedId && a.merchantId === selectedMerchantId)) {
-      selectAutomation(filteredAutomations[0]);
+    if (filteredAutomations.length === 0) return;
+    const current = filteredAutomations.find(a => a.id === selectedId && a.merchantId === selectedMerchantId);
+    if (current) return;
+    // Try URL params first
+    const urlId = searchParams.get('id');
+    const urlMerchant = searchParams.get('merchant');
+    if (urlId) {
+      const fromUrl = filteredAutomations.find(a => String(a.id) === urlId && (!urlMerchant || a.merchantId === urlMerchant));
+      if (fromUrl) { selectAutomation(fromUrl); return; }
     }
-  }, [filteredAutomations, selectedId, selectedMerchantId, selectAutomation]);
+    selectAutomation(filteredAutomations[0]);
+  }, [filteredAutomations, selectedId, selectedMerchantId, selectAutomation, searchParams]);
 
   // Summary stats
   const totalRuns = useMemo(() => automations.reduce((s, a) => s + a.execution_count, 0), [automations]);
