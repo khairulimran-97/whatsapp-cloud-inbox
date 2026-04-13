@@ -217,6 +217,8 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
   const [activeTab, setActiveTab] = useState<'all' | 'unread'>('all');
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [showProfile, setShowProfile] = useState(false);
+  const [showProfileSwitcher, setShowProfileSwitcher] = useState(false);
+  const profileSwitcherRef = useRef<HTMLDivElement>(null);
   const [showPushDialog, setShowPushDialog] = useState(false);
   const [showSettings, setShowSettingsRaw] = useState(false);
   const setShowSettings = useCallback((v: boolean) => {
@@ -461,6 +463,17 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
     return () => window.removeEventListener('beforeunload', handler);
   }, [syncing]);
 
+  // Close profile switcher on click outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (profileSwitcherRef.current && !profileSwitcherRef.current.contains(e.target as Node)) {
+        setShowProfileSwitcher(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
   const selectByPhoneNumber = (phoneNumber: string) => {
     const conversation = conversations.find(conv => conv.phoneNumber === phoneNumber);
     if (conversation) {
@@ -691,17 +704,16 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
       <div className="px-4 pt-5 pb-3 border-b border-[var(--wa-border-strong)] bg-[var(--wa-panel-header)]">
         <div className="safe-area-top" />
         <div className="flex items-center gap-3 mb-3">
+          <div className="relative flex-1 min-w-0" ref={profileSwitcherRef}>
           <button
             onClick={() => {
-              if (parentProfiles && parentProfiles.length >= 2 && onProfileSwitch) {
-                const currentIdx = parentProfiles.findIndex(p => p.id === profileId);
-                const nextIdx = (currentIdx + 1) % parentProfiles.length;
-                onProfileSwitch(parentProfiles[nextIdx].id);
+              if (parentProfiles && parentProfiles.length >= 2) {
+                setShowProfileSwitcher(v => !v);
               } else {
                 setShowProfile(true);
               }
             }}
-            className="group flex items-center gap-3 flex-1 min-w-0 rounded-xl px-2 py-1.5 -mx-2 -my-1.5 hover:bg-[var(--wa-green)]/[0.06] active:bg-[var(--wa-green)]/10 transition-all duration-200"
+            className="group flex items-center gap-3 w-full rounded-xl px-2 py-1.5 -mx-2 -my-1.5 hover:bg-[var(--wa-green)]/[0.06] active:bg-[var(--wa-green)]/10 transition-all duration-200"
             title={parentProfiles && parentProfiles.length >= 2 ? "Switch profile" : "View business profile"}
           >
             <div className="relative flex-shrink-0">
@@ -737,6 +749,48 @@ export const ConversationList = forwardRef<ConversationListRef, Props>(
               : <ChevronRight className="h-4 w-4 text-[var(--wa-text-secondary)]/40 group-hover:text-[var(--wa-text-secondary)] transition-colors flex-shrink-0" />
             }
           </button>
+          {/* Profile switcher popover */}
+          {showProfileSwitcher && parentProfiles && parentProfiles.length >= 2 && (
+            <div className="absolute top-full left-0 right-0 mt-2 mx-1 rounded-xl border border-[var(--wa-border)] bg-[var(--wa-panel-bg)] shadow-xl z-50 overflow-hidden">
+              {parentProfiles.map(p => {
+                const active = p.id === profileId;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => {
+                      onProfileSwitch?.(p.id);
+                      setShowProfileSwitcher(false);
+                    }}
+                    className={cn(
+                      "w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors",
+                      active
+                        ? "bg-[var(--wa-green)]/10"
+                        : "hover:bg-[var(--wa-hover)]"
+                    )}
+                  >
+                    <Phone className={cn("h-4 w-4 flex-shrink-0", active ? "text-[var(--wa-green)]" : "text-[var(--wa-text-secondary)]")} />
+                    <span className={cn("text-[13px] font-medium truncate", active ? "text-[var(--wa-green)]" : "text-[var(--wa-text-primary)]")}>
+                      {p.label}
+                    </span>
+                    {active && <Check className="h-4 w-4 text-[var(--wa-green)] ml-auto flex-shrink-0" />}
+                  </button>
+                );
+              })}
+              <div className="border-t border-[var(--wa-border)]">
+                <button
+                  onClick={() => {
+                    setShowProfileSwitcher(false);
+                    setShowSettings(true);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-[var(--wa-hover)] transition-colors"
+                >
+                  <Plus className="h-4 w-4 text-[var(--wa-text-secondary)] flex-shrink-0" />
+                  <span className="text-[13px] font-medium text-[var(--wa-text-secondary)]">Add Account</span>
+                </button>
+              </div>
+            </div>
+          )}
+          </div>
           <div className="flex items-center flex-shrink-0">
             <div className="relative group">
               <Button
