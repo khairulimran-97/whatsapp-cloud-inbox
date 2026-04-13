@@ -117,6 +117,11 @@ function markSeedComplete(profileId: string) {
       .values({ key, value: 'true' })
       .onConflictDoUpdate({ target: schema.settings.key, set: { value: 'true', updatedAt: new Date() } })
       .run();
+    // Update wa_profiles synced status
+    db.update(schema.waProfiles)
+      .set({ synced: true, lastSyncedAt: new Date() })
+      .where(eq(schema.waProfiles.id, profileId))
+      .run();
   } catch (e) {
     console.error('[Conversations] Failed to mark seed complete:', e);
   }
@@ -685,6 +690,12 @@ export async function POST(request: Request) {
     db.insert(schema.settings)
       .values({ key, value: 'false' })
       .onConflictDoUpdate({ target: schema.settings.key, set: { value: 'false', updatedAt: new Date() } })
+      .run();
+
+    // Reset synced status in wa_profiles
+    db.update(schema.waProfiles)
+      .set({ synced: false, lastSyncedAt: null })
+      .where(eq(schema.waProfiles.id, profileId))
       .run();
 
     // Reset in-memory state for this profile
