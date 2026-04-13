@@ -295,7 +295,7 @@ export default function AutomationsPage() {
               <select
                 value={filterMerchant}
                 onChange={e => setFilterMerchant(e.target.value)}
-                className="appearance-none h-8 pl-2.5 pr-7 text-[12px] rounded-lg bg-white/60 dark:bg-white/5 text-[var(--wa-text-primary)] border border-amber-200 dark:border-amber-500/20 outline-none cursor-pointer font-medium"
+                className="appearance-none h-8 pl-2.5 pr-7 text-[12px] rounded-lg bg-white/60 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/20 outline-none cursor-pointer font-medium"
               >
                 {merchantNames.map(name => (
                   <option key={name} value={name}>{name}</option>
