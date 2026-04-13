@@ -175,6 +175,10 @@ function createDb() {
         sqlite.prepare(
           `INSERT INTO wa_profiles (id, label, phone_number_id, waba_id, kapso_api_key, is_default, synced, last_synced_at, created_at) VALUES (?, 'Default', ?, ?, ?, 1, 1, ?, ?)`
         ).run(id, phoneNumberId, wabaId, kapsoApiKey, Math.floor(Date.now() / 1000), Math.floor(Date.now() / 1000));
+        // Also set per-profile seed_complete so sync screen is skipped
+        sqlite.prepare(
+          `INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, 'true', ?)`
+        ).run(`seed_complete_${id}`, Math.floor(Date.now() / 1000));
         console.log('[DB Migration] Migrated WABA from .env to wa_profiles');
       }
     }
