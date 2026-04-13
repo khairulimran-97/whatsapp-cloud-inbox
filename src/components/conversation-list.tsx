@@ -1247,6 +1247,7 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
   const [saving, setSaving] = useState(false);
   const [bclDropdownOpen, setBclDropdownOpen] = useState(false);
   const bclDropdownRef = useRef<HTMLDivElement>(null);
+  const [webhookSecret, setWebhookSecret] = useState('');
 
   // Close BCL dropdown on click outside
   useEffect(() => {
@@ -1263,14 +1264,17 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
 
   const fetchData = useCallback(async () => {
     try {
-      const [pRes, mRes] = await Promise.all([
+      const [pRes, mRes, wRes] = await Promise.all([
         fetch('/api/wa-profiles'),
         fetch('/api/bcl-merchants'),
+        fetch('/api/webhook-info'),
       ]);
       const pData = await pRes.json();
       const mData = await mRes.json();
+      const wData = await wRes.json();
       setProfiles(pData.profiles || []);
       setBclMerchants(mData.merchants || []);
+      setWebhookSecret(wData.webhookSecret || '');
     } catch { /* ignore */ }
     finally { setLoading(false); }
   }, []);
@@ -1601,25 +1605,45 @@ function WaProfilesTab({ onClose }: { onClose: () => void }) {
             </div>
           )}
           {/* Webhook instructions */}
-          <div className="rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] p-3 space-y-1.5">
+          <div className="rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] p-3 space-y-2">
             <label className="text-[10px] font-medium text-[var(--wa-text-secondary)] uppercase tracking-wider block">Webhook Setup</label>
-            <div className="flex items-center gap-1.5">
-              <code className="flex-1 text-[11px] text-[var(--wa-text-primary)] bg-[var(--wa-hover)] px-2 py-1 rounded font-mono truncate">
-                {typeof window !== 'undefined' ? window.location.origin : ''}/api/webhooks/kapso
-              </code>
-              <button
-                type="button"
-                onClick={() => {
-                  navigator.clipboard.writeText(`${window.location.origin}/api/webhooks/kapso`);
-                }}
-                className="shrink-0 text-[10px] px-2 py-1 rounded bg-[var(--wa-green)]/10 text-[var(--wa-green)] hover:bg-[var(--wa-green)]/20 transition-colors"
-              >
-                Copy
-              </button>
+            <div>
+              <span className="text-[10px] text-[var(--wa-text-secondary)] block mb-1">Webhook URL</span>
+              <div className="flex items-center gap-1.5">
+                <code className="flex-1 text-[11px] text-[var(--wa-text-primary)] bg-[var(--wa-hover)] px-2 py-1 rounded font-mono truncate">
+                  {typeof window !== 'undefined' ? window.location.origin : ''}/api/webhooks/kapso
+                </code>
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard.writeText(`${window.location.origin}/api/webhooks/kapso`)}
+                  className="shrink-0 text-[10px] px-2 py-1 rounded bg-[var(--wa-green)]/10 text-[var(--wa-green)] hover:bg-[var(--wa-green)]/20 transition-colors"
+                >
+                  Copy
+                </button>
+              </div>
             </div>
-            <p className="text-[10px] text-[var(--wa-text-secondary)] leading-relaxed">
-              Set this URL as the webhook in your Kapso dashboard. The secret key is configured via <code className="text-[var(--wa-text-primary)] bg-[var(--wa-hover)] px-1 rounded">KAPSO_WEBHOOK_SECRET</code> env variable.
-            </p>
+            {webhookSecret && (
+              <div>
+                <span className="text-[10px] text-[var(--wa-text-secondary)] block mb-1">Secret Key</span>
+                <div className="flex items-center gap-1.5">
+                  <code className="flex-1 text-[11px] text-[var(--wa-text-primary)] bg-[var(--wa-hover)] px-2 py-1 rounded font-mono truncate">
+                    {webhookSecret}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => navigator.clipboard.writeText(webhookSecret)}
+                    className="shrink-0 text-[10px] px-2 py-1 rounded bg-[var(--wa-green)]/10 text-[var(--wa-green)] hover:bg-[var(--wa-green)]/20 transition-colors"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+            )}
+            {!webhookSecret && (
+              <p className="text-[10px] text-[var(--wa-text-secondary)]/70 leading-relaxed">
+                No secret key configured. Set <code className="text-[var(--wa-text-primary)] bg-[var(--wa-hover)] px-1 rounded">KAPSO_WEBHOOK_SECRET</code> in your env to enable signature verification.
+              </p>
+            )}
           </div>
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="ghost" size="sm" onClick={resetForm}>Cancel</Button>
