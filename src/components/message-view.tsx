@@ -1496,10 +1496,16 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
                     {/* Media rendering — support both direct URLs and mediaId proxy */}
                     {(() => {
                       const md = message.mediaData as Record<string, unknown> | undefined;
-                      const mediaUrl = md?.url as string | undefined 
-                        || (md?.mediaId ? `/api/media/${md.mediaId}` : undefined)
-                        || (message.metadata?.mediaUrl as string | undefined)
-                        || (message.metadata?.mediaId ? `/api/media/${message.metadata.mediaId}` : undefined);
+                      const mdMediaId = md?.mediaId as string | undefined;
+                      const metaMediaId = message.metadata?.mediaId as string | undefined;
+                      const proxyUrl = mdMediaId ? `/api/media/${mdMediaId}` : (metaMediaId ? `/api/media/${metaMediaId}` : undefined);
+                      const directUrl = (md?.url as string | undefined) || (message.metadata?.mediaUrl as string | undefined);
+                      const isDocument = message.messageType === 'document';
+                      // Documents: always go through the proxy (Kapso direct URLs need auth).
+                      // Other media: prefer the direct URL if present, fall back to the proxy.
+                      const mediaUrl = isDocument
+                        ? (proxyUrl || directUrl)
+                        : (directUrl || proxyUrl);
                       const hasMediaContent = message.hasMedia && mediaUrl;
                       
                       if (!hasMediaContent) return null;

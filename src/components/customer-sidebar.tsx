@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { X, User, Mail, Phone, MapPin, AlertCircle, Loader2, ExternalLink, ShieldCheck, Copy, Check, Search, KeyRound, Send, ChevronLeft, ChevronRight, Store } from 'lucide-react';
+import { X, User, Mail, Phone, MapPin, AlertCircle, Loader2, ExternalLink, ShieldCheck, Copy, Check, Search, KeyRound, Send, ChevronLeft, ChevronRight, Store, Ticket, Calendar, CheckCircle2 } from 'lucide-react';
 
 type Address = {
   address_lines?: string[];
@@ -54,13 +54,56 @@ type ProtectedContent = {
   access_token?: string;
 };
 
+type Participant = {
+  id: number | string;
+  match_sources?: string[];
+  participant?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    ticket_name?: string;
+    ticket_number?: string;
+    seat_number?: string | null;
+    status?: string;
+    checked_in?: boolean;
+    checked_in_at?: string | null;
+    ticket_url?: string | null;
+    custom_fields?: Record<string, unknown> | unknown[] | null;
+  };
+  event?: {
+    id?: number | string;
+    name?: string;
+    slug?: string;
+    starts_at?: string;
+    ends_at?: string;
+  };
+  order?: {
+    transaction_id?: string;
+    order_number?: string;
+    customer_id?: string;
+    status?: string;
+    status_code?: string | number;
+    is_paid?: boolean;
+    amount?: number;
+    payer_name?: string;
+    payer_email?: string;
+    payer_phone?: string;
+    created_at?: string;
+  };
+  created_at?: string;
+  updated_at?: string;
+};
+
 type CustomerData = {
   configured: boolean;
   found?: boolean;
-  customer?: Customer;
-  stats?: Stats;
+  customerFound?: boolean;
+  customer?: Customer | null;
+  stats?: Stats | null;
   recentTransactions?: Transaction[];
   protectedContent?: ProtectedContent[];
+  participants?: Participant[];
+  participantsSummary?: { total?: number; uniqueOrders?: number };
   error?: string;
 };
 
@@ -128,7 +171,7 @@ function getPhoneFlag(phone?: string): string {
   return '🌐';
 }
 
-function CopyButton({ text, title = 'Copy' }: { text: string; title?: string }) {
+function CopyButton({ text, title = 'Copy', className, label }: { text: string; title?: string; className?: string; label?: string }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -139,13 +182,16 @@ function CopyButton({ text, title = 'Copy' }: { text: string; title?: string }) 
     } catch { /* ignore */ }
   };
 
+  const defaultClass = 'h-6 w-6 flex items-center justify-center rounded-md text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)] transition-colors flex-shrink-0';
+
   return (
     <button
       onClick={handleCopy}
-      className="h-6 w-6 flex items-center justify-center rounded-md text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)] hover:bg-[var(--wa-hover)] transition-colors flex-shrink-0"
+      className={className || defaultClass}
       title={title}
     >
       {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
+      {label && <span>{copied ? 'Copied' : label}</span>}
     </button>
   );
 }
@@ -164,6 +210,26 @@ function Tooltip({ text, children }: { text: string; children: React.ReactNode }
       {show && (
         <span className="pointer-events-none absolute left-0 top-full mt-1 z-[100] max-w-[280px] px-2 py-1 text-[11px] text-white bg-gray-900 dark:bg-gray-100 dark:text-gray-900 rounded-md shadow-lg whitespace-normal break-words leading-snug">
           {text}
+        </span>
+      )}
+    </span>
+  );
+}
+
+function HoverDetails({ content, children }: { content: React.ReactNode; children: React.ReactNode }) {
+  const [show, setShow] = useState(false);
+
+  return (
+    <span
+      className="relative inline-block max-w-full cursor-pointer"
+      onClick={() => setShow(v => !v)}
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
+      {children}
+      {show && (
+        <span className="pointer-events-none absolute left-0 top-full mt-1 z-[100] min-w-[220px] max-w-[320px] px-2.5 py-2 text-[11px] text-white bg-gray-900 dark:bg-gray-100 dark:text-gray-900 rounded-md shadow-lg break-words leading-snug">
+          {content}
         </span>
       )}
     </span>
@@ -468,10 +534,171 @@ function LookupResultCard({ tx, onInsertText }: { tx: Transaction; onInsertText?
   );
 }
 
+function matchSourceLabel(source: string): { label: string; className: string } {
+  switch (source) {
+    case 'attendee_phone':
+      return { label: 'Attendee phone', className: 'bg-blue-500/10 text-blue-500 dark:text-blue-300' };
+    case 'attendee_email':
+      return { label: 'Attendee email', className: 'bg-blue-500/10 text-blue-500 dark:text-blue-300' };
+    case 'buyer_phone':
+      return { label: 'Buyer phone', className: 'bg-green-500/10 text-green-500 dark:text-green-300' };
+    case 'buyer_email':
+      return { label: 'Buyer email', className: 'bg-green-500/10 text-green-500 dark:text-green-300' };
+    default:
+      return { label: source, className: 'bg-gray-500/10 text-gray-500 dark:text-gray-300' };
+  }
+}
+
+function ParticipantCard({ participant }: { participant: Participant }) {
+  const p = participant.participant ?? {};
+  const event = participant.event ?? {};
+  const order = participant.order ?? {};
+  const matches = participant.match_sources ?? [];
+  const ticketUrl = p.ticket_url ?? undefined;
+  const attendeePhoneMatch = matches.includes('attendee_phone');
+
+  return (
+    <div className="rounded-lg border border-black/10 dark:border-white/15 bg-[var(--wa-hover)] p-2.5 space-y-2">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <HoverDetails
+            content={
+              <div className="space-y-0.5">
+                <div className="font-semibold">{event.name || 'Event'}</div>
+                {event.starts_at && <div>Starts: {formatDateTime(event.starts_at)}</div>}
+                {event.ends_at && <div>Ends: {formatDateTime(event.ends_at)}</div>}
+                {event.slug && <div className="opacity-70">Slug: {event.slug}</div>}
+                {(p.ticket_name || p.ticket_number) && (
+                  <div className="pt-1 border-t border-white/20 dark:border-black/20 mt-1">
+                    <div>Ticket: {p.ticket_name || '—'}</div>
+                    {p.ticket_number && <div>Number: {p.ticket_number}</div>}
+                    {p.seat_number && <div>Seat: {p.seat_number}</div>}
+                  </div>
+                )}
+              </div>
+            }
+          >
+            <span className="flex items-center gap-1.5 text-[13px] font-semibold text-[var(--wa-text-primary)] truncate max-w-full">
+              <Calendar className="h-3.5 w-3.5 text-[var(--wa-text-secondary)] flex-shrink-0" />
+              <span className="truncate">{event.name || 'Event'}</span>
+            </span>
+          </HoverDetails>
+          {event.starts_at && (
+            <p className="text-[11px] text-[var(--wa-text-secondary)] mt-0.5 pl-5">
+              {formatDateTime(event.starts_at)}
+            </p>
+          )}
+        </div>
+        {p.checked_in && (
+          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-500 dark:text-green-300 whitespace-nowrap flex items-center gap-1">
+            <CheckCircle2 className="h-3 w-3" />
+            Checked in
+          </span>
+        )}
+      </div>
+
+      <div className="flex items-center flex-wrap gap-1">
+        {matches.map((s) => {
+          const m = matchSourceLabel(s);
+          return (
+            <span key={s} className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${m.className}`}>
+              {m.label}
+            </span>
+          );
+        })}
+      </div>
+
+      <div className="overflow-hidden rounded-md border border-black/10 dark:border-white/15 bg-[var(--wa-panel-bg)]">
+        <table className="w-full text-[12px] table-fixed">
+          <tbody>
+            <tr>
+              <td className="px-2 py-1 text-[var(--wa-text-secondary)] bg-black/5 dark:bg-white/5 w-[72px] whitespace-nowrap border-r border-b border-black/15 dark:border-white/20">Ticket</td>
+              <td className="px-2 py-1 text-[var(--wa-text-primary)] truncate border-b border-black/15 dark:border-white/20" title={p.ticket_name}>
+                {p.ticket_name || '—'}{p.ticket_number ? ` · ${p.ticket_number}` : ''}{p.seat_number ? ` · Seat ${p.seat_number}` : ''}
+              </td>
+            </tr>
+            <tr>
+              <td className={`px-2 py-1 text-[var(--wa-text-secondary)] bg-black/5 dark:bg-white/5 w-[72px] whitespace-nowrap border-r border-b border-black/15 dark:border-white/20`}>Attendee</td>
+              <td className="px-2 py-1 text-[var(--wa-text-primary)] truncate border-b border-black/15 dark:border-white/20">
+                <span className={attendeePhoneMatch ? 'font-semibold' : ''}>{p.name || '—'}</span>
+                {p.phone && (
+                  <span className="text-[var(--wa-text-secondary)]"> · {p.phone}</span>
+                )}
+              </td>
+            </tr>
+            {(order.payer_phone || order.payer_email) && (
+              <tr>
+                <td className="px-2 py-1 text-[var(--wa-text-secondary)] bg-black/5 dark:bg-white/5 w-[72px] whitespace-nowrap border-r border-b border-black/15 dark:border-white/20">Buyer</td>
+                <td className="px-2 py-1 text-[var(--wa-text-primary)] truncate border-b border-black/15 dark:border-white/20">
+                  <HoverDetails
+                    content={
+                      <div className="space-y-0.5">
+                        <div className="font-semibold">{order.payer_name || 'Buyer'}</div>
+                        {order.payer_phone && <div>📱 {order.payer_phone}</div>}
+                        {order.payer_email && <div>✉️ {order.payer_email}</div>}
+                        {order.order_number && <div className="pt-1 border-t border-white/20 dark:border-black/20 mt-1">Order: {order.order_number}</div>}
+                        {order.amount != null && <div>Amount: {formatRM(order.amount)}</div>}
+                        {order.status && <div>Status: {order.status}</div>}
+                        {order.created_at && <div className="opacity-70">Created: {formatDateTime(order.created_at)}</div>}
+                      </div>
+                    }
+                  >
+                    <span className="truncate">
+                      {order.payer_phone || '—'}
+                      {order.payer_phone && order.payer_email && <span className="text-[var(--wa-text-secondary)]"> · </span>}
+                      {order.payer_email && <span className="text-[var(--wa-text-secondary)]">{order.payer_email}</span>}
+                    </span>
+                  </HoverDetails>
+                </td>
+              </tr>
+            )}
+            {order.order_number && (
+              <tr>
+                <td className="px-2 py-1 text-[var(--wa-text-secondary)] bg-black/5 dark:bg-white/5 w-[72px] whitespace-nowrap border-r border-black/15 dark:border-white/20">Order</td>
+                <td className="px-2 py-1 text-[var(--wa-text-primary)] truncate">
+                  {order.order_number}
+                  {order.amount != null && (
+                    <span className="text-[var(--wa-text-secondary)]"> · {formatRM(order.amount)}</span>
+                  )}
+                  {order.status && (
+                    <span className={`ml-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${order.is_paid ? 'bg-green-500/10 text-green-500 dark:text-green-300' : 'bg-yellow-500/10 text-yellow-500 dark:text-yellow-300'}`}>
+                      {order.status}
+                    </span>
+                  )}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {ticketUrl && (
+        <div className="flex items-center gap-1.5">
+          <a
+            href={ticketUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-[2] flex items-center justify-center gap-1 text-[11px] font-medium px-2 py-1.5 rounded-md bg-[var(--wa-green)]/10 text-[var(--wa-green)] hover:bg-[var(--wa-green)]/20 transition-colors"
+          >
+            <ExternalLink className="h-3 w-3" />
+            Open ticket
+          </a>
+          <CopyButton
+            text={ticketUrl}
+            title="Copy ticket URL"
+            label="Copy"
+            className="flex-1 flex items-center justify-center gap-1 text-[11px] font-medium px-2 py-1.5 rounded-md bg-[var(--wa-hover)] text-[var(--wa-text-primary)] hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/15 transition-colors"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function MerchantSelector({ merchants, selected, onChange }: { merchants: BclMerchantInfo[]; selected: string; onChange: (id: string) => void }) {
   if (merchants.length === 0) return null;
   return (
-    <div className="px-4 py-2 border-b border-[var(--wa-border)] bg-[var(--wa-panel-bg)]">
+    <div className="px-4 py-2 border-b border-[var(--wa-border)] bg-[var(--wa-panel-bg)] flex-shrink-0">
       <div className="flex items-center gap-2">
         <Store className="h-3 w-3 text-[var(--wa-text-secondary)] flex-shrink-0" />
         <div className="flex gap-1 flex-wrap flex-1 bg-black/[0.04] dark:bg-white/[0.06] rounded-lg p-1">
@@ -667,7 +894,7 @@ function TabBar({ activeTab, onChangeTab }: { activeTab: TabId; onChangeTab: (ta
   ];
 
   return (
-    <div className="flex border-b border-black/10 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02]">
+    <div className="flex border-b border-black/10 dark:border-white/15 bg-black/[0.02] dark:bg-white/[0.02] flex-shrink-0">
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id;
         return (
@@ -777,11 +1004,11 @@ export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, pa
         </div>
         <TabBar activeTab={activeTab} onChangeTab={setActiveTab} />
         <MerchantSelector merchants={merchants} selected={selectedMerchant} onChange={setSelectedMerchant} />
-        <div className="overflow-y-auto flex-1 p-4">
+        <div className="overflow-y-auto flex-1 px-4 pb-4">
           <div className={activeTab !== 'customer' ? 'hidden' : ''}>
             <InfoContent data={data} loading={loading} phoneNumber={phoneNumber} onInsertText={onInsertText} />
           </div>
-          <div className={activeTab !== 'lookup' ? 'hidden' : ''}>
+          <div className={activeTab !== 'lookup' ? 'hidden' : 'pt-4'}>
             <OrdersTab onInsertText={onInsertText} query={lookupQuery} setQuery={setLookupQuery} results={lookupResults} setResults={setLookupResults} page={lookupPage} setPage={setLookupPage} merchantId={selectedMerchant} />
           </div>
         </div>
@@ -799,12 +1026,12 @@ export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, pa
         />
       )}
       <div
-        className={`fixed top-0 right-0 h-full z-[70] w-full sm:w-[420px] bg-[var(--wa-panel-bg)] border-l border-[var(--wa-border)] shadow-2xl transform transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 h-full z-[70] w-full sm:w-[420px] bg-[var(--wa-panel-bg)] border-l border-[var(--wa-border)] shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
-        <div className="flex items-center justify-between h-[60px] px-4 border-b border-[var(--wa-border)] bg-[var(--wa-panel-bg)]">
+        <div className="flex items-center justify-between h-[60px] px-4 border-b border-[var(--wa-border)] bg-[var(--wa-panel-bg)] flex-shrink-0">
           <h3 className="text-[15px] font-semibold text-[var(--wa-text-primary)]">
             Customer
           </h3>
@@ -817,11 +1044,11 @@ export function CustomerSidebar({ phoneNumber, open, onClose, inline = false, pa
         </div>
         <TabBar activeTab={activeTab} onChangeTab={setActiveTab} />
         <MerchantSelector merchants={merchants} selected={selectedMerchant} onChange={setSelectedMerchant} />
-        <div className="overflow-y-auto h-[calc(100%-60px-41px)] p-4">
+        <div className="overflow-y-auto flex-1 min-h-0 px-4 pb-4">
           <div className={activeTab !== 'customer' ? 'hidden' : ''}>
             <InfoContent data={data} loading={loading} phoneNumber={phoneNumber} onInsertText={onInsertText} />
           </div>
-          <div className={activeTab !== 'lookup' ? 'hidden' : ''}>
+          <div className={activeTab !== 'lookup' ? 'hidden' : 'pt-4'}>
             <OrdersTab onInsertText={onInsertText} query={lookupQuery} setQuery={setLookupQuery} results={lookupResults} setResults={setLookupResults} page={lookupPage} setPage={setLookupPage} merchantId={selectedMerchant} />
           </div>
         </div>
@@ -856,68 +1083,85 @@ function InfoContent({ data, loading, phoneNumber, onInsertText }: { data: Custo
         <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
           <User className="h-10 w-10 text-[var(--wa-text-secondary)] opacity-50" />
           <p className="text-sm text-[var(--wa-text-secondary)]">
-            No customer found for
+            No customer or participant found for
           </p>
           <p className="text-sm font-medium text-[var(--wa-text-primary)]">{phoneNumber}</p>
         </div>
       )}
 
-      {!loading && data && data.configured && data.found && data.customer && (
+      {!loading && data && data.configured && data.found && (
         <div className="space-y-5">
-          {/* Customer profile */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-12 w-12 rounded-full bg-[var(--wa-green)] flex items-center justify-center flex-shrink-0">
-                <User className="h-6 w-6 text-white" />
-              </div>
-              <div className="min-w-0">
-                <h4 className="text-[17px] font-semibold text-[var(--wa-text-primary)] truncate leading-tight" title={data.customer.name}>
-                  {data.customer.name}
-                </h4>
-                {data.customer.tin && (
-                  <p className="text-xs text-[var(--wa-text-secondary)] mt-0.5">
-                    TIN: {data.customer.tin}
-                  </p>
+          {data.customer ? (
+            <>
+              <div className="sticky top-0 -mx-4 px-4 pt-4 pb-3 bg-[var(--wa-panel-bg)] z-10 border-b border-[var(--wa-border)] space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-[var(--wa-green)] flex items-center justify-center flex-shrink-0">
+                    <User className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="text-[15px] font-semibold text-[var(--wa-text-primary)] truncate leading-tight" title={data.customer.name}>
+                      {data.customer.name}
+                    </h4>
+                    {data.customer.tin && (
+                      <p className="text-[11px] text-[var(--wa-text-secondary)] mt-0.5">
+                        TIN: {data.customer.tin}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {(data.customer.email || data.customer.phone) && (
+                  <div className="flex items-center gap-3 text-[12px] flex-wrap">
+                    {data.customer.email && (
+                      <div className="flex items-center gap-1.5 group min-w-0">
+                        <Mail className="h-3.5 w-3.5 text-[var(--wa-text-secondary)] flex-shrink-0" />
+                        <span className="text-[var(--wa-text-primary)] truncate" title={data.customer.email}>{data.customer.email}</span>
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                          <CopyButton text={data.customer.email} title="Copy email" />
+                        </div>
+                      </div>
+                    )}
+
+                    {data.customer.phone && (
+                      <div className="flex items-center gap-1.5 group min-w-0">
+                        <Phone className="h-3.5 w-3.5 text-[var(--wa-text-secondary)] flex-shrink-0" />
+                        <span className="text-sm leading-none">{getPhoneFlag(data.customer.phone)}</span>
+                        <span className="text-[var(--wa-text-primary)] truncate">{data.customer.phone}</span>
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                          <CopyButton text={data.customer.phone} title="Copy phone" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
+
+              {formatAddress(data.customer.address) && (
+                <div className="flex items-start gap-3 text-sm">
+                  <MapPin className="h-4 w-4 text-[var(--wa-text-secondary)] flex-shrink-0 mt-0.5" />
+                  <span className="text-[var(--wa-text-primary)] leading-relaxed">
+                    {formatAddress(data.customer.address)}
+                  </span>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="mt-4 flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+              <Ticket className="h-4 w-4 text-amber-500 dark:text-amber-300 flex-shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-[var(--wa-text-primary)]">
+                  No customer record for {phoneNumber}
+                </p>
+                <p className="text-xs text-[var(--wa-text-secondary)] mt-0.5">
+                  This phone appears as a participant on {data.participantsSummary?.total ?? data.participants?.length ?? 0} ticket(s) below.
+                </p>
+              </div>
             </div>
-
-            {data.customer.email && (
-              <div className="flex items-center gap-3 text-sm group">
-                <Mail className="h-4 w-4 text-[var(--wa-text-secondary)] flex-shrink-0" />
-                <span className="text-[var(--wa-text-primary)] truncate flex-1">{data.customer.email}</span>
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                  <CopyButton text={data.customer.email} title="Copy email" />
-                </div>
-              </div>
-            )}
-
-            {data.customer.phone && (
-              <div className="flex items-center gap-3 text-sm group">
-                <Phone className="h-4 w-4 text-[var(--wa-text-secondary)] flex-shrink-0" />
-                <div className="flex items-center gap-1.5 flex-1">
-                  <span className="text-base leading-none">{getPhoneFlag(data.customer.phone)}</span>
-                  <span className="text-[var(--wa-text-primary)]">{data.customer.phone}</span>
-                </div>
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                  <CopyButton text={data.customer.phone} title="Copy phone" />
-                </div>
-              </div>
-            )}
-
-            {formatAddress(data.customer.address) && (
-              <div className="flex items-start gap-3 text-sm">
-                <MapPin className="h-4 w-4 text-[var(--wa-text-secondary)] flex-shrink-0 mt-0.5" />
-                <span className="text-[var(--wa-text-primary)] leading-relaxed">
-                  {formatAddress(data.customer.address)}
-                </span>
-              </div>
-            )}
-          </div>
+          )}
 
           {/* Transaction stats */}
-          {data.stats && (
-            <div className="border-t border-[var(--wa-border)] pt-4">
+          {data.customer && data.stats && (
+            <div className="pt-3">
               <h5 className="text-xs font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-3">
                 Transaction Stats
               </h5>
@@ -957,7 +1201,7 @@ function InfoContent({ data, loading, phoneNumber, onInsertText }: { data: Custo
           )}
 
           {/* Recent transactions */}
-          {data.recentTransactions && data.recentTransactions.length > 0 && (
+          {data.customer && data.recentTransactions && data.recentTransactions.length > 0 && (
               <div className="border-t border-black/10 dark:border-white/15 pt-4">
                 <h5 className="text-xs font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-2">
                   Recent Transactions
@@ -970,8 +1214,27 @@ function InfoContent({ data, loading, phoneNumber, onInsertText }: { data: Custo
               </div>
           )}
 
+          {/* Participants / Event Tickets */}
+          {data.participants && data.participants.length > 0 && (
+            <div className="border-t border-black/10 dark:border-white/15 pt-4">
+              <h5 className="text-xs font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-2 flex items-center gap-1.5">
+                <Ticket className="h-3.5 w-3.5" />
+                Event Tickets
+                <span className="text-[10px] font-medium text-[var(--wa-text-secondary)]/80 normal-case tracking-normal">
+                  · {data.participantsSummary?.total ?? data.participants.length} ticket(s)
+                  {data.participantsSummary?.uniqueOrders ? ` · ${data.participantsSummary.uniqueOrders} order(s)` : ''}
+                </span>
+              </h5>
+              <div className="space-y-2.5">
+                {data.participants.map((p, i) => (
+                  <ParticipantCard key={p.id ?? i} participant={p} />
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Standalone content access */}
-          {data.protectedContent && data.protectedContent.length > 0 && (
+          {data.customer && data.protectedContent && data.protectedContent.length > 0 && (
             (!data.recentTransactions || data.recentTransactions.length === 0) && (
               <div className="border-t border-[var(--wa-border)] pt-4">
                 <h5 className="text-xs font-semibold uppercase tracking-wider text-[var(--wa-text-secondary)] mb-3 flex items-center gap-1.5">

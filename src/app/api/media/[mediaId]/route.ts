@@ -13,7 +13,10 @@ export async function GET(
     const profileId = searchParams.get('profileId');
     const { client, profile } = resolveProfile(profileId);
 
-    // First check if we have a Kapso direct URL cached in SQLite
+    // First check if we have a cached direct URL in SQLite.
+    // Skip redirect for Kapso Active Storage URLs — those require the
+    // Kapso session/API key that the end user's browser doesn't have.
+    // In that case fall through to the SDK download below.
     try {
       const db = getDb();
       const row = db.select({ mediaDataJson: schema.messages.mediaDataJson })
@@ -22,7 +25,11 @@ export async function GET(
         .get();
       if (row?.mediaDataJson) {
         const md = JSON.parse(row.mediaDataJson);
-        if (md.url && !md.url.startsWith('/api/')) {
+        if (
+          md.url &&
+          !md.url.startsWith('/api/') &&
+          !/(^|\/\/)([a-z0-9-]+\.)?kapso\.ai\//i.test(md.url)
+        ) {
           return NextResponse.redirect(md.url, 302);
         }
       }
