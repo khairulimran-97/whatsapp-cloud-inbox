@@ -14,12 +14,12 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "PPV Support",
-  description: "PPV Live Streaming Customer Support Inbox",
+  title: "WhatsApp CRM by WasapBOM",
+  description: "WhatsApp CRM by WasapBOM",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "PPV Support",
+    title: "WhatsApp CRM by WasapBOM",
   },
 };
 
@@ -32,9 +32,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+        <link rel="apple-touch-icon" href="/api/profile/favicon" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/api/profile/favicon" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/api/profile/favicon" />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('whatsapp-inbox-theme');if(t==='light')return;document.documentElement.classList.add('dark')}catch(e){}})()`,

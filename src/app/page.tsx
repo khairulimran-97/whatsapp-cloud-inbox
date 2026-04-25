@@ -138,6 +138,15 @@ export default function Home() {
     }).catch(() => {});
   }, [activeProfileId, profiles]);
 
+  // Swap favicon to active WABA profile picture (cached server-side)
+  useEffect(() => {
+    if (!activeProfileId) return;
+    const href = `/api/profile/favicon?profileId=${encodeURIComponent(activeProfileId)}`;
+    document.querySelectorAll<HTMLLinkElement>('link[rel="icon"], link[rel="apple-touch-icon"]').forEach(link => {
+      link.href = href;
+    });
+  }, [activeProfileId]);
+
   useEffect(() => {
     notificationSoundRef.current = new Audio('/notification.wav');
     notificationSoundRef.current.volume = 0.8;
