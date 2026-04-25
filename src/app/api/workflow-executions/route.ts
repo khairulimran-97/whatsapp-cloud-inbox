@@ -1,5 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { updateWorkflowExecution, resumeWorkflowExecution } from '@/lib/kapso-platform';
+import { resolveProfile } from '@/lib/whatsapp-client';
+
+function resolveApiKey(req: NextRequest): string | undefined {
+  const profileIdParam = req.nextUrl.searchParams.get('profileId');
+  try {
+    const { profile } = resolveProfile(profileIdParam);
+    return profile.kapsoApiKey;
+  } catch {
+    return undefined;
+  }
+}
 
 // PATCH /api/workflow-executions?id=xxx — update execution status (handoff/end)
 // POST /api/workflow-executions?id=xxx — resume execution
@@ -16,7 +27,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'status required' }, { status: 400 });
     }
 
-    const result = await updateWorkflowExecution(executionId, status);
+    const result = await updateWorkflowExecution(executionId, status, resolveApiKey(req));
     return NextResponse.json(result);
   } catch (error) {
     console.error('[Workflow] Error updating execution:', error);
@@ -33,7 +44,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
     const currentStatus = body.currentStatus as string | undefined;
-    const result = await resumeWorkflowExecution(executionId, currentStatus);
+    const result = await resumeWorkflowExecution(executionId, currentStatus, resolveApiKey(req));
     return NextResponse.json(result);
   } catch (error) {
     console.error('[Workflow] Error resuming execution:', error);

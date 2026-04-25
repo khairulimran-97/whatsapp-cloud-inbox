@@ -707,7 +707,7 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
     if (!conversationIds || conversationIds.length === 0) return;
     setWorkflowExecution(null);
     const fetchExecution = () => {
-      fetch(`/api/workflows/executions?conversationIds=${conversationIds.join(',')}`)
+      fetch(withProfile(`/api/workflows/executions?conversationIds=${conversationIds.join(',')}`))
         .then(r => r.ok ? r.json() : null)
         .then(data => {
           if (data?.data?.length > 0) {
@@ -722,13 +722,13 @@ export const MessageView = forwardRef<MessageViewRef, Props>(function MessageVie
     // Poll every 30s to detect workflow state changes
     const interval = setInterval(fetchExecution, 30000);
     return () => clearInterval(interval);
-  }, [conversationIds]);
+  }, [conversationIds, withProfile]);
 
   const handleWorkflowAction = useCallback(async (targetStatus: string) => {
     if (!workflowExecution) return;
     setWorkflowActionLoading(true);
     try {
-      const res = await fetch(`/api/workflow-executions?id=${workflowExecution.id}`, {
+      const res = await fetch(withProfile(`/api/workflow-executions?id=${workflowExecution.id}`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: targetStatus }),

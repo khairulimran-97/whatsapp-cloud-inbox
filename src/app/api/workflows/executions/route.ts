@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { listWorkflows, listWorkflowExecutions } from '@/lib/kapso-platform';
+import { resolveProfile } from '@/lib/whatsapp-client';
 
 // GET /api/workflows/executions?conversationId=xxx
 // Returns active/waiting executions for a given conversation
 export async function GET(req: NextRequest) {
   const conversationId = req.nextUrl.searchParams.get('conversationId');
   const conversationIds = req.nextUrl.searchParams.get('conversationIds');
+  const profileIdParam = req.nextUrl.searchParams.get('profileId');
 
   if (!conversationId && !conversationIds) {
     return NextResponse.json({ error: 'conversationId or conversationIds required' }, { status: 400 });
@@ -15,9 +17,17 @@ export async function GET(req: NextRequest) {
   if (conversationId) targetIds.add(conversationId);
   if (conversationIds) conversationIds.split(',').forEach(id => targetIds.add(id.trim()));
 
+  let apiKey: string | undefined;
+  try {
+    const { profile } = resolveProfile(profileIdParam);
+    apiKey = profile.kapsoApiKey;
+  } catch {
+    // Fall back to env-based key inside platformFetch
+  }
+
   try {
     // First, list all workflows to get their IDs
-    const { data: workflows } = await listWorkflows();
+    const { data: workflows } = await listWorkflows(apiKey);
 
     // For each active workflow, check executions
     const activeWorkflows = workflows.filter((w: { status: string }) =>
@@ -27,7 +37,7 @@ export async function GET(req: NextRequest) {
     const results: Record<string, unknown>[] = [];
 
     for (const workflow of activeWorkflows) {
-      const { data: executions } = await listWorkflowExecutions(workflow.id, 1, 50);
+      const { data: executions } = await listWorkflowExecutions(workflow.id, 1, 50, apiKey);
 
       for (const exec of executions) {
         if (targetIds.has(exec.whatsapp_conversation_id) &&
