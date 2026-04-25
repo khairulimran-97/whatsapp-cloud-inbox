@@ -732,6 +732,7 @@ type OrdersSearchResult = {
   data?: Transaction[];
   meta?: { current_page: number; last_page: number; per_page: number; total: number };
   summary?: { total_count: number; success_count: number; pending_count: number; failed_count: number };
+  participants?: Participant[];
   error?: string;
 };
 
@@ -789,7 +790,7 @@ function OrdersTab({ onInsertText, query, setQuery, results, setResults, page, s
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Order ID, email, phone..."
+            placeholder="Order, ticket, email, phone..."
             className="w-full pl-8 pr-3 py-2 text-xs rounded-lg border border-[var(--wa-border)] bg-[var(--wa-search-bg)] text-[var(--wa-text-primary)] placeholder:text-[var(--wa-text-secondary)] focus:outline-none focus:border-[var(--wa-green)]/50"
           />
         </div>
@@ -809,9 +810,9 @@ function OrdersTab({ onInsertText, query, setQuery, results, setResults, page, s
             <Search className="h-6 w-6 text-[var(--wa-text-secondary)] opacity-60" />
           </div>
           <div>
-            <p className="text-xs font-medium text-[var(--wa-text-primary)]">Find an order</p>
-            <p className="text-[11px] text-[var(--wa-text-secondary)] mt-1 leading-relaxed max-w-[200px]">
-              Search by order ID, email, or phone number
+            <p className="text-xs font-medium text-[var(--wa-text-primary)]">Find an order or ticket</p>
+            <p className="text-[11px] text-[var(--wa-text-secondary)] mt-1 leading-relaxed max-w-[220px]">
+              Search by order ID, ticket number, email, or phone number
             </p>
           </div>
         </div>
@@ -841,17 +842,44 @@ function OrdersTab({ onInsertText, query, setQuery, results, setResults, page, s
 
       {results && results.configured && !results.error && (
         <>
-          {/* Transaction list */}
-          {results.data && results.data.length > 0 ? (
-            <div className="space-y-2.5">
-              {results.data.map((tx, i) => (
-                <LookupResultCard key={tx.order_number || tx.id || i} tx={tx} onInsertText={onInsertText} />
-              ))}
+          {results.participants && results.participants.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[11px] font-semibold uppercase tracking-wide text-[var(--wa-text-secondary)]">
+                  Tickets
+                </h4>
+                <span className="text-[10px] text-[var(--wa-text-secondary)]">{results.participants.length}</span>
+              </div>
+              <div className="space-y-2.5">
+                {results.participants.map((p, i) => (
+                  <ParticipantCard key={p.id ?? i} participant={p} />
+                ))}
+              </div>
             </div>
-          ) : (
+          )}
+
+          {results.data && results.data.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[11px] font-semibold uppercase tracking-wide text-[var(--wa-text-secondary)]">
+                  Transactions
+                </h4>
+                {results.meta && (
+                  <span className="text-[10px] text-[var(--wa-text-secondary)]">{results.meta.total}</span>
+                )}
+              </div>
+              <div className="space-y-2.5">
+                {results.data.map((tx, i) => (
+                  <LookupResultCard key={tx.order_number || tx.id || i} tx={tx} onInsertText={onInsertText} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(!results.data || results.data.length === 0) && (!results.participants || results.participants.length === 0) && (
             <div className="flex flex-col items-center py-10 gap-2 text-center">
               <Search className="h-8 w-8 text-[var(--wa-text-secondary)] opacity-50" />
-              <p className="text-xs text-[var(--wa-text-secondary)]">No transactions found</p>
+              <p className="text-xs text-[var(--wa-text-secondary)]">No matches found</p>
             </div>
           )}
 
