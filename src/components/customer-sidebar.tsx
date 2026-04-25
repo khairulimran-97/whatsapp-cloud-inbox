@@ -749,6 +749,18 @@ type OrdersTabProps = {
 
 function OrdersTab({ onInsertText, query, setQuery, results, setResults, page, setPage, merchantId }: OrdersTabProps) {
   const [loading, setLoading] = useState(false);
+  const [resultsTab, setResultsTab] = useState<'tickets' | 'receipts'>('tickets');
+
+  const ticketsCount = results?.participants?.length ?? 0;
+  const receiptsCount = results?.data?.length ?? 0;
+  const hasBoth = ticketsCount > 0 && receiptsCount > 0;
+
+  // Default to whichever section has results when only one is populated
+  useEffect(() => {
+    if (!results) return;
+    if (ticketsCount > 0 && receiptsCount === 0) setResultsTab('tickets');
+    else if (receiptsCount > 0 && ticketsCount === 0) setResultsTab('receipts');
+  }, [results, ticketsCount, receiptsCount]);
 
   const handleSearch = useCallback(async (q: string, p: number) => {
     if (!q.trim()) return;
@@ -842,49 +854,78 @@ function OrdersTab({ onInsertText, query, setQuery, results, setResults, page, s
 
       {results && results.configured && !results.error && (
         <>
-          {results.participants && results.participants.length > 0 && (
+          {hasBoth && (
+            <div className="flex gap-1 bg-black/[0.04] dark:bg-white/[0.06] rounded-lg p-1">
+              <button
+                onClick={() => setResultsTab('tickets')}
+                className={`flex-1 text-[11px] font-medium px-3 py-1.5 rounded-md transition-all ${
+                  resultsTab === 'tickets'
+                    ? 'bg-blue-500 text-white shadow-sm'
+                    : 'text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]'
+                }`}
+              >
+                Tickets <span className="opacity-70">({ticketsCount})</span>
+              </button>
+              <button
+                onClick={() => setResultsTab('receipts')}
+                className={`flex-1 text-[11px] font-medium px-3 py-1.5 rounded-md transition-all ${
+                  resultsTab === 'receipts'
+                    ? 'bg-blue-500 text-white shadow-sm'
+                    : 'text-[var(--wa-text-secondary)] hover:text-[var(--wa-text-primary)]'
+                }`}
+              >
+                Receipts <span className="opacity-70">({results.meta?.total ?? receiptsCount})</span>
+              </button>
+            </div>
+          )}
+
+          {ticketsCount > 0 && (resultsTab === 'tickets' || !hasBoth) && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h4 className="text-[11px] font-semibold uppercase tracking-wide text-[var(--wa-text-secondary)]">
-                  Tickets
-                </h4>
-                <span className="text-[10px] text-[var(--wa-text-secondary)]">{results.participants.length}</span>
-              </div>
+              {!hasBoth && (
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[11px] font-semibold uppercase tracking-wide text-[var(--wa-text-secondary)]">
+                    Tickets
+                  </h4>
+                  <span className="text-[10px] text-[var(--wa-text-secondary)]">{ticketsCount}</span>
+                </div>
+              )}
               <div className="space-y-2.5">
-                {results.participants.map((p, i) => (
+                {results.participants!.map((p, i) => (
                   <ParticipantCard key={p.id ?? i} participant={p} />
                 ))}
               </div>
             </div>
           )}
 
-          {results.data && results.data.length > 0 && (
+          {receiptsCount > 0 && (resultsTab === 'receipts' || !hasBoth) && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h4 className="text-[11px] font-semibold uppercase tracking-wide text-[var(--wa-text-secondary)]">
-                  Transactions
-                </h4>
-                {results.meta && (
-                  <span className="text-[10px] text-[var(--wa-text-secondary)]">{results.meta.total}</span>
-                )}
-              </div>
+              {!hasBoth && (
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[11px] font-semibold uppercase tracking-wide text-[var(--wa-text-secondary)]">
+                    Receipts
+                  </h4>
+                  {results.meta && (
+                    <span className="text-[10px] text-[var(--wa-text-secondary)]">{results.meta.total}</span>
+                  )}
+                </div>
+              )}
               <div className="space-y-2.5">
-                {results.data.map((tx, i) => (
+                {results.data!.map((tx, i) => (
                   <LookupResultCard key={tx.order_number || tx.id || i} tx={tx} onInsertText={onInsertText} />
                 ))}
               </div>
             </div>
           )}
 
-          {(!results.data || results.data.length === 0) && (!results.participants || results.participants.length === 0) && (
+          {ticketsCount === 0 && receiptsCount === 0 && (
             <div className="flex flex-col items-center py-10 gap-2 text-center">
               <Search className="h-8 w-8 text-[var(--wa-text-secondary)] opacity-50" />
               <p className="text-xs text-[var(--wa-text-secondary)]">No matches found</p>
             </div>
           )}
 
-          {/* Pagination */}
-          {results.meta && results.meta.last_page > 1 && (
+          {/* Pagination — receipts only */}
+          {results.meta && results.meta.last_page > 1 && (resultsTab === 'receipts' || !hasBoth) && receiptsCount > 0 && (
             <div className="flex items-center justify-between pt-2">
               <button
                 onClick={() => handleSearch(query, page - 1)}
